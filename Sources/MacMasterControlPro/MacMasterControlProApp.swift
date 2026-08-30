@@ -3,13 +3,10 @@ import AppKit
 
 @main
 struct MacMasterControlProApp: App {
-    init() {
-        ThemeManager.shared.applyNow()
-    }
-
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear { ThemeManager.shared.applyNow() }
         }
         .windowResizability(.contentSize)
         .commands {
