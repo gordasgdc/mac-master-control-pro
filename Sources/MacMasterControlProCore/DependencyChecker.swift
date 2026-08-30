@@ -1,0 +1,112 @@
+import Foundation
+
+/// Model generic - acelasi tipar ca SystemDependencyChecker din DataMover
+/// (Regula 4: Manager de Dependente, indicator rosu/verde).
+public struct DependencyItem: Identifiable, Equatable {
+    public let id: String          // ex: "homebrew"
+    public let name: String        // ex: "Homebrew"
+    public var isInstalled: Bool
+    public var version: String?
+    public var installHint: String // afisat cand lipseste
+}
+
+public final class DependencyChecker: ObservableObject {
+    public init() {}
+
+    @Published public var items: [DependencyItem] = []
+    @Published public var isChecking: Bool = false
+    @Published public var isInstalling: Bool = false
+    @Published public var lastLog: String = ""
+
+    public var allInstalled: Bool { !items.isEmpty && items.allSatisfy { $0.isInstalled } }
+
+    private var brewPath: String? {
+        if FileManager.default.fileExists(atPath: "/opt/homebrew/bin/brew") { return "/opt/homebrew/bin/brew" }
+        if FileManager.default.fileExists(atPath: "/usr/local/bin/brew") { return "/usr/local/bin/brew" }
+        return nil
+    }
+
+    // MARK: - Scanare (rulata la prima pornire + manual)
+
+    public func checkAll() {
+        isChecking = true
+        var results: [DependencyItem] = []
+
+        // Homebrew
+        if let brew = brewPath {
+            let version = Shell.run("\"\(brew)\" --version 2>/dev/null").split(separator: "\n").first.map(String.init) ?? "instalat"
+            results.append(DependencyItem(id: "homebrew", name: "Homebrew", isInstalled: true, version: version, installHint: "brew.sh"))
+        } else {
+            results.append(DependencyItem(id: "homebrew", name: "Homebrew", isInstalled: false, version: nil, installHint: "Necesar pentru Rclone și macFUSE."))
+        }
+
+        // Rclone
+        if let brew = brewPath, !Shell.run("\"\(brew)\" list --versions rclone 2>/dev/null").isEmpty {
+            let v = Shell.run("rclone version 2>/dev/null | head -n1")
+            results.append(DependencyItem(id: "rclone", name: "Rclone", isInstalled: true, version: v, installHint: ""))
+        } else {
+            results.append(DependencyItem(id: "rclone", name: "Rclone", isInstalled: false, version: nil, installHint: "Necesar pentru Cloud Manager."))
+        }
+
+        // macFUSE
+        let macfuseInstalled = FileManager.default.fileExists(atPath: "/Library/Filesystems/macfuse.fs")
+        results.append(DependencyItem(id: "macfuse", name: "macFUSE", isInstalled: macfuseInstalled, version: macfuseInstalled ? "instalat" : nil, installHint: "Necesar pentru montare Cloud ca disc virtual."))
+
+        // Utilitare de sistem (parte din macOS, verificare simpla de prezenta)
+        for tool in ["sysctl", "tmutil", "networksetup", "lipo"] {
+            let found = !Shell.run("command -v \(tool)").isEmpty
+            results.append(DependencyItem(id: tool, name: tool, isInstalled: found, version: nil, installHint: "Utilitar de sistem macOS."))
+        }
+
+        items = results
+        isChecking = false
+    }
+
+    // MARK: - Auto-install (fara Terminal manual pentru Rclone/macFUSE)
+
+    /// Homebrew lipsa: scriptul oficial e interactiv (cere Return + parola)
+    /// - il deschidem in Terminal.app in loc sa-l rulam orb in fundal.
+    public func installHomebrewInTerminal() {
+        let script = "/bin/bash -c \\\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\\""
+        let osa = "tell application \"Terminal\" to do script \"\(script)\""
+        var error: NSDictionary?
+        NSAppleScript(source: osa)?.executeAndReturnError(&error)
+    }
+
+    /// Rclone/macFUSE: odata Homebrew prezent, instalarea e non-interactiva.
+    public func installMissingViaBrew(completion: @escaping () -> Void) {
+        guard let brew = brewPath else { completion(); return }
+        isInstalling = true
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            var log = ""
+            if self.items.first(where: { $0.id == "rclone" })?.isInstalled == false {
+                log += Shell.run("\"\(brew)\" install rclone 2>&1") + "\n"
+            }
+            if self.items.first(where: { $0.id == "macfuse" })?.isInstalled == false {
+                log += Shell.run("\"\(brew)\" install --cask macfuse 2>&1") + "\n"
+            }
+            DispatchQueue.main.async {
+                self.lastLog = log
+                self.isInstalling = false
+                self.checkAll()
+                completion()
+            }
+        }
+    }
+
+    /// Check & Update All - `brew update && brew upgrade` pentru pachetele noastre.
+    public func checkAndUpdateAll(completion: @escaping () -> Void) {
+        guard let brew = brewPath else { completion(); return }
+        isInstalling = true
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let log = Shell.run("\"\(brew)\" update 2>&1 && \"\(brew)\" upgrade rclone macfuse 2>&1")
+            DispatchQueue.main.async {
+                self?.lastLog = log
+                self?.isInstalling = false
+                self?.checkAll()
+                completion()
+            }
+        }
+    }
+}
