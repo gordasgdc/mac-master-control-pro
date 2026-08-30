@@ -108,6 +108,9 @@ public struct CloudTransferStats {
     public let activeTransfers: Int
 }
 
+/// Directia unei sincronizari folder local <-> remote (Faza 4).
+public enum SyncDirection { case upload, download }
+
 /// O intrare intr-un folder de pe remote (Faza 3 - explorare fara montare).
 public struct RemoteEntry: Identifiable, Hashable {
     public var id: String { path }
@@ -273,6 +276,65 @@ public final class CloudManagerService: ObservableObject {
         let bytes = (json["bytes"] as? NSNumber)?.int64Value ?? 0
         let transfers = (json["transfers"] as? NSNumber)?.intValue ?? 0
         return CloudTransferStats(speedBytesPerSec: speed, bytesTransferred: bytes, activeTransfers: transfers)
+    }
+
+    // MARK: - Faza 4: Upload / Download / Sincronizare / Stergere
+
+    /// Urca fisiere/foldere locale intr-un folder de pe remote - functioneaza
+    /// FIE ca remote-ul e montat, FIE nu (rclone lucreaza direct pe API-ul
+    /// providerului, nu are nevoie de mount pentru copy).
+    public func upload(remoteName: String, remotePath: String, localPaths: [String], log: @escaping (String) -> Void, completion: @escaping (Bool) -> Void) {
+        let target = remotePath.isEmpty ? "\(remoteName):" : "\(remoteName):\(remotePath)"
+        DispatchQueue.global(qos: .userInitiated).async {
+            for path in localPaths {
+                log("$ rclone copy \"\(path)\" \"\(target)\" --progress")
+                let output = Shell.run("rclone copy \"\(path)\" \"\(target)\" -P 2>&1 | tail -n 8")
+                if !output.isEmpty { DispatchQueue.main.async { log(output) } }
+            }
+            DispatchQueue.main.async { log("✔ Încărcare terminată."); completion(true) }
+        }
+    }
+
+    /// Descarca un fisier/folder de pe remote intr-un folder local.
+    public func download(remoteName: String, remotePath: String, isDir: Bool, localDestFolder: String, log: @escaping (String) -> Void, completion: @escaping (Bool) -> Void) {
+        let source = "\(remoteName):\(remotePath)"
+        DispatchQueue.global(qos: .userInitiated).async {
+            log("$ rclone copy \"\(source)\" \"\(localDestFolder)\" --progress")
+            let output = Shell.run("rclone copy \"\(source)\" \"\(localDestFolder)\" -P 2>&1 | tail -n 8")
+            if !output.isEmpty { DispatchQueue.main.async { log(output) } }
+            DispatchQueue.main.async { log("✔ Descărcare terminată în \(localDestFolder)."); completion(true) }
+        }
+    }
+
+    /// Sterge un fisier sau un folder (recursiv) de pe remote - IREVERSIBIL,
+    /// UI-ul trebuie sa ceara confirmare explicita inainte de a apela asta.
+    public func deleteRemoteEntry(remoteName: String, remotePath: String, isDir: Bool, log: @escaping (String) -> Void) {
+        let target = "\(remoteName):\(remotePath)"
+        let command = isDir ? "rclone purge \"\(target)\"" : "rclone deletefile \"\(target)\""
+        log("$ \(command)")
+        let output = Shell.run("\(command) 2>&1")
+        if !output.isEmpty { log(output) }
+        log("✔ Șters: \(remotePath)")
+    }
+
+    /// Sincronizare folder local <-> remote. `mirror: true` = oglinda EXACTA
+    /// (sterge la destinatie ce nu mai exista la sursa, `rclone sync`) -
+    /// implicit FALSE (`rclone copy`, doar adauga/actualizeaza, niciodata
+    /// nu sterge) - standardul GDC de "niciodata distructiv fara bifa
+    /// explicita" (Regula 26/multi-selectie).
+    public func syncFolder(localFolder: String, remoteName: String, remotePath: String, direction: SyncDirection, mirror: Bool, log: @escaping (String) -> Void, completion: @escaping (Bool) -> Void) {
+        let remoteTarget = remotePath.isEmpty ? "\(remoteName):" : "\(remoteName):\(remotePath)"
+        let (source, dest) = direction == .upload ? (localFolder, remoteTarget) : (remoteTarget, localFolder)
+        let verb = mirror ? "sync" : "copy"
+        DispatchQueue.global(qos: .userInitiated).async {
+            log("$ rclone \(verb) \"\(source)\" \"\(dest)\" --progress" + (mirror ? "  (oglindă - șterge ce lipsește la sursă)" : ""))
+            let output = Shell.run("rclone \(verb) \"\(source)\" \"\(dest)\" -P 2>&1 | tail -n 12")
+            DispatchQueue.main.async {
+                if !output.isEmpty { log(output) }
+                log("✔ Sincronizare terminată.")
+                completion(true)
+            }
+        }
     }
 
     // MARK: - Faza 3: Explorare remote fara montare
