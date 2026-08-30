@@ -11,7 +11,7 @@ struct SidebarFooterView: View {
     @State private var copiedFeedback = false
     @State private var isCheckingUpdate = false
 
-    private var machineID: String { MachineID.current() }
+    private var machineID: String { MachineID.display }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
