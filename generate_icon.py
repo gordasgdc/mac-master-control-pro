@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genereaza AppIcon.icns pentru Mac Master Control Pro — squircle metallic/
+"""Genereaza AppIcon.icns pentru Master Control Studio Pro — squircle metallic/
 gold cu glif de angrenaj, in linie cu identitatea vizuala GDC (accent
 amber/cupru, Regula 16), dar cu tonuri metalice/aurii cerute explicit pentru
 brand-ul acestei aplicatii (System Tuning Panel)."""

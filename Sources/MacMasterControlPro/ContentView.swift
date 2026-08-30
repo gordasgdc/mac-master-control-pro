@@ -54,7 +54,7 @@ struct ContentView: View {
                 }
                 SidebarFooterView()
             }
-            .navigationTitle("Mac Master Control Pro")
+            .navigationTitle("Master Control Studio Pro")
         } detail: {
             switch selection {
             case .network: NetworkModuleView()
@@ -75,7 +75,7 @@ struct ContentView: View {
             UpdateChecker.checkSilentlyOnLaunch { version, pkgURL in
                 let alert = NSAlert()
                 alert.messageText = "Este disponibilă o versiune nouă"
-                alert.informativeText = "Mac Master Control Pro \(version) este disponibil (tu ai \(UpdateChecker.currentVersion))."
+                alert.informativeText = "Master Control Studio Pro \(version) este disponibil (tu ai \(UpdateChecker.currentVersion))."
                 alert.addButton(withTitle: "Actualizează acum")
                 alert.addButton(withTitle: "Mai târziu")
                 let response = alert.runModal()

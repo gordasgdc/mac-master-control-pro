@@ -1,4 +1,4 @@
-# Mac Master Control Pro
+# Master Control Studio Pro
 
 Panou nativ SwiftUI pentru macOS — conversie a scriptului `Mac_Master_Control.sh`
 într-o aplicație completă de tuning sistem, Cloud Manager universal, curățare

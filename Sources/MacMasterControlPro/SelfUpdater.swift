@@ -76,7 +76,7 @@ enum SelfUpdater {
             exit $status
         fi
         echo "Pornesc aplicatia actualizata..."
-        open -a "Mac Master Control Pro"
+        open -a "Master Control Studio Pro"
         rm -rf "\(tempDir.path)"
         """
         do {
@@ -130,7 +130,7 @@ final class UpdateProgressWindow {
 
         let container = NSView(frame: contentRect)
 
-        let titleLabel = NSTextField(labelWithString: "Mac Master Control Pro \(version)")
+        let titleLabel = NSTextField(labelWithString: "Master Control Studio Pro \(version)")
         titleLabel.font = .boldSystemFont(ofSize: 13)
         titleLabel.frame = NSRect(x: 20, y: 70, width: 320, height: 20)
         container.addSubview(titleLabel)

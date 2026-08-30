@@ -1,4 +1,14 @@
-# Mac Master Control Pro (Mac) — note de arhitectura
+# Master Control Studio Pro (Mac) — note de arhitectura
+
+**[REBRANDING 2026-08-30]** Numele afișat a devenit "Master Control
+Studio Pro" (fost "Mac Master Control Pro") — nume neutru, pregătit
+pentru lansarea pe Windows. Identificatorii tehnici NU s-au schimbat:
+`productID` (`mac-master-control-pro`), bundle ID
+(`com.gordasgdc.macmastercontrolpro`), numele repo-ului GitHub
+(`mac-master-control-pro`) și numele fișierelor `.pkg`/`.zip` publicate.
+Restul acestui fișier menționează încă vechiul nume în intrările vechi —
+rămâne așa intenționat (jurnal append-only, Regula 10), doar identitatea
+curentă s-a schimbat.
 
 Aplicatie standalone GDC: conversie a scriptului Mac_Master_Control.sh
 intr-un panou nativ de tuning sistem, Cloud Manager universal (Rclone),
