@@ -1,5 +1,16 @@
 # Changelog — Master Control Studio Pro
 
+## v2.7.2 (2026-08-30) — FIX REAL: „Explorează” tot nu se redimensiona
+
+Raportat de Cristi după v2.7.1: fereastra rămânea "tot la o dimensiune așa
+îngustă", oricât trăgea de margine. Cauza reală: pe un `.sheet` macOS,
+fereastra devine efectiv redimensionabilă doar dacă frame-ul exterior
+specifică explicit `maxWidth`/`maxHeight` ca `.infinity` — fix-ul din
+v2.7.1 seta doar `minWidth`/`idealWidth`, fără `maxWidth`, iar SwiftUI
+trata `idealWidth` ca plafon real. Adăugat `maxWidth: .infinity,
+maxHeight: .infinity` pe frame-ul `RemoteBrowserSheet` — acum se trage
+liber de margine, de la 560×420 în sus.
+
 ## v2.7.1 (2026-08-30) — Fereastra „Explorează” redimensionabilă
 
 Fereastra de explorare Cloud (`RemoteBrowserSheet`) era prea mică pentru
