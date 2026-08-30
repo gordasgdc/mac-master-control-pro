@@ -12,6 +12,10 @@ struct CloudManagerView: View {
     @State private var selected: Set<String> = []
     @State private var logLines: [String] = []
     @State private var mountFolder: String? = CloudMountSettings.customMountFolder
+    @State private var rcloneTransfers = RclonePerformanceSettings.transfers
+    @State private var rcloneCheckers = RclonePerformanceSettings.checkers
+    @State private var rcloneChunkMB = RclonePerformanceSettings.driveChunkMB
+    @State private var rcloneFastList = RclonePerformanceSettings.fastList
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -35,6 +39,27 @@ struct CloudManagerView: View {
                             mountFolder = nil
                         }
                     }
+                }
+                .padding(6)
+            }
+
+            GroupBox("Performanță rclone (Încărcare / Descărcare / Sincronizare)") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Se aplică la Încărcare, Descărcare și Sincronizare — nu la montare. Valori mai mari pot ajuta la multe fișiere mici SAU la fișiere mari, dar pot suprasolicita conexiunea/providerul; scade dacă apar erori de tip rate-limit.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Stepper("Transferuri paralele: \(rcloneTransfers)", value: $rcloneTransfers, in: RclonePerformanceSettings.transfersRange)
+                        .onChange(of: rcloneTransfers) { _, newValue in RclonePerformanceSettings.transfers = newValue }
+                    Stepper("Verificări paralele (checkers): \(rcloneCheckers)", value: $rcloneCheckers, in: RclonePerformanceSettings.checkersRange)
+                        .onChange(of: rcloneCheckers) { _, newValue in RclonePerformanceSettings.checkers = newValue }
+                    Picker("Fragment upload (chunk size)", selection: $rcloneChunkMB) {
+                        ForEach(RclonePerformanceSettings.chunkChoicesMB, id: \.self) { mb in
+                            Text("\(mb) MB").tag(mb)
+                        }
+                    }
+                    .frame(width: 260)
+                    .onChange(of: rcloneChunkMB) { _, newValue in RclonePerformanceSettings.driveChunkMB = newValue }
+                    Toggle("Listare rapidă (--fast-list)", isOn: $rcloneFastList)
+                        .onChange(of: rcloneFastList) { _, newValue in RclonePerformanceSettings.fastList = newValue }
                 }
                 .padding(6)
             }
@@ -122,6 +147,7 @@ struct AddCloudRemoteSheet: View {
     @State private var values: [String: String] = [:]
     @State private var status: String?
     @State private var isCreating = false
+    @State private var useGDCClient = GDCOAuthClients.useGDCClientForNewRemotes
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -137,6 +163,12 @@ struct AddCloudRemoteSheet: View {
             if type.isOAuth {
                 Text("Se va deschide browser-ul pentru autorizare — flux standard Rclone, o singură dată per cont.")
                     .font(.caption).foregroundStyle(.secondary)
+                if type == .googleDrive {
+                    Toggle("Folosește client Google rapid (GDC)", isOn: $useGDCClient)
+                        .onChange(of: useGDCClient) { _, newValue in GDCOAuthClients.useGDCClientForNewRemotes = newValue }
+                    Text("Activează DOAR pentru un cont pe care l-ai adăugat deja ca „test user” în Google Cloud Console — altfel contul rămâne blocat la conectare (mesaj „Access blocked”, fără opțiune de a continua). Vezi GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.md.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             } else {
                 ForEach(type.fields) { field in
                     if field.isSecure {

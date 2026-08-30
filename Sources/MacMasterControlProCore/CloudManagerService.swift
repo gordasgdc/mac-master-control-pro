@@ -133,6 +133,95 @@ public enum CloudMountSettings {
     }
 }
 
+/// Client OAuth propriu GDC (Google Cloud Console, proiect al lui Cristi),
+/// disponibil ca OPTIUNE in aplicatie (2026-08-30) - alternativa la
+/// clientul PARTAJAT al rclone-ului pentru Google Drive (limitat agresiv
+/// de Google la viteza per fisier).
+///
+/// **NU e implicit/automat** (decizie explicita a lui Cristi, 2026-08-30,
+/// dupa ce a realizat implicatia reala): cat timp proiectul Google ramane
+/// in modul "Testing", DOAR conturile adaugate manual ca "test user" in
+/// Google Cloud Console se pot conecta prin acest client - orice alt cont
+/// primeste un ecran de BLOCAJ TOTAL ("Access blocked", fara nicio optiune
+/// de a continua), nu doar un avertisment ignorabil. Daca ar fi implicit
+/// pentru toata lumea, orice client nenominalizat manual de Cristi ar
+/// ramane blocat la conectare.
+///
+/// De aceea: implicit, remote-urile Google Drive noi folosesc clientul
+/// STANDARD rclone (functioneaza pentru oricine, fara nicio configurare,
+/// doar putin mai lent) - Cristi activeaza manual comutatorul "Foloseste
+/// client Google rapid (GDC)" din Cloud Manager DOAR pentru un cont pe
+/// care l-a adaugat deja ca test user (al lui, sau al unui client caruia
+/// i-a promis explicit viteza mai buna). Vezi ghidul PDF, sectiunea
+/// "Upload lent pe Google Drive?", pentru varianta ALTERNATIVA in care
+/// clientul isi face singur propriul client Google (independenta de
+/// limita de 100 test useri) - si `GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.md`
+/// pentru procedura completa de onboarding per-client.
+public enum GDCOAuthClients {
+    // Valorile reale traiesc in GDCOAuthSecrets.generated.swift, fisier
+    // NECOMIS in git (vezi .gitignore) - generat la build din variabila de
+    // mediu GDC_GOOGLE_DRIVE_CLIENT_SECRET (build_installer.sh), la fel ca
+    // APPLE_SIGN_IDENTITY_APP pentru semnare. GitHub Push Protection a
+    // blocat push-ul initial cand aceste valori erau hardcodate direct
+    // aici (secret literal intr-un repo PUBLIC) - Regula 2 (zero secrete
+    // in git) se aplica si aici, nu doar la token-uri de autentificare git.
+    public static let googleDriveClientID = GDCOAuthSecretsGenerated.googleDriveClientID
+    public static let googleDriveClientSecret = GDCOAuthSecretsGenerated.googleDriveClientSecret
+
+    /// Comutator persistat, implicit FALSE - vezi comentariul de mai sus
+    /// pentru motivul exact al acestei decizii.
+    private static let useGDCClientKey = "MacMasterControlPro.useGDCGoogleDriveClient"
+    public static var useGDCClientForNewRemotes: Bool {
+        get { UserDefaults.standard.bool(forKey: useGDCClientKey) }
+        set { UserDefaults.standard.set(newValue, forKey: useGDCClientKey) }
+    }
+}
+
+/// Setari de performanta rclone, reglabile din UI (Cloud Manager › secțiunea
+/// "Performanță"), 2026-08-30 - cerinta explicita a lui Cristi dupa fix-ul
+/// identic din DataMover ("mai multe opțiuni de configurare"). Spre
+/// deosebire de DataMover (unde bug-ul era un proces `rclone` per fisier),
+/// `upload`/`download`/`syncFolder` de aici ruleaza deja UN singur proces
+/// pe tot folderul - nu exista acelasi bug de arhitectura, dar rulau pe
+/// valorile IMPLICITE rclone (`--transfers 4 --checkers 8`), fara nicio
+/// optiune reglabila. Valorile implicite de mai jos sunt cele deja
+/// confirmate mai rapide pe DataMover (Google Drive, mix fisiere mici+mari).
+public enum RclonePerformanceSettings {
+    private static let transfersKey = "MacMasterControlPro.rcloneTransfers"
+    private static let checkersKey = "MacMasterControlPro.rcloneCheckers"
+    private static let chunkMBKey = "MacMasterControlPro.rcloneDriveChunkMB"
+    private static let fastListKey = "MacMasterControlPro.rcloneFastList"
+
+    public static let transfersRange = 1...16
+    public static let checkersRange = 1...32
+    public static let chunkChoicesMB = [8, 16, 32, 64, 128]
+
+    public static var transfers: Int {
+        get { let v = UserDefaults.standard.integer(forKey: transfersKey); return v > 0 ? v : 8 }
+        set { UserDefaults.standard.set(newValue, forKey: transfersKey) }
+    }
+    public static var checkers: Int {
+        get { let v = UserDefaults.standard.integer(forKey: checkersKey); return v > 0 ? v : 16 }
+        set { UserDefaults.standard.set(newValue, forKey: checkersKey) }
+    }
+    public static var driveChunkMB: Int {
+        get { let v = UserDefaults.standard.integer(forKey: chunkMBKey); return v > 0 ? v : 64 }
+        set { UserDefaults.standard.set(newValue, forKey: chunkMBKey) }
+    }
+    public static var fastList: Bool {
+        get { UserDefaults.standard.object(forKey: fastListKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: fastListKey) }
+    }
+
+    /// Flag-urile gata formatate, de adaugat la orice comanda `rclone
+    /// copy`/`sync` - citite live la fiecare apel (Setari fara restart).
+    public static var copyFlags: String {
+        var flags = "--transfers \(transfers) --checkers \(checkers) --drive-chunk-size \(driveChunkMB)M"
+        if fastList { flags += " --fast-list" }
+        return flags
+    }
+}
+
 /// Manager Universal Multi-Cloud - inlocuieste implementarea legata strict
 /// de Degoo. Orice remote Rclone (OAuth sau cu credentiale) e tratat identic.
 public final class CloudManagerService: ObservableObject {
@@ -165,6 +254,16 @@ public final class CloudManagerService: ObservableObject {
     /// callback local - de aceea rulam async, fara sa blocam UI-ul.
     public func createRemote(name: String, type: CloudProviderType, values: [String: String], completion: @escaping (Bool, String) -> Void) {
         var args = ["config", "create", name, type.rawValue]
+        // Client OAuth propriu GDC pentru Google Drive - DOAR daca Cristi a
+        // activat explicit comutatorul (vezi GDCOAuthClients, NU e implicit
+        // - proiectul Google ramane in modul "Testing", un cont neadaugat
+        // manual ca test user ar ramane BLOCAT total la conectare cu acest
+        // client). Implicit (comutator OFF), foloseste clientul STANDARD
+        // rclone - functioneaza pentru orice cont, fara nicio configurare.
+        if type == .googleDrive && GDCOAuthClients.useGDCClientForNewRemotes {
+            args.append("client_id=\(GDCOAuthClients.googleDriveClientID)")
+            args.append("client_secret=\(GDCOAuthClients.googleDriveClientSecret)")
+        }
         for field in type.fields {
             guard let value = values[field.key], !value.isEmpty else { continue }
             if field.isSecure {
@@ -285,10 +384,11 @@ public final class CloudManagerService: ObservableObject {
     /// providerului, nu are nevoie de mount pentru copy).
     public func upload(remoteName: String, remotePath: String, localPaths: [String], log: @escaping (String) -> Void, completion: @escaping (Bool) -> Void) {
         let target = remotePath.isEmpty ? "\(remoteName):" : "\(remoteName):\(remotePath)"
+        let perf = RclonePerformanceSettings.copyFlags
         DispatchQueue.global(qos: .userInitiated).async {
             for path in localPaths {
-                log("$ rclone copy \"\(path)\" \"\(target)\" --progress")
-                let output = Shell.run("rclone copy \"\(path)\" \"\(target)\" -P 2>&1 | tail -n 8")
+                log("$ rclone copy \"\(path)\" \"\(target)\" \(perf) --progress")
+                let output = Shell.run("rclone copy \"\(path)\" \"\(target)\" \(perf) -P 2>&1 | tail -n 8")
                 if !output.isEmpty { DispatchQueue.main.async { log(output) } }
             }
             DispatchQueue.main.async { log("✔ Încărcare terminată."); completion(true) }
@@ -298,9 +398,10 @@ public final class CloudManagerService: ObservableObject {
     /// Descarca un fisier/folder de pe remote intr-un folder local.
     public func download(remoteName: String, remotePath: String, isDir: Bool, localDestFolder: String, log: @escaping (String) -> Void, completion: @escaping (Bool) -> Void) {
         let source = "\(remoteName):\(remotePath)"
+        let perf = RclonePerformanceSettings.copyFlags
         DispatchQueue.global(qos: .userInitiated).async {
-            log("$ rclone copy \"\(source)\" \"\(localDestFolder)\" --progress")
-            let output = Shell.run("rclone copy \"\(source)\" \"\(localDestFolder)\" -P 2>&1 | tail -n 8")
+            log("$ rclone copy \"\(source)\" \"\(localDestFolder)\" \(perf) --progress")
+            let output = Shell.run("rclone copy \"\(source)\" \"\(localDestFolder)\" \(perf) -P 2>&1 | tail -n 8")
             if !output.isEmpty { DispatchQueue.main.async { log(output) } }
             DispatchQueue.main.async { log("✔ Descărcare terminată în \(localDestFolder)."); completion(true) }
         }
@@ -326,9 +427,10 @@ public final class CloudManagerService: ObservableObject {
         let remoteTarget = remotePath.isEmpty ? "\(remoteName):" : "\(remoteName):\(remotePath)"
         let (source, dest) = direction == .upload ? (localFolder, remoteTarget) : (remoteTarget, localFolder)
         let verb = mirror ? "sync" : "copy"
+        let perf = RclonePerformanceSettings.copyFlags
         DispatchQueue.global(qos: .userInitiated).async {
-            log("$ rclone \(verb) \"\(source)\" \"\(dest)\" --progress" + (mirror ? "  (oglindă - șterge ce lipsește la sursă)" : ""))
-            let output = Shell.run("rclone \(verb) \"\(source)\" \"\(dest)\" -P 2>&1 | tail -n 12")
+            log("$ rclone \(verb) \"\(source)\" \"\(dest)\" \(perf) --progress" + (mirror ? "  (oglindă - șterge ce lipsește la sursă)" : ""))
+            let output = Shell.run("rclone \(verb) \"\(source)\" \"\(dest)\" \(perf) -P 2>&1 | tail -n 12")
             DispatchQueue.main.async {
                 if !output.isEmpty { log(output) }
                 log("✔ Sincronizare terminată.")
