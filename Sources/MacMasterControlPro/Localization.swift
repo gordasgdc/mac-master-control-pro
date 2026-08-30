@@ -69,9 +69,9 @@ enum L {
 
         "trial.title": [.ro: "Analiza este 100% completă", .en: "Analysis is 100% complete", .es: "El análisis está 100% completo"],
         "trial.body": [
-            .ro: "Susține dezvoltarea cu o donație (9€, o singură dată) pentru a debloca aplicarea modificărilor.",
-            .en: "Support development with a one-time 9€ donation to unlock applying changes.",
-            .es: "Apoya el desarrollo con una donación única de 9€ para desbloquear la aplicación de cambios."
+            .ro: "Susține dezvoltarea cu o donație (17€, o singură dată) pentru a debloca aplicarea modificărilor.",
+            .en: "Support development with a one-time 17€ donation to unlock applying changes.",
+            .es: "Apoya el desarrollo con una donación única de 17€ para desbloquear la aplicación de cambios."
         ],
         "trial.donate": [.ro: "Donează din GDC Plugin Manager", .en: "Donate via GDC Plugin Manager", .es: "Donar desde GDC Plugin Manager"],
         "trial.activate": [.ro: "Activează", .en: "Activate", .es: "Activar"],

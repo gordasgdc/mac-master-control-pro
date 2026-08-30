@@ -46,7 +46,7 @@ struct TrialGateModal: View {
                 .buttonStyle(.borderedProminent)
             }
             Button {
-                let message = "Salut! Doresc să achiziționez / activez licența Lifetime (9 EUR) pentru Mac-ul meu — Master Control Studio Pro. Machine ID: \(MachineID.display)"
+                let message = "Salut! Doresc să achiziționez / activez licența Lifetime (17 EUR) pentru Mac-ul meu — Master Control Studio Pro. Machine ID: \(MachineID.display)"
                 NSWorkspace.shared.open(WhatsAppLink.url(text: message))
             } label: {
                 Label(L.t("trial.whatsapp"), systemImage: "message.fill")
