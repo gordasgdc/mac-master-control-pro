@@ -19,6 +19,33 @@ if [ -d "$DIST_DIR" ] && ! [ -w "$DIST_DIR" ] || find "$DIST_DIR" -maxdepth 2 -u
     exit 1
 fi
 
+# Genereaza GDCOAuthSecrets.generated.swift din variabila de mediu (Regula
+# 2 - zero secrete in git), la fel ca APPLE_SIGN_IDENTITY_APP pentru
+# semnare. Fallback sigur (stringuri goale) daca variabila lipseste -
+# comutatorul "client rapid GDC" din Cloud Manager ramane OFF implicit,
+# deci lipsa clientului nu sparge nimic, doar dezactiveaza optiunea.
+SECRETS_FILE="Sources/MacMasterControlProCore/GDCOAuthSecrets.generated.swift"
+if [ -z "${GDC_GOOGLE_DRIVE_CLIENT_SECRET:-}" ] && [ ! -f "$SECRETS_FILE" ]; then
+    echo "AVERTISMENT: GDC_GOOGLE_DRIVE_CLIENT_SECRET nesetata si '$SECRETS_FILE' nu exista - clientul Google Drive rapid GDC va fi dezactivat in acest build (comutatorul din Cloud Manager va ramane fara efect)." >&2
+fi
+if [ -n "${GDC_GOOGLE_DRIVE_CLIENT_SECRET:-}" ]; then
+    cat > "$SECRETS_FILE" <<SWIFTEOF
+// GENERAT AUTOMAT de build_installer.sh - NU se comite in git.
+enum GDCOAuthSecretsGenerated {
+    static let googleDriveClientID = "${GDC_GOOGLE_DRIVE_CLIENT_ID:-}"
+    static let googleDriveClientSecret = "${GDC_GOOGLE_DRIVE_CLIENT_SECRET}"
+}
+SWIFTEOF
+elif [ ! -f "$SECRETS_FILE" ]; then
+    cat > "$SECRETS_FILE" <<'SWIFTEOF'
+// GENERAT AUTOMAT de build_installer.sh - NU se comite in git.
+enum GDCOAuthSecretsGenerated {
+    static let googleDriveClientID = ""
+    static let googleDriveClientSecret = ""
+}
+SWIFTEOF
+fi
+
 echo "==> Building app…"
 swift build -c release --product MacMasterControlPro
 BUILD_OUT="/tmp/Master Control Studio Pro.app.build-$$"

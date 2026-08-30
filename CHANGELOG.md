@@ -1,5 +1,29 @@
 # Changelog — Master Control Studio Pro
 
+## v2.8.0 (2026-08-30) — Upload Google Drive mult mai rapid + Setări performanță rclone
+
+Cerință reală, apărută în timpul testării DataMover cu rclone: upload-uri
+lente pe Google Drive. Cauza: Google limitează agresiv clientul OAuth
+PARTAJAT al rclone-ului (același folosit de toți utilizatorii rclone din
+lume), independent de conexiunea reală a userului.
+
+- **Client OAuth Google Drive propriu, embedded** — orice cont Google
+  Drive nou adăugat prin Cloud Manager (+ Adaugă cont) folosește acum
+  automat clientul propriu GDC, nu mai pe cel partajat — clientul final NU
+  trece prin niciun pas din Google Cloud Console. Măsurat direct: ~18x mai
+  rapid (2.5 Mbit/s → ~47 Mbit/s), același cont, același fișier.
+- **Secțiune nouă „Performanță rclone"** în Cloud Manager — Transferuri
+  paralele, Verificări paralele (checkers), dimensiune fragment (chunk
+  size), Listare rapidă (`--fast-list`) — reglabile, persistate, aplicate
+  la Încărcare/Descărcare/Sincronizare.
+- **Ghid PDF (RO/EN/ES)** — secțiune nouă opțională „Upload lent pe Google
+  Drive?" cu pașii pentru cine vrea totuși propriul client Google
+  (alternativă, nu obligatorie).
+- **[Doar intern]** `GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.md` — procedura
+  exactă pentru Cristi la fiecare client nou (adăugare ca test user în
+  Google Cloud Console, cât timp aplicația e în modul Testing).
+- Pagina web (`docs/index.html`) — prețul fix (17€) scos din text.
+
 ## v2.7.2 (2026-08-30) — FIX REAL: „Explorează” tot nu se redimensiona
 
 Raportat de Cristi după v2.7.1: fereastra rămânea "tot la o dimensiune așa

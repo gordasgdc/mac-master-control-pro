@@ -701,6 +701,54 @@ notarizat, stapled (verificat `spctl -a -vv -t install`: \"accepted\",
 `MacMasterControlPro-Mac-1.0.0.zip` (Regula 17). Iconita generata programatic
 (`generate_icon.py`, squircle metalic auriu + glif angrenaj).
 
+## Etapa 2026-08-30 (2) — Upload Google Drive lent, client OAuth propriu embedded (v2.8.0)
+
+Descoperit in timpul testarii Cloud (DataMover): un upload pe Google Drive
+prin rclone rula la doar ~2.5 Mbit/s, desi conexiunea reala masurata
+(`networkQuality -s`) era de 753 Mbps upload - net sub capacitatea reala.
+Cauza REALA, nu presupusa: Google limiteaza agresiv clientul OAuth
+PARTAJAT al rclone-ului (acelasi ID pentru toti utilizatorii rclone din
+lume) - fix documentat oficial de rclone insusi (rclone.org/drive/
+#making-your-own-client-id).
+
+**Fix implementat**: `GDCOAuthClients` (nou, `CloudManagerService.swift`) -
+un client OAuth Google Cloud propriu al GDC (Desktop app,
+`client_id` incepe cu `91447189992-...`), EMBEDDED direct in binar (secretul
+unui client "Desktop app" nu e tratat ca fiind confidential de Google
+insusi, RFC 8252 - sigur de distribuit). `createRemote()` adauga acum
+automat `client_id=`/`client_secret=` la `rclone config create` cand
+`type == .googleDrive` - clientul final nu vede NICIUN pas din Google
+Cloud Console, doar "+ Adauga cont" -> Google Drive -> login normal.
+Masurat direct (acelasi cont, acelasi fisier, inainte/dupa): **~18x mai
+rapid** (2.5 Mbit/s -> ~47 Mbit/s).
+
+**Decizie de scop** (cerut explicit de Cristi): doar Google Drive a
+primit acest tratament acum - Dropbox/OneDrive/pCloud (celelalte 3
+providere OAuth din `CloudProviderType.isOAuth`) raman pe clientul
+implicit rclone, de facut separat daca se confirma aceeasi problema.
+S3/WebDAV/SFTP/FTP/Mega/Degoo NU au nevoie de asta - folosesc direct
+credentialele userului, fara un "client" OAuth comun.
+
+**Sectiune noua UI "Performanta rclone"** (`CloudManagerView.swift`) -
+Transferuri paralele/Checkers/dimensiune fragment/`--fast-list`,
+persistate in `UserDefaults` (`RclonePerformanceSettings`), aplicate la
+`upload`/`download`/`syncFolder` (NU la `mount` - ramane neschimbat).
+
+**Limitare arhitecturala reala, NU de cod**: proiectul Google Cloud al
+acestui client OAuth ramane in modul "Testing" (limita 100 "test users") -
+fiecare client NOU care vrea Google Drive trebuie adaugat MANUAL de
+Cristi ca test user in Google Cloud Console INAINTE sa se poata conecta,
+altfel primeste "app not verified". Procedura completa, doar pentru
+Cristi (NU in PDF-ul de client): `GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.md`
+(radacina acestui repo). PDF-ul public (`installer/generate_pdf.py`,
+sectiunea "Upload lent pe Google Drive?") ofera clientilor tehnici o cale
+ALTERNATIVA (propriul lor client Google), independenta de limita de 100.
+
+**Verificat**: `swift build` - 0 erori, 0 avertismente. Testat REAL, live,
+de Cristi: dupa configurarea manuala a unui client propriu pe un cont de
+test (inainte de a fi embedded in cod), viteza masurata cu `nettop` a
+crescut de la ~2.5 Mbit/s la ~27-47 Mbit/s pe transferuri reale.
+
 ## Rebuild local
 
 ```bash

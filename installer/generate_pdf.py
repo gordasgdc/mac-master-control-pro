@@ -107,6 +107,10 @@ def build_doc(lang_data, out_path):
     flow.append(Paragraph(lang_data["cloud_sync_h"], h3_style))
     flow.append(bullets(lang_data["cloud_sync"]))
     flow.append(note(lang_data["cloud_note"]))
+    flow.append(Paragraph(lang_data["cloud_speed_h"], h3_style))
+    flow.append(Paragraph(lang_data["cloud_speed_intro"], body_style))
+    flow.append(bullets(lang_data["cloud_speed_steps"]))
+    flow.append(note(lang_data["cloud_speed_note"]))
 
     flow.append(Paragraph(lang_data["h_trial"], h2_style))
     flow.append(Paragraph(lang_data["trial_intro"], body_style))
@@ -199,6 +203,20 @@ RO = dict(
         "Bifează „Oglindă exactă” DOAR dacă vrei ca destinația să arate identic cu sursa — acest mod ȘTERGE la destinație orice nu mai există la sursă (ireversibil).",
     ],
     cloud_note="<b>Notă:</b> toate acțiunile de mai sus (montare, urcare, descărcare, sincronizare) necesită licență activă — analizele/explorarea rămân libere.",
+    cloud_speed_h="Upload lent pe Google Drive? (opțional, avansat)",
+    cloud_speed_intro="Google limitează viteza pe clientul standard folosit de Rclone pentru TOȚI utilizatorii din lume, la un plafon mic per fișier — pentru fișiere mari, poți simți asta ca „încarcă foarte încet”. Aplicația folosește deja, implicit, un client propriu GDC pentru Google Drive, ca să eviți exact această limitare. Dacă vrei totuși propriul tău client Google (opțional, nu e necesar în mod normal), urmează pașii de mai jos — durează 5-10 minute, o singură dată, per cont Google.",
+    cloud_speed_steps=[
+        "Mergi pe <b>console.cloud.google.com</b>, loghează-te cu contul tău Google, creează un proiect nou (orice nume).",
+        "În meniul din stânga: <b>APIs & Services → Library</b>, caută „Google Drive API”, apasă „Enable”.",
+        "<b>APIs & Services → OAuth consent screen</b> → alege „External” → completează nume aplicație + email-ul tău → salvează.",
+        "În aceeași secțiune, la fila „Audience”/„Público”, apasă „+ Add users” și adaugă-ți propriul email ca utilizator de test.",
+        "<b>APIs & Services → Credentials</b> → „+ Create Credentials” → „OAuth client ID” → tip „Desktop app” → orice nume → „Create”.",
+        "Apare un popup cu <b>Client ID</b> și <b>Client Secret</b> — copiază-le pe amândouă.",
+        "Deschide Terminal pe Mac și rulează (înlocuiește NUMELE_CONTULUI cu numele contului tău din Cloud Manager, ex. „drive_personal”):",
+        "<font face=\"Courier\">rclone config update NUMELE_CONTULUI client_id \"CLIENT_ID_COPIAT\" client_secret \"CLIENT_SECRET_COPIAT\"</font>",
+        "Apoi rulează: <font face=\"Courier\">rclone config reconnect NUMELE_CONTULUI:</font> — se deschide browserul, confirmă contul Google din nou.",
+    ],
+    cloud_speed_note="<b>Notă:</b> acest pas e complet opțional — clientul GDC implicit funcționează bine pentru majoritatea utilizărilor. Fă asta doar dacă lucrezi frecvent cu fișiere foarte mari și simți nevoia de viteză maximă per fișier.",
     h_trial="5. Trial și licență (donație)",
     trial_intro="Toate analizele și scanările sunt <b>complet libere</b>, nelimitat. Doar acțiunile care modifică efectiv sistemul cer o licență activă.",
     trial=[
@@ -272,6 +290,20 @@ EN = dict(
         "Check \"Exact mirror\" ONLY if you want the destination to look identical to the source — this mode DELETES at the destination anything no longer present at the source (irreversible).",
     ],
     cloud_note="<b>Note:</b> all actions above (mounting, uploading, downloading, syncing) require an active license — analysis/browsing remain free.",
+    cloud_speed_h="Slow Google Drive uploads? (optional, advanced)",
+    cloud_speed_intro="Google throttles the shared client used by Rclone for ALL users worldwide, to a small per-file cap — for large files this can feel like \"uploading very slowly\". The app already uses, by default, its own GDC client for Google Drive to avoid exactly this limit. If you still want your own personal Google client (optional, not needed in normal use), follow the steps below — takes 5-10 minutes, once, per Google account.",
+    cloud_speed_steps=[
+        "Go to <b>console.cloud.google.com</b>, sign in with your Google account, create a new project (any name).",
+        "In the left menu: <b>APIs & Services → Library</b>, search \"Google Drive API\", click \"Enable\".",
+        "<b>APIs & Services → OAuth consent screen</b> → choose \"External\" → fill in an app name + your email → save.",
+        "In the same section, on the \"Audience\" tab, click \"+ Add users\" and add your own email as a test user.",
+        "<b>APIs & Services → Credentials</b> → \"+ Create Credentials\" → \"OAuth client ID\" → type \"Desktop app\" → any name → \"Create\".",
+        "A popup appears with a <b>Client ID</b> and <b>Client Secret</b> — copy both.",
+        "Open Terminal on your Mac and run (replace ACCOUNT_NAME with your Cloud Manager account name, e.g. \"personal_drive\"):",
+        "<font face=\"Courier\">rclone config update ACCOUNT_NAME client_id \"COPIED_CLIENT_ID\" client_secret \"COPIED_CLIENT_SECRET\"</font>",
+        "Then run: <font face=\"Courier\">rclone config reconnect ACCOUNT_NAME:</font> — a browser opens, confirm your Google account again.",
+    ],
+    cloud_speed_note="<b>Note:</b> this step is entirely optional — the default GDC client works well for most use cases. Only do this if you frequently work with very large files and need maximum per-file speed.",
     h_trial="5. Trial and license (donation)",
     trial_intro="All analyses and scans are <b>completely free</b>, unlimited. Only actions that actually modify the system require an active license.",
     trial=[
@@ -345,6 +377,20 @@ ES = dict(
         "Marca \"Espejo exacto\" SOLO si quieres que el destino se vea idéntico al origen — este modo ELIMINA en el destino todo lo que ya no existe en el origen (irreversible).",
     ],
     cloud_note="<b>Nota:</b> todas las acciones anteriores (montar, subir, descargar, sincronizar) requieren una licencia activa — el análisis/exploración siguen siendo gratis.",
+    cloud_speed_h="¿Subidas lentas a Google Drive? (opcional, avanzado)",
+    cloud_speed_intro="Google limita el cliente compartido que usa Rclone para TODOS los usuarios del mundo, a un límite pequeño por archivo — para archivos grandes esto puede sentirse como \"sube muy lento\". La app ya usa, por defecto, su propio cliente GDC para Google Drive, para evitar exactamente esta limitación. Si aun así quieres tu propio cliente personal de Google (opcional, no necesario en uso normal), sigue los pasos de abajo — toma 5-10 minutos, una vez, por cuenta de Google.",
+    cloud_speed_steps=[
+        "Ve a <b>console.cloud.google.com</b>, inicia sesión con tu cuenta de Google, crea un proyecto nuevo (cualquier nombre).",
+        "En el menú izquierdo: <b>APIs & Services → Library</b>, busca \"Google Drive API\", pulsa \"Enable\".",
+        "<b>APIs & Services → OAuth consent screen</b> → elige \"External\" → completa nombre de app + tu email → guarda.",
+        "En la misma sección, en la pestaña \"Audience\"/\"Público\", pulsa \"+ Add users\" y añade tu propio email como usuario de prueba.",
+        "<b>APIs & Services → Credentials</b> → \"+ Create Credentials\" → \"OAuth client ID\" → tipo \"Desktop app\" → cualquier nombre → \"Create\".",
+        "Aparece un popup con un <b>Client ID</b> y <b>Client Secret</b> — copia ambos.",
+        "Abre Terminal en tu Mac y ejecuta (reemplaza NOMBRE_CUENTA con el nombre de tu cuenta en Cloud Manager, ej. \"drive_personal\"):",
+        "<font face=\"Courier\">rclone config update NOMBRE_CUENTA client_id \"CLIENT_ID_COPIADO\" client_secret \"CLIENT_SECRET_COPIADO\"</font>",
+        "Luego ejecuta: <font face=\"Courier\">rclone config reconnect NOMBRE_CUENTA:</font> — se abre el navegador, confirma tu cuenta de Google de nuevo.",
+    ],
+    cloud_speed_note="<b>Nota:</b> este paso es totalmente opcional — el cliente GDC por defecto funciona bien para la mayoría de los casos. Hazlo solo si trabajas frecuentemente con archivos muy grandes y necesitas velocidad máxima por archivo.",
     h_trial="5. Prueba y licencia (donación)",
     trial_intro="Todos los análisis y escaneos son <b>completamente gratuitos</b>, sin límite. Solo las acciones que modifican realmente el sistema requieren una licencia activa.",
     trial=[
