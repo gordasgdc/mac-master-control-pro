@@ -1,5 +1,16 @@
 # Changelog — Master Control Studio Pro
 
+## v2.3.1 (2026-08-30) — FIX: „Adaugă cont Cloud” eșua cu „rclone: No such file or directory”
+
+**Bug real, raportat de Cristi**: `.app` lansat din Finder/Dock moștenește un
+PATH minimal (`/usr/bin:/bin:/usr/sbin:/sbin`), fără `/opt/homebrew/bin`
+(unde Homebrew instalează rclone) — `Shell.swift` și procesul separat din
+`createRemote` (Cloud Manager) invocau `rclone` ca nume simplu, negăsibil pe
+acel PATH, deși dependența era corect detectată ca instalată (verificarea
+foloseşte o cale absolută către `brew`, diferit de restul comenzilor).
+Fix: PATH augmentat explicit cu `/opt/homebrew/bin:/usr/local/bin` pe orice
+proces pornit din aplicație.
+
 ## v2.3.0 (2026-08-30)
 **Standard Global de Multi-Selecție** — extins peste v2.2.0 la modulele rămase:
 - **Spotlight Shield (Tweak-uri Sistem)**: pickerul cu un singur folder a devenit un manager cu listare automată `/Volumes/*` (discuri externe) + foldere adăugate multiplu (`NSOpenPanel` multi-select), fiecare cu bifă proprie ("protejat"/"neprotejat"), Selectează/Deselectează tot, contor „Protejate X din Y".
