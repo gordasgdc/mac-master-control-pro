@@ -1,3 +1,7 @@
 .DS_Store
 .build/
 dist/
+# Secret real, NICIODATA in git (Regula 2 - zero secrete in git) - generat
+# la build din variabila de mediu GDC_GOOGLE_DRIVE_CLIENT_SECRET, vezi
+# build_installer.sh si GDCOAuthSecrets.generated.swift.
+Sources/MacMasterControlProCore/GDCOAuthSecrets.generated.swift
