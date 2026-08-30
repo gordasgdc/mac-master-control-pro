@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
@@ -37,15 +38,20 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(SidebarItem.allCases, selection: $selection) { item in
-                HStack {
-                    Label(item.label, systemImage: item.icon)
-                    if item == .dependencies, !dependencyChecker.allInstalled, !dependencyChecker.items.isEmpty {
-                        Spacer()
-                        Circle().fill(Color.red).frame(width: 8, height: 8)
+            // Frati intr-un VStack, NICIODATA .safeAreaInset direct pe List
+            // (Regula 24 — bug de suprapunere la resize rapid al ferestrei).
+            VStack(spacing: 0) {
+                List(SidebarItem.allCases, selection: $selection) { item in
+                    HStack {
+                        Label(item.label, systemImage: item.icon)
+                        if item == .dependencies, !dependencyChecker.allInstalled, !dependencyChecker.items.isEmpty {
+                            Spacer()
+                            Circle().fill(Color.red).frame(width: 8, height: 8)
+                        }
                     }
+                    .tag(item)
                 }
-                .tag(item)
+                SidebarFooterView()
             }
             .navigationTitle("Mac Master Control Pro")
         } detail: {
@@ -62,7 +68,21 @@ struct ContentView: View {
         }
         .dynamicTypeSize(textScale.current.dynamicTypeSize)
         .frame(minWidth: 900, minHeight: 600)
-        .onAppear { dependencyChecker.checkAll() }
+        .onAppear {
+            dependencyChecker.checkAll()
+            UpdateChecker.checkSilentlyOnLaunch { version, pkgURL in
+                let alert = NSAlert()
+                alert.messageText = "Este disponibilă o versiune nouă"
+                alert.informativeText = "Mac Master Control Pro \(version) este disponibil (tu ai \(UpdateChecker.currentVersion))."
+                alert.addButton(withTitle: "Actualizează acum")
+                alert.addButton(withTitle: "Mai târziu")
+                let response = alert.runModal()
+                UpdateChecker.markDismissed(version)
+                if response == .alertFirstButtonReturn {
+                    Task { await SelfUpdater.downloadAndInstall(pkgURL: pkgURL, version: version) }
+                }
+            }
+        }
     }
 }
 
@@ -95,18 +115,26 @@ struct DashboardView: View {
 struct SettingsView: View {
     @ObservedObject private var theme = ThemeManager.shared
     @ObservedObject private var textScale = TextScaleManager.shared
+    @ObservedObject private var profile = UserProfileStore.shared
 
     var body: some View {
         Form {
-            Picker("Temă", selection: $theme.current) {
-                ForEach(AppTheme.allCases) { Text($0.label).tag($0) }
-            }
-            .pickerStyle(.segmented)
+            Section("Aspect") {
+                Picker("Temă", selection: $theme.current) {
+                    ForEach(AppTheme.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
 
-            Picker("Mărime text", selection: $textScale.current) {
-                ForEach(TextScalePreference.allCases) { Text($0.label).tag($0) }
+                Picker("Mărime text", selection: $textScale.current) {
+                    ForEach(TextScalePreference.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
             }
-            .pickerStyle(.segmented)
+
+            Section("Profil") {
+                TextField("Nume", text: $profile.name)
+                TextField("Email", text: $profile.email)
+            }
         }
         .padding(32)
     }
