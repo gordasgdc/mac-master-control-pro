@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.7.0 (2026-08-30) — Faza 4: Upload / Download / Sincronizare + Ghid PDF complet + Landing page
+
+- **Faza 4 — Cloud Manager, sistem complet de lucru cu fișiere**: din fereastra „Explorează" — încărcare fișiere/foldere de pe Mac, descărcare selecție pe Mac, ștergere (cu confirmare explicită, ireversibilă), și sincronizare folder local ↔ cloud (implicit non-distructiv — doar adaugă/actualizează; „Oglindă exactă" e opțională, explicit bifată, pentru sincronizare cu ștergere).
+- **Ghid PDF (RO/EN/ES) rescris** — secțiune nouă dedicată „Cloud Manager — Ghid Complet”: setup cont, montare + locație externă, statistici live, explorare, upload/download/ștergere, sincronizare.
+- **Landing page**: secțiune nouă, vizibilă, care expune că motorul e Rclone (open-source, folosit de zeci de mii de proiecte) — interfață 100% nativă, fără linie de comandă.
+
 ## v2.6.0 (2026-08-30) — Fazele 2+3: Statistici live + Explorare remote fără montare
 
 - **Faza 2**: fiecare cont montat afișează acum viteza de transfer live,
