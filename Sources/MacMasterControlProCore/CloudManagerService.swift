@@ -140,6 +140,12 @@ public final class CloudManagerService: ObservableObject {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["rclone"] + args
+        // Vezi Shell.augmentedPath - Process() separat de Shell.run() nu
+        // mostenea PATH-ul augmentat cu Homebrew, deci "rclone" era negasibil
+        // de /usr/bin/env desi era instalat (bug real 2026-08-30).
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = Shell.augmentedPath
+        process.environment = env
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
