@@ -1,0 +1,39 @@
+name: Build Mac Master Control Pro (Mac)
+
+# Se ruleaza automat la orice push pe main, si manual din tab-ul Actions.
+# NU reutilizeaza build_installer.sh (acela e facut pentru masina locala
+# a lui Cristi: semneaza cu certificatul Developer ID + notarizeaza,
+# credentiale care nu exista pe runner-ul GitHub) — aici impachetam
+# manual si semnam ad-hoc, doar ca verificare independenta de build.
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Descarca codul din repo
+        uses: actions/checkout@v4
+
+      - name: Compileaza (release)
+        run: swift build -c release --product MacMasterControlPro
+
+      - name: Impacheteaza "Mac Master Control Pro.app"
+        run: |
+          APP="dist/Mac Master Control Pro.app"
+          rm -rf dist
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp .build/release/MacMasterControlPro "$APP/Contents/MacOS/MacMasterControlPro"
+          cp Info.plist "$APP/Contents/Info.plist"
+          cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose "$APP"
+
+      - name: Salveaza .app ca artefact descarcabil
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 1
+          name: MacMasterControlPro-Mac-build
+          path: dist/Mac Master Control Pro.app
