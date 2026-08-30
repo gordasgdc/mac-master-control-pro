@@ -1,5 +1,12 @@
 # Changelog — Master Control Studio Pro
 
+## v2.4.1 (2026-08-30) — Donație actualizată la 17€
+
+Decizie Cristi: rămâne un singur nivel de licențiere (fără Standard/Pro
+separate) — doar suma de referință a donației Lifetime crește de la 9€ la
+17€. Actualizat în UI (`TrialGateModal`), mesajul WhatsApp de activare,
+ghidurile PDF (RO/EN/ES) și landing page.
+
 ## v2.4.0 (2026-08-30) — Panou „terminal live” + butoane roșu/verde la Dependențe
 
 Standard nou, cerut explicit de Cristi (devine Regula 26 GDC, propagată în

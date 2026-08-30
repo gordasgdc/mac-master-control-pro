@@ -14,7 +14,7 @@ from reportlab.platypus import (
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.4.1"
 
 pdfmetrics.registerFont(TTFont("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Bold", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"))
@@ -158,7 +158,7 @@ RO = dict(
     h_trial="4. Trial și licență (donație)",
     trial_intro="Toate analizele și scanările sunt <b>complet libere</b>, nelimitat. Doar acțiunile care modifică efectiv sistemul cer o licență activă.",
     trial=[
-        "La prima acțiune de scriere, apare o fereastră cu Machine ID-ul tău (buton de copiere) și un buton „Donează din GDC Plugin Manager” (9€, donație unică de susținere).",
+        "La prima acțiune de scriere, apare o fereastră cu Machine ID-ul tău (buton de copiere) și un buton „Donează din GDC Plugin Manager” (17€, donație unică de susținere).",
         "După ce primești codul, lipește-l în același ecran și apasă „Activează”.",
     ],
     trial_note="<b>Important:</b> codul e legat de acest calculator — dacă schimbi Mac-ul, ai nevoie de un cod nou pentru noul Machine ID.",
@@ -200,7 +200,7 @@ EN = dict(
     h_trial="4. Trial and license (donation)",
     trial_intro="All analyses and scans are <b>completely free</b>, unlimited. Only actions that actually modify the system require an active license.",
     trial=[
-        "On the first write action, a window appears with your Machine ID (copy button) and a \"Donate via GDC Plugin Manager\" button (9€, one-time support donation).",
+        "On the first write action, a window appears with your Machine ID (copy button) and a \"Donate via GDC Plugin Manager\" button (17€, one-time support donation).",
         "Once you receive the code, paste it into the same screen and tap \"Activate\".",
     ],
     trial_note="<b>Important:</b> the code is tied to this computer — if you switch Macs, you'll need a new code for the new Machine ID.",
@@ -242,7 +242,7 @@ ES = dict(
     h_trial="4. Prueba y licencia (donación)",
     trial_intro="Todos los análisis y escaneos son <b>completamente gratuitos</b>, sin límite. Solo las acciones que modifican realmente el sistema requieren una licencia activa.",
     trial=[
-        "En la primera acción de escritura, aparece una ventana con tu Machine ID (botón de copiar) y un botón \"Donar desde GDC Plugin Manager\" (9€, donación única de apoyo).",
+        "En la primera acción de escritura, aparece una ventana con tu Machine ID (botón de copiar) y un botón \"Donar desde GDC Plugin Manager\" (17€, donación única de apoyo).",
         "Cuando recibas el código, pégalo en la misma pantalla y pulsa \"Activar\".",
     ],
     trial_note="<b>Importante:</b> el código está vinculado a este ordenador — si cambias de Mac, necesitarás un código nuevo para el nuevo Machine ID.",
