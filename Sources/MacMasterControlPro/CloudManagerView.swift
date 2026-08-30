@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MacMasterControlProCore
 
 struct CloudManagerView: View {
@@ -9,6 +10,8 @@ struct CloudManagerView: View {
     @State private var useChunker = false
     @State private var chunkSize = "18G"
     @State private var selected: Set<String> = []
+    @State private var logLines: [String] = []
+    @State private var mountFolder: String? = CloudMountSettings.customMountFolder
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -17,6 +20,23 @@ struct CloudManagerView: View {
                 Spacer()
                 Button("+ Adaugă cont") { showAddSheet = true }
                 Button("Rescanează") { service.refreshRemotes() }
+            }
+
+            GroupBox("Locație montare") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Implicit, conturile se montează pe Desktop. Poți alege în schimb un disc extern (Thunderbolt/USB-C), ca să nu ocupi spațiu pe SSD-ul intern.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text(mountFolder?.isEmpty == false ? "Folder curent: \(mountFolder!)" : "Implicit: ~/Desktop")
+                        .font(.caption).foregroundStyle(mountFolder?.isEmpty == false ? .green : .secondary)
+                    HStack {
+                        Button("Alege folder…") { pickMountFolder() }
+                        Button("Resetează (Desktop)") {
+                            CloudMountSettings.customMountFolder = nil
+                            mountFolder = nil
+                        }
+                    }
+                }
+                .padding(6)
             }
 
             GroupBox("Chunker (spargere fișiere mari)") {
@@ -69,8 +89,9 @@ struct CloudManagerView: View {
                         HStack {
                             Button("Montează selecția") {
                                 runGated {
+                                    logLines = []
                                     for name in selected where !service.mounted.contains(where: { $0.remoteName == name }) {
-                                        service.mount(remoteName: name, useChunker: useChunker, chunkSize: chunkSize)
+                                        service.mount(remoteName: name, useChunker: useChunker, chunkSize: chunkSize) { logLines.append($0) }
                                     }
                                 }
                             }
@@ -78,12 +99,17 @@ struct CloudManagerView: View {
                             .disabled(selected.isEmpty)
 
                             Button("Demontează selecția") {
-                                for name in selected { service.unmount(remoteName: name) }
+                                logLines = []
+                                for name in selected { service.unmount(remoteName: name) { logLines.append($0) } }
                             }
                             .disabled(selected.isEmpty)
                         }
                     }
                 }
+            }
+
+            if !logLines.isEmpty {
+                TerminalLogView(lines: logLines)
             }
             Spacer()
         }
@@ -91,6 +117,16 @@ struct CloudManagerView: View {
         .onAppear { service.refreshRemotes() }
         .sheet(isPresented: $showAddSheet) { AddCloudRemoteSheet(service: service) }
         .sheet(isPresented: $showGate) { TrialGateModal() }
+    }
+
+    private func pickMountFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.prompt = "Alege"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        CloudMountSettings.customMountFolder = url.path
+        mountFolder = url.path
     }
 
     private func runGated(_ action: @escaping () -> Void) {

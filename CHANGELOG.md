@@ -1,5 +1,15 @@
 # Changelog — Master Control Studio Pro
 
+## v2.5.0 (2026-08-30) — Faza 1: Locație de montare configurabilă (disc extern)
+
+Cloud Manager permite acum alegerea folderului unde se montează conturile
+(implicit `~/Desktop`) — util pentru discuri externe Thunderbolt/USB-C, ca
+să nu se ocupe spațiu pe SSD-ul intern (adesea mic pe Mac). Dacă folderul
+configurat nu mai există la momentul montării (disc extern deconectat),
+aplicația cade automat pe Desktop, cu avertisment în panoul Terminal Live —
+niciodată eșec silențios. Progresul de montare/demontare apare acum linie
+cu linie în Terminal Live (Regula 26).
+
 ## v2.4.1 (2026-08-30) — Donație actualizată la 17€
 
 Decizie Cristi: rămâne un singur nivel de licențiere (fără Standard/Pro
