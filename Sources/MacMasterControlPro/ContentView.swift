@@ -5,16 +5,16 @@ import MacMasterControlProCore
 enum SidebarItem: String, CaseIterable, Identifiable {
     case dashboard, network, cloud, cleanup, tweaks, rosetta, dependencies, settings
     var id: String { rawValue }
-    var label: String {
+    var labelKey: String {
         switch self {
-        case .dashboard: return "Dashboard"
-        case .network: return "Rețea"
-        case .cloud: return "Cloud Manager"
-        case .cleanup: return "Curățare & RAM"
-        case .tweaks: return "Tweak-uri Sistem"
-        case .rosetta: return "Rosetta Inspector"
-        case .dependencies: return "Dependențe"
-        case .settings: return "Setări"
+        case .dashboard: return "sidebar.dashboard"
+        case .network: return "sidebar.network"
+        case .cloud: return "sidebar.cloud"
+        case .cleanup: return "sidebar.cleanup"
+        case .tweaks: return "sidebar.tweaks"
+        case .rosetta: return "sidebar.rosetta"
+        case .dependencies: return "sidebar.dependencies"
+        case .settings: return "sidebar.settings"
         }
     }
     var icon: String {
@@ -34,6 +34,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @State private var selection: SidebarItem? = .dashboard
     @ObservedObject private var textScale = TextScaleManager.shared
+    @ObservedObject private var language = LanguageStore.shared
     @StateObject private var dependencyChecker = DependencyChecker()
 
     var body: some View {
@@ -43,7 +44,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 List(SidebarItem.allCases, selection: $selection) { item in
                     HStack {
-                        Label(item.label, systemImage: item.icon)
+                        Label(L.t(item.labelKey), systemImage: item.icon)
                         if item == .dependencies, !dependencyChecker.allInstalled, !dependencyChecker.items.isEmpty {
                             Spacer()
                             Circle().fill(Color.red).frame(width: 8, height: 8)
@@ -66,6 +67,7 @@ struct ContentView: View {
             default: DashboardView(checker: dependencyChecker, goToDependencies: { selection = .dependencies })
             }
         }
+        .id(language.current) // forteaza refresh la schimbarea limbii
         .dynamicTypeSize(textScale.current.dynamicTypeSize)
         .frame(minWidth: 900, minHeight: 600)
         .onAppear {
@@ -92,15 +94,15 @@ struct DashboardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("📊 Dashboard").font(.largeTitle).bold()
-            Text("Ultimate System Tuning, Cloud Mount, Media Cache & Future macOS Readiness Panel")
+            Text(L.t("dashboard.title")).font(.largeTitle).bold()
+            Text(L.t("dashboard.tagline"))
                 .foregroundStyle(.secondary)
 
             if !checker.items.isEmpty, !checker.allInstalled {
                 Button {
                     goToDependencies()
                 } label: {
-                    Label("Dependențe lipsă — apasă pentru a rezolva", systemImage: "exclamationmark.triangle.fill")
+                    Label(L.t("dashboard.depsWarning"), systemImage: "exclamationmark.triangle.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.orange)
@@ -116,24 +118,30 @@ struct SettingsView: View {
     @ObservedObject private var theme = ThemeManager.shared
     @ObservedObject private var textScale = TextScaleManager.shared
     @ObservedObject private var profile = UserProfileStore.shared
+    @ObservedObject private var language = LanguageStore.shared
 
     var body: some View {
         Form {
-            Section("Aspect") {
-                Picker("Temă", selection: $theme.current) {
+            Section(L.t("settings.appearance")) {
+                Picker(L.t("settings.theme"), selection: $theme.current) {
                     ForEach(AppTheme.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
 
-                Picker("Mărime text", selection: $textScale.current) {
+                Picker(L.t("settings.textSize"), selection: $textScale.current) {
                     ForEach(TextScalePreference.allCases) { Text($0.label).tag($0) }
+                }
+                .pickerStyle(.segmented)
+
+                Picker(L.t("settings.language"), selection: $language.current) {
+                    ForEach(AppLanguage.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
             }
 
-            Section("Profil") {
-                TextField("Nume", text: $profile.name)
-                TextField("Email", text: $profile.email)
+            Section(L.t("settings.profile")) {
+                TextField(L.t("settings.name"), text: $profile.name)
+                TextField(L.t("settings.email"), text: $profile.email)
             }
         }
         .padding(32)
