@@ -97,6 +97,19 @@ public struct MountedDrive: Codable, Identifiable {
     public let usesChunker: Bool
 }
 
+/// Folder custom (posibil pe disc extern) unde se monteaza remote-urile, in
+/// loc de `~/Desktop` implicit - cerinta explicita 2026-08-30 (SSD-uri
+/// interne mici, se lucreaza de pe discuri externe Thunderbolt/USB-C).
+/// `nil` = comportament vechi (`~/Desktop`).
+public enum CloudMountSettings {
+    private static let key = "MacMasterControlPro.customMountFolder"
+
+    public static var customMountFolder: String? {
+        get { UserDefaults.standard.string(forKey: key) }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+}
+
 /// Manager Universal Multi-Cloud - inlocuieste implementarea legata strict
 /// de Degoo. Orice remote Rclone (OAuth sau cu credentiale) e tratat identic.
 public final class CloudManagerService: ObservableObject {
@@ -171,8 +184,20 @@ public final class CloudManagerService: ObservableObject {
 
     // MARK: - Mount / Unmount (actiune reala - poarta de Trial in UI)
 
-    public func mount(remoteName: String, useChunker: Bool, chunkSize: String) {
-        let mountPath = NSHomeDirectory() + "/Desktop/Cloud_" + remoteName
+    /// `log` primeste linia de comanda + orice avertisment (panou Terminal
+    /// Live) - ex. daca folderul custom configurat nu mai exista (disc
+    /// extern deconectat), cadem pe Desktop in loc sa esuam silentios.
+    public func mount(remoteName: String, useChunker: Bool, chunkSize: String, log: ((String) -> Void)? = nil) {
+        var baseFolder = NSHomeDirectory() + "/Desktop"
+        if let custom = CloudMountSettings.customMountFolder, !custom.isEmpty {
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: custom, isDirectory: &isDir), isDir.boolValue {
+                baseFolder = custom
+            } else {
+                log?("⚠ Folderul de mount configurat (\(custom)) nu există (disc extern deconectat?) — folosesc Desktop în loc.")
+            }
+        }
+        let mountPath = baseFolder + "/Cloud_" + remoteName
         try? FileManager.default.createDirectory(atPath: mountPath, withIntermediateDirectories: true)
 
         var sourceRemote = "\(remoteName):"
@@ -184,19 +209,23 @@ public final class CloudManagerService: ObservableObject {
             sourceRemote = "\(chunkedName):"
         }
 
+        log?("$ rclone mount \(sourceRemote) \"\(mountPath)\"")
         Shell.run("nohup rclone mount \(sourceRemote) \"\(mountPath)\" --vfs-cache-mode off --bwlimit 0 > /tmp/mmc_\(remoteName).log 2>&1 &")
 
         let drive = MountedDrive(remoteName: remoteName, mountPath: mountPath, usesChunker: useChunker)
         mounted.removeAll { $0.remoteName == remoteName }
         mounted.append(drive)
         saveMountedState()
+        log?("✔ \(remoteName): montat pe \(mountPath)")
     }
 
-    public func unmount(remoteName: String) {
+    public func unmount(remoteName: String, log: ((String) -> Void)? = nil) {
         guard let drive = mounted.first(where: { $0.remoteName == remoteName }) else { return }
+        log?("$ diskutil unmount force \"\(drive.mountPath)\"")
         Shell.run("diskutil unmount force \"\(drive.mountPath)\" 2>/dev/null || umount \"\(drive.mountPath)\" 2>/dev/null")
         mounted.removeAll { $0.remoteName == remoteName }
         saveMountedState()
+        log?("✔ \(remoteName): demontat.")
     }
 
     private func escapeForShell(_ value: String) -> String {
