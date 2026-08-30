@@ -8,6 +8,7 @@ struct CloudManagerView: View {
     @State private var showAddSheet = false
     @State private var useChunker = false
     @State private var chunkSize = "18G"
+    @State private var selected: Set<String> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -31,23 +32,57 @@ struct CloudManagerView: View {
                 if service.remotes.isEmpty {
                     Text("Niciun cont adăugat încă.").foregroundStyle(.secondary).padding(6)
                 } else {
-                    List(service.remotes) { remote in
+                    VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            VStack(alignment: .leading) {
-                                Text(remote.name).bold()
-                                Text(remote.type).font(.caption).foregroundStyle(.secondary)
+                            Button(selected.count == service.remotes.count ? "Deselectează tot" : "Selectează tot") {
+                                selected = selected.count == service.remotes.count ? [] : Set(service.remotes.map(\.name))
                             }
+                            .font(.caption)
                             Spacer()
-                            if service.mounted.contains(where: { $0.remoteName == remote.name }) {
-                                Label("Montat", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-                                Button("Demontează") { service.unmount(remoteName: remote.name) }
-                            } else {
-                                Button("Montează pe Desktop") { runGated { service.mount(remoteName: remote.name, useChunker: useChunker, chunkSize: chunkSize) } }
+                            Text("Selectate \(selected.count) din \(service.remotes.count)").font(.caption).foregroundStyle(.secondary)
+                        }
+                        List(service.remotes) { remote in
+                            HStack {
+                                Toggle(isOn: Binding(
+                                    get: { selected.contains(remote.name) },
+                                    set: { checked in
+                                        if checked { selected.insert(remote.name) } else { selected.remove(remote.name) }
+                                    }
+                                )) {
+                                    VStack(alignment: .leading) {
+                                        Text(remote.name).bold()
+                                        Text(remote.type).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                if service.mounted.contains(where: { $0.remoteName == remote.name }) {
+                                    Label("Montat", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                                } else {
+                                    Text("Demontat").font(.caption).foregroundStyle(.secondary)
+                                }
+                                Button(role: .destructive) { service.deleteRemote(remote.name) } label: { Image(systemName: "trash") }
+                                    .buttonStyle(.plain)
                             }
-                            Button(role: .destructive) { service.deleteRemote(remote.name) } label: { Image(systemName: "trash") }
+                        }
+                        .frame(minHeight: 220)
+
+                        HStack {
+                            Button("Montează selecția") {
+                                runGated {
+                                    for name in selected where !service.mounted.contains(where: { $0.remoteName == name }) {
+                                        service.mount(remoteName: name, useChunker: useChunker, chunkSize: chunkSize)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(selected.isEmpty)
+
+                            Button("Demontează selecția") {
+                                for name in selected { service.unmount(remoteName: name) }
+                            }
+                            .disabled(selected.isEmpty)
                         }
                     }
-                    .frame(minHeight: 220)
                 }
             }
             Spacer()

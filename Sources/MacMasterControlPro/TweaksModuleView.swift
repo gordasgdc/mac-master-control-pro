@@ -17,7 +17,6 @@ struct TweaksModuleView: View {
     @StateObject private var service = TweaksService()
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
-    @State private var spotlightStatus = ""
     @State private var selected: Set<TweakID> = []
     @State private var status = ""
 
@@ -53,11 +52,53 @@ struct TweaksModuleView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(selected.isEmpty)
 
-                    Divider()
-                    Button("Protejează folder RAW de Spotlight…") { pickFolderAndProtect() }
-                    if !spotlightStatus.isEmpty {
-                        Text(spotlightStatus).font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(6)
+            }
+
+            GroupBox("Spotlight Shield — Discuri & Foldere") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Bifează un disc/folder pentru a-l proteja de indexarea Spotlight (`.metadata_never_index`); debifează pentru a elimina protecția.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("+ Adaugă foldere…") { pickFolders() }
                     }
+                    HStack {
+                        Button(service.protectedPaths.count == service.spotlightTargets.count && !service.spotlightTargets.isEmpty
+                               ? "Deselectează tot" : "Selectează tot") {
+                            runGated {
+                                let all = service.protectedPaths.count == service.spotlightTargets.count
+                                service.applyProtection(selected: all ? [] : Set(service.spotlightTargets.map(\.path)))
+                            }
+                        }
+                        .font(.caption)
+                        Spacer()
+                        Button("Rescanează") { service.scanSpotlightTargets() }
+                    }
+                    if service.spotlightTargets.isEmpty {
+                        Text("Niciun disc extern conectat și niciun folder adăugat.").font(.caption).foregroundStyle(.secondary)
+                    } else {
+                        ForEach(service.spotlightTargets) { target in
+                            HStack {
+                                Toggle(isOn: Binding(
+                                    get: { service.protectedPaths.contains(target.path) },
+                                    set: { checked in runGated { service.setProtected(target.path, checked) } }
+                                )) {
+                                    Label(target.name, systemImage: target.isVolume ? "externaldrive" : "folder")
+                                }
+                                Spacer()
+                                if !target.isVolume {
+                                    Button(role: .destructive) { service.removeCustomFolder(target.path) } label: {
+                                        Image(systemName: "xmark.circle")
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    Text("Protejate \(service.protectedPaths.count) din \(service.spotlightTargets.count)")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(6)
             }
@@ -75,6 +116,7 @@ struct TweaksModuleView: View {
             Spacer()
         }
         .padding(24)
+        .onAppear { service.scanSpotlightTargets() }
         .sheet(isPresented: $showGate) { TrialGateModal() }
     }
 
@@ -85,15 +127,13 @@ struct TweaksModuleView: View {
         selected = []
     }
 
-    private func pickFolderAndProtect() {
+    private func pickFolders() {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        runGated {
-            let ok = service.protectFromSpotlight(folderPath: url.path)
-            spotlightStatus = ok ? "✔ Protejat: \(url.lastPathComponent)" : "Eroare — cale invalidă."
-        }
+        panel.allowsMultipleSelection = true
+        guard panel.runModal() == .OK else { return }
+        service.addCustomFolders(panel.urls.map(\.path))
     }
 
     private func runGated(_ action: @escaping () -> Void) {
