@@ -23,9 +23,19 @@ struct TrialGateModal: View {
             TextField("Cheie de licență", text: $key)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 280)
-            if showError {
-                Text("Cheie invalidă.").foregroundStyle(.red).font(.caption)
+            if showError, let error = license.lastError {
+                Text(error).foregroundStyle(.red).font(.caption)
             }
+            Button {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(MachineID.display, forType: .string)
+            } label: {
+                Text("Machine ID: \(MachineID.display) (copiază)")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
             HStack {
                 Button("Donează din GDC Plugin Manager") {
                     NSWorkspace.shared.open(URL(string: "https://gordas.dev/mac-master-control-pro")!)
