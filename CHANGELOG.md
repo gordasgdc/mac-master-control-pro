@@ -1,5 +1,10 @@
 # Changelog — Master Control Studio Pro
 
+## v2.1.0 (2026-08-30)
+- **Buton „Activează Licența" persistent** în Sidebar Footer (badge Pro/Trial apăsabil oricând, nu doar declanșat de teasing).
+- **Contact WhatsApp** în modala de activare (`WhatsAppLink.swift`, port 1:1 din GDCVault/DataMover) — mesaj pre-completat cu numele aplicației și Machine ID.
+- Localizare RO/EN/ES completată pentru cele două stringuri noi.
+
 ## v2.0.0 (2026-08-30)
 **Rebranding** (MAJOR, Regula 14): "Mac Master Control Pro" → "Master
 Control Studio Pro" — nume neutru, pregătit pentru lansarea viitoare pe

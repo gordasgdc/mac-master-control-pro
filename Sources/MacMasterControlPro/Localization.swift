@@ -77,6 +77,8 @@ enum L {
         "trial.activate": [.ro: "Activează", .en: "Activate", .es: "Activar"],
         "trial.cancel": [.ro: "Anulează", .en: "Cancel", .es: "Cancelar"],
         "trial.key": [.ro: "Cheie de licență", .en: "License key", .es: "Clave de licencia"],
+        "trial.whatsapp": [.ro: "Contact WhatsApp", .en: "Contact WhatsApp", .es: "Contacto WhatsApp"],
+        "sidebar.trialBadge": [.ro: "Trial — Activează", .en: "Trial — Activate", .es: "Prueba — Activar"],
     ]
 
     static func t(_ key: String) -> String {
