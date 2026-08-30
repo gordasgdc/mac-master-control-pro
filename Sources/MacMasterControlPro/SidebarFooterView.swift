@@ -10,6 +10,7 @@ struct SidebarFooterView: View {
     @ObservedObject private var license = LicenseStore.shared
     @State private var copiedFeedback = false
     @State private var isCheckingUpdate = false
+    @State private var showActivation = false
 
     private var machineID: String { MachineID.display }
 
@@ -26,12 +27,17 @@ struct SidebarFooterView: View {
                     }
                 }
                 Spacer()
-                Text(license.isActivated ? "Pro" : "Trial")
-                    .font(.caption2).bold()
-                    .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(license.isActivated ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
-                    .foregroundStyle(license.isActivated ? .green : .orange)
-                    .clipShape(Capsule())
+                Button {
+                    if !license.isActivated { showActivation = true }
+                } label: {
+                    Text(license.isActivated ? "Pro" : L.t("sidebar.trialBadge"))
+                        .font(.caption2).bold()
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(license.isActivated ? Color.green.opacity(0.2) : Color.orange.opacity(0.25))
+                        .foregroundStyle(license.isActivated ? .green : .orange)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
             }
 
             Button {
@@ -66,5 +72,6 @@ struct SidebarFooterView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
+        .sheet(isPresented: $showActivation) { TrialGateModal() }
     }
 }
