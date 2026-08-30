@@ -2,31 +2,31 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>
-    <string>Master Control Studio Pro</string>
-    <key>CFBundleDisplayName</key>
-    <string>Master Control Studio Pro</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.gordasgdc.macmastercontrolpro</string>
-    <key>CFBundleExecutable</key>
-    <string>MacMasterControlPro</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>2.7.1</string>
-    <key>CFBundleVersion</key>
-    <string>2.7.1</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSHumanReadableCopyright</key>
-    <string>© 2026 GDC / Cristi Gordas. Toate drepturile rezervate.</string>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
-    <key>LSApplicationCategoryType</key>
-    <string>public.app-category.utilities</string>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>Master Control Studio Pro folosește AppleScript pentru a solicita drepturi de administrator, la fel ca alte aplicații de sistem.</string>
+	<key>CFBundleDisplayName</key>
+	<string>Master Control Studio Pro</string>
+	<key>CFBundleExecutable</key>
+	<string>MacMasterControlPro</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.gordasgdc.macmastercontrolpro</string>
+	<key>CFBundleName</key>
+	<string>Master Control Studio Pro</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2.7.2</string>
+	<key>CFBundleVersion</key>
+	<string>2.7.2</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Master Control Studio Pro folosește AppleScript pentru a solicita drepturi de administrator, la fel ca alte aplicații de sistem.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 GDC / Cristi Gordas. Toate drepturile rezervate.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
 </dict>
 </plist>

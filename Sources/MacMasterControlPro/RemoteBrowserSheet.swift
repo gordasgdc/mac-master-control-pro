@@ -75,7 +75,15 @@ struct RemoteBrowserSheet: View {
             }
         }
         .padding(20)
-        .frame(minWidth: 560, idealWidth: 780, minHeight: 420, idealHeight: 560)
+        // FIX REAL (2026-08-30): un .sheet pe macOS devine efectiv
+        // redimensionabil DOAR daca frame-ul exterior specifica explicit
+        // maxWidth/maxHeight ca .infinity - fara ele (asa cum era pana
+        // acum, doar minWidth/idealWidth), SwiftUI trateaza ideal ca plafon
+        // real si fereastra ramane blocata la acea dimensiune, oricat ai
+        // trage de margine. Raportat de Cristi: "ramane tot la o dimensiune
+        // asa ingusta".
+        .frame(minWidth: 560, idealWidth: 780, maxWidth: .infinity,
+               minHeight: 420, idealHeight: 560, maxHeight: .infinity)
         .onAppear { reload() }
         .alert("Ștergi „\(selectedEntry?.name ?? "")”?", isPresented: $confirmDelete) {
             Button("Anulează", role: .cancel) {}
