@@ -17,6 +17,9 @@ public final class DependencyChecker: ObservableObject {
     @Published public var isChecking: Bool = false
     @Published public var isInstalling: Bool = false
     @Published public var lastLog: String = ""
+    /// Panou "terminal live" (Regula UI 2026-08-30) - linie cu linie, per
+    /// comanda rulata, ca userul sa vada CONCRET ca se intampla ceva.
+    @Published public var logLines: [String] = []
 
     public var allInstalled: Bool { !items.isEmpty && items.allSatisfy { $0.isInstalled } }
 
@@ -88,6 +91,33 @@ public final class DependencyChecker: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.lastLog = log
+                self.isInstalling = false
+                self.checkAll()
+                completion()
+            }
+        }
+    }
+
+    /// Instaleaza DOAR componenta ceruta - buton propriu per element (rosu/
+    /// verde), cerinta explicita 2026-08-30: instalare pas-cu-pas, niciodata
+    /// bulk automat, ca sa nu blocheze sistemul cu mai multe instalari deodata.
+    public func installOne(id: String, completion: @escaping () -> Void) {
+        guard let brew = brewPath else { completion(); return }
+        let brewPackage: String
+        let isCask: Bool
+        switch id {
+        case "rclone": brewPackage = "rclone"; isCask = false
+        case "macfuse": brewPackage = "macfuse"; isCask = true
+        default: completion(); return
+        }
+        isInstalling = true
+        logLines.append("$ brew install \(isCask ? "--cask " : "")\(brewPackage)")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let output = Shell.run("\"\(brew)\" install \(isCask ? "--cask " : "")\(brewPackage) 2>&1")
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.logLines.append(contentsOf: output.split(separator: "\n").map(String.init))
+                self.logLines.append("✔ \(brewPackage): comandă terminată.")
                 self.isInstalling = false
                 self.checkAll()
                 completion()

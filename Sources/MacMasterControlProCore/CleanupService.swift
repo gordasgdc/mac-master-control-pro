@@ -52,9 +52,19 @@ public final class CleanupService: ObservableObject {
     }
 
     /// Actiune reala - sterge DOAR itemii bifati de utilizator.
-    public func deleteSelected(_ selected: Set<CleanableItem>) {
+    /// `log` primeste o linie per item (panou terminal live) - fara el,
+    /// `2>/dev/null` inghitea orice eroare silentios si userul nu avea nicio
+    /// confirmare ca ceva chiar s-a sters (bug real, gasit 2026-08-30, port
+    /// al fix-ului identic de pe Windows).
+    public func deleteSelected(_ selected: Set<CleanableItem>, log: ((String) -> Void)? = nil) {
         for item in selected {
-            Shell.run("rm -rf \"\(item.path)\"/* 2>/dev/null")
+            log?("Ștergere: \(item.name)…")
+            // shopt -s dotglob: `*` implicit NU prinde fisierele ascunse
+            // (.DS_Store etc.) - fara el, cache-uri ascunse ar ramane
+            // neatinse desi userul a bifat exact acel folder.
+            let output = Shell.run("setopt dotglob 2>/dev/null; rm -rfv \"\(item.path)\"/* 2>&1 | tail -n 5")
+            if !output.isEmpty { log?(output) }
+            log?("  ✔ \(item.name): comandă terminată.")
         }
         scanReclaimable()
     }

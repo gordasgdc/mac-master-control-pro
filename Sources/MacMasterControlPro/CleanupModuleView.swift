@@ -8,6 +8,7 @@ struct CleanupModuleView: View {
     @State private var selectedItems: Set<CleanableItem> = []
     @State private var selectedSnapshots: Set<String> = []
     @State private var status = ""
+    @State private var logLines: [String] = []
 
     private var selectedBytes: Int64 { selectedItems.reduce(0) { $0 + $1.sizeBytes } }
     private var totalBytes: Int64 { service.items.reduce(0) { $0 + $1.sizeBytes } }
@@ -50,7 +51,12 @@ struct CleanupModuleView: View {
                         .font(.caption).foregroundStyle(.secondary)
 
                     Button("Șterge cache-urile selectate") {
-                        runGated { service.deleteSelected(selectedItems); selectedItems = []; status = "✔ Cache-uri șterse." }
+                        runGated {
+                            logLines = []
+                            service.deleteSelected(selectedItems) { logLines.append($0) }
+                            selectedItems = []
+                            status = "✔ Gata — vezi detaliile mai jos."
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(selectedItems.isEmpty)
@@ -103,6 +109,9 @@ struct CleanupModuleView: View {
 
             if !status.isEmpty {
                 Text(status).font(.caption).foregroundStyle(.secondary)
+            }
+            if !logLines.isEmpty {
+                TerminalLogView(lines: logLines)
             }
             Spacer()
         }

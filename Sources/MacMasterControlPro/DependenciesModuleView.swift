@@ -1,6 +1,8 @@
 import SwiftUI
 import MacMasterControlProCore
 
+private let installableIds: Set<String> = ["rclone", "macfuse"]
+
 struct DependenciesModuleView: View {
     @ObservedObject var checker: DependencyChecker
 
@@ -17,6 +19,9 @@ struct DependenciesModuleView: View {
                     .foregroundStyle(.orange)
             }
 
+            Text("Fiecare componentă are propriul buton de instalare — roșu (neinstalat) devine verde (instalat) după ce comanda reușește. Fără instalare în masă, ca să nu blocheze sistemul.")
+                .font(.caption).foregroundStyle(.secondary)
+
             GroupBox("Status pachete") {
                 VStack(spacing: 0) {
                     ForEach(checker.items) { item in
@@ -28,6 +33,19 @@ struct DependenciesModuleView: View {
                             Spacer()
                             Text(item.isInstalled ? (item.version ?? "Instalat") : "Neinstalat")
                                 .foregroundStyle(.secondary).font(.caption)
+
+                            if installableIds.contains(item.id) {
+                                Button(item.isInstalled ? "Instalat ✔" : "Instalează") {
+                                    checker.installOne(id: item.id) {}
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .tint(item.isInstalled ? .green : .red)
+                                .disabled(item.isInstalled || checker.isInstalling)
+                            } else if item.id == "homebrew" && !item.isInstalled {
+                                Button("Instalează (Terminal)") { checker.installHomebrewInTerminal() }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.red)
+                            }
                         }
                         .padding(.vertical, 6)
                         Divider()
@@ -36,30 +54,13 @@ struct DependenciesModuleView: View {
                 .padding(6)
             }
 
-            HStack {
-                if checker.items.first(where: { $0.id == "homebrew" })?.isInstalled == false {
-                    Button("Instalează Homebrew (Terminal)") { checker.installHomebrewInTerminal() }
-                        .buttonStyle(.borderedProminent)
-                } else if !checker.allInstalled {
-                    Button(checker.isInstalling ? "Se instalează…" : "Instalează Dependențele Lipsă") {
-                        checker.installMissingViaBrew {}
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(checker.isInstalling)
-                }
-                Button(checker.isInstalling ? "Se verifică…" : "Check & Update All") {
-                    checker.checkAndUpdateAll {}
-                }
-                .disabled(checker.isInstalling)
+            Button(checker.isInstalling ? "Se verifică…" : "Check & Update All") {
+                checker.checkAndUpdateAll {}
             }
+            .disabled(checker.isInstalling)
 
-            if !checker.lastLog.isEmpty {
-                ScrollView {
-                    Text(checker.lastLog)
-                        .font(.system(.caption, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxHeight: 160)
+            if !checker.logLines.isEmpty {
+                TerminalLogView(lines: checker.logLines)
             }
             Spacer()
         }

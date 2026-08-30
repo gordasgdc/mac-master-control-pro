@@ -1,5 +1,22 @@
 # Changelog — Master Control Studio Pro
 
+## v2.4.0 (2026-08-30) — Panou „terminal live” + butoane roșu/verde la Dependențe
+
+Standard nou, cerut explicit de Cristi (devine Regula 26 GDC, propagată în
+tot ecosistemul): instalarea în masă ("Instalează tot ce lipsește") poate
+bloca sistemul — orice componentă instalabilă are acum **butonul ei propriu**
+(roșu = neinstalat, verde = instalat), niciodată un bulk install automat.
+
+- **`TerminalLogView`** — panou reutilizabil tip terminal (fundal negru,
+  text monospace verde, auto-scroll), afișează linie cu linie orice comandă
+  externă rulată (instalare, ștergere fișiere) — fără el, „Șterge cache-ul"
+  părea că nu face nimic (bug real raportat, catch-ul original ascundea
+  orice eroare silențios).
+- **Dependențe**: fiecare pachet instalabil (Rclone, macFUSE) are propriul
+  buton — Homebrew păstrează fluxul separat prin Terminal.app (interactiv).
+- **Curățare & RAM**: ștergerea afișează acum progresul real (fișier cu
+  fișier) în panoul terminal, în loc de un mesaj static „✔ șterse".
+
 ## v2.3.1 (2026-08-30) — FIX: „Adaugă cont Cloud” eșua cu „rclone: No such file or directory”
 
 **Bug real, raportat de Cristi**: `.app` lansat din Finder/Dock moștenește un
