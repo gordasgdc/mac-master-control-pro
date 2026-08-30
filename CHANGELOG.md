@@ -1,5 +1,17 @@
 # Changelog — Master Control Studio Pro
 
+## v2.6.0 (2026-08-30) — Fazele 2+3: Statistici live + Explorare remote fără montare
+
+- **Faza 2**: fiecare cont montat afișează acum viteza de transfer live,
+  bytes transferați și transferuri active (`rclone rc core/stats`, port RC
+  unic per montare — port comun ar fi amestecat statisticile mai multor
+  conturi montate simultan).
+- **Faza 3**: buton „Explorează" — răsfoiește conținutul unui cont Cloud
+  (`rclone lsjson`) FĂRĂ să-l montezi, cu navigare pe foldere. Buton
+  „Deschide" pe conturile montate — deschide direct în Finder.
+- Cloud Manager complet: alegere locație de montare (v2.5.0), statistici
+  live, explorare fără montare — toate în stilul nativ al aplicației.
+
 ## v2.5.0 (2026-08-30) — Faza 1: Locație de montare configurabilă (disc extern)
 
 Cloud Manager permite acum alegerea folderului unde se montează conturile

@@ -95,6 +95,26 @@ public struct MountedDrive: Codable, Identifiable {
     public let remoteName: String
     public let mountPath: String
     public let usesChunker: Bool
+    /// Port RC unic (Faza 2 - statistici live), `nil` pentru montari facute
+    /// inainte de aceasta versiune (fara `--rc`, fara statistici disponibile
+    /// pana la o remontare).
+    public var rcPort: Int? = nil
+}
+
+/// Statistici live de transfer (Faza 2), citite din `rclone rc core/stats`.
+public struct CloudTransferStats {
+    public let speedBytesPerSec: Double
+    public let bytesTransferred: Int64
+    public let activeTransfers: Int
+}
+
+/// O intrare intr-un folder de pe remote (Faza 3 - explorare fara montare).
+public struct RemoteEntry: Identifiable, Hashable {
+    public var id: String { path }
+    public let name: String
+    public let path: String
+    public let isDir: Bool
+    public let size: Int64
 }
 
 /// Folder custom (posibil pe disc extern) unde se monteaza remote-urile, in
@@ -120,6 +140,8 @@ public final class CloudManagerService: ObservableObject {
     @Published public var lastError: String?
 
     private static let mountedKey = "MacMasterControlPro.mountedDrives"
+    private static let rcBasePort = 5572
+    private var nextRcPort: Int { Self.rcBasePort + mounted.count }
 
     // MARK: - Remote list
 
@@ -209,10 +231,15 @@ public final class CloudManagerService: ObservableObject {
             sourceRemote = "\(chunkedName):"
         }
 
-        log?("$ rclone mount \(sourceRemote) \"\(mountPath)\"")
-        Shell.run("nohup rclone mount \(sourceRemote) \"\(mountPath)\" --vfs-cache-mode off --bwlimit 0 > /tmp/mmc_\(remoteName).log 2>&1 &")
+        // --rc: activeaza API-ul local de statistici (Faza 2, "progres live
+        // la transfer") - port UNIC per montare, nu unul fix comun (aceeasi
+        // clasa de bug reparata pe Windows: doua montari simultane pe
+        // acelasi port s-ar interfera la citirea statisticilor).
+        let port = nextRcPort
+        log?("$ rclone mount \(sourceRemote) \"\(mountPath)\" --rc-addr 127.0.0.1:\(port)")
+        Shell.run("nohup rclone mount \(sourceRemote) \"\(mountPath)\" --vfs-cache-mode off --bwlimit 0 --rc --rc-addr 127.0.0.1:\(port) --rc-no-auth > /tmp/mmc_\(remoteName).log 2>&1 &")
 
-        let drive = MountedDrive(remoteName: remoteName, mountPath: mountPath, usesChunker: useChunker)
+        let drive = MountedDrive(remoteName: remoteName, mountPath: mountPath, usesChunker: useChunker, rcPort: port)
         mounted.removeAll { $0.remoteName == remoteName }
         mounted.append(drive)
         saveMountedState()
@@ -221,11 +248,50 @@ public final class CloudManagerService: ObservableObject {
 
     public func unmount(remoteName: String, log: ((String) -> Void)? = nil) {
         guard let drive = mounted.first(where: { $0.remoteName == remoteName }) else { return }
+        if let port = drive.rcPort {
+            log?("$ rclone rc core/quit --rc-addr 127.0.0.1:\(port)")
+            Shell.run("rclone rc core/quit --rc-addr 127.0.0.1:\(port) 2>/dev/null")
+        }
         log?("$ diskutil unmount force \"\(drive.mountPath)\"")
         Shell.run("diskutil unmount force \"\(drive.mountPath)\" 2>/dev/null || umount \"\(drive.mountPath)\" 2>/dev/null")
         mounted.removeAll { $0.remoteName == remoteName }
         saveMountedState()
         log?("✔ \(remoteName): demontat.")
+    }
+
+    // MARK: - Faza 2: Statistici live de transfer
+
+    /// Citeste `core/stats` din API-ul local al montarii - `nil` daca
+    /// remote-ul nu e montat sau montarea a fost facuta cu o versiune veche
+    /// (fara `--rc`, `rcPort == nil`).
+    public func fetchStats(remoteName: String) -> CloudTransferStats? {
+        guard let drive = mounted.first(where: { $0.remoteName == remoteName }), let port = drive.rcPort else { return nil }
+        let output = Shell.run("rclone rc core/stats --rc-addr 127.0.0.1:\(port) 2>/dev/null")
+        guard let data = output.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        let speed = json["speed"] as? Double ?? 0
+        let bytes = (json["bytes"] as? NSNumber)?.int64Value ?? 0
+        let transfers = (json["transfers"] as? NSNumber)?.intValue ?? 0
+        return CloudTransferStats(speedBytesPerSec: speed, bytesTransferred: bytes, activeTransfers: transfers)
+    }
+
+    // MARK: - Faza 3: Explorare remote fara montare
+
+    /// Listeaza un folder de pe remote prin `rclone lsjson`, FARA sa
+    /// monteze nimic - util pentru un preview rapid inainte de a decide
+    /// daca montezi remote-ul intreg.
+    public func listRemoteFolder(remoteName: String, path: String) -> [RemoteEntry] {
+        let target = path.isEmpty ? "\(remoteName):" : "\(remoteName):\(path)"
+        let output = Shell.run("rclone lsjson \"\(target)\" 2>/dev/null")
+        guard let data = output.data(using: .utf8),
+              let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [] }
+        return array.compactMap { item in
+            guard let name = item["Name"] as? String else { return nil }
+            let isDir = item["IsDir"] as? Bool ?? false
+            let size = (item["Size"] as? NSNumber)?.int64Value ?? 0
+            let childPath = path.isEmpty ? name : "\(path)/\(name)"
+            return RemoteEntry(name: name, path: childPath, isDir: isDir, size: size)
+        }.sorted { $0.isDir && !$1.isDir || ($0.isDir == $1.isDir && $0.name.lowercased() < $1.name.lowercased()) }
     }
 
     private func escapeForShell(_ value: String) -> String {

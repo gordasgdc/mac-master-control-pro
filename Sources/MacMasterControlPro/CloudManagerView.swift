@@ -62,27 +62,7 @@ struct CloudManagerView: View {
                             Text("Selectate \(selected.count) din \(service.remotes.count)").font(.caption).foregroundStyle(.secondary)
                         }
                         List(service.remotes) { remote in
-                            HStack {
-                                Toggle(isOn: Binding(
-                                    get: { selected.contains(remote.name) },
-                                    set: { checked in
-                                        if checked { selected.insert(remote.name) } else { selected.remove(remote.name) }
-                                    }
-                                )) {
-                                    VStack(alignment: .leading) {
-                                        Text(remote.name).bold()
-                                        Text(remote.type).font(.caption).foregroundStyle(.secondary)
-                                    }
-                                }
-                                Spacer()
-                                if service.mounted.contains(where: { $0.remoteName == remote.name }) {
-                                    Label("Montat", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-                                } else {
-                                    Text("Demontat").font(.caption).foregroundStyle(.secondary)
-                                }
-                                Button(role: .destructive) { service.deleteRemote(remote.name) } label: { Image(systemName: "trash") }
-                                    .buttonStyle(.plain)
-                            }
+                            CloudRemoteRow(service: service, remote: remote, selected: $selected)
                         }
                         .frame(minHeight: 220)
 
