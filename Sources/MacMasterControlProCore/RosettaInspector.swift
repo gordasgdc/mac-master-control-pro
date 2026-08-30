@@ -1,7 +1,7 @@
 import Foundation
 
-public struct IntelApp: Identifiable {
-    public let id = UUID()
+public struct IntelApp: Identifiable, Hashable {
+    public var id: String { path }
     public let name: String
     public let path: String
 }
@@ -52,5 +52,20 @@ public final class RosettaInspector: ObservableObject {
             "launchctl remove com.apple.oahd 2>/dev/null || true",
             "rm -rf /Library/Apple/usr/share/rosetta 2>/dev/null || true"
         ])
+    }
+
+    /// Trimite la Cosul de gunoi DOAR aplicatiile bifate de utilizator -
+    /// dezinstalare reala, selectiva (nu "totul sau nimic").
+    @discardableResult
+    public func moveToTrash(_ selected: Set<IntelApp>) -> Int {
+        var moved = 0
+        for app in selected {
+            let url = URL(fileURLWithPath: app.path)
+            if (try? FileManager.default.trashItem(at: url, resultingItemURL: nil)) != nil {
+                moved += 1
+            }
+        }
+        scan()
+        return moved
     }
 }
