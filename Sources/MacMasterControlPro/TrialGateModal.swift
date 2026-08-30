@@ -15,12 +15,12 @@ struct TrialGateModal: View {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(.yellow)
-            Text("Analiza este 100% completă")
+            Text(L.t("trial.title"))
                 .font(.title2).bold()
-            Text("Susține dezvoltarea cu o donație (9€, o singură dată) pentru a debloca aplicarea modificărilor.")
+            Text(L.t("trial.body"))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
-            TextField("Cheie de licență", text: $key)
+            TextField(L.t("trial.key"), text: $key)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 280)
             if showError, let error = license.lastError {
@@ -37,15 +37,15 @@ struct TrialGateModal: View {
             }
             .buttonStyle(.plain)
             HStack {
-                Button("Donează din GDC Plugin Manager") {
+                Button(L.t("trial.donate")) {
                     NSWorkspace.shared.open(URL(string: "https://gordas.dev/mac-master-control-pro")!)
                 }
-                Button("Activează") {
+                Button(L.t("trial.activate")) {
                     if license.activate(withKey: key) { dismiss() } else { showError = true }
                 }
                 .buttonStyle(.borderedProminent)
             }
-            Button("Anulează") { dismiss() }
+            Button(L.t("trial.cancel")) { dismiss() }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
         }

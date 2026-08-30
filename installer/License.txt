@@ -1,0 +1,54 @@
+TERMENI ȘI CONDIȚII — Mac Master Control Pro
+Ultima actualizare: 30 august 2026
+
+1. LICENȚA
+Mac Master Control Pro ("Aplicația") este dezvoltată de Cristi Gordas
+("GDC", "Dezvoltatorul") — un proiect independent, nu o companie
+comercială. Prin instalarea și utilizarea Aplicației, accepți acești
+termeni.
+
+Îți este acordată o licență personală, netransmisibilă, de a instala și
+folosi Aplicația pe calculatoarele tale, pentru uz propriu sau
+profesional.
+
+2. TRIAL NELIMITAT
+Aplicația poate fi folosită nelimitat în modul Trial: analizele, scanările
+și calculele (stare rețea, spațiu recuperabil, aplicații Intel, conturi
+Cloud) sunt complet libere. Doar acțiunile care modifică efectiv sistemul
+(curățare, tuning rețea, montare Cloud, eliminare Rosetta) necesită o
+licență activă.
+
+3. SUSȚINEREA DEZVOLTĂRII (DONAȚIE)
+O licență Lifetime se poate obține printr-o donație unică de sprijin
+(9€, sumă de referință pentru acest produs), prin GDC Plugin Manager sau
+direct din aplicație. Contribuția susține dezvoltarea continuă — nu este
+o achiziție comercială clasică. Codul de licență primit e legat de
+Hardware Machine ID-ul calculatorului tău și este personal — nu-l
+distribui public.
+
+4. FĂRĂ GARANȚIE ("AS IS")
+Aplicația este oferită ca atare, fără nicio garanție explicită sau
+implicită. Multe acțiuni (curățare cache, tuning rețea, eliminare
+Rosetta) modifică fișiere și setări de sistem — Dezvoltatorul nu este
+responsabil pentru pierderi directe sau indirecte rezultate din
+utilizarea sau imposibilitatea utilizării Aplicației. Recomandăm o
+copie de siguranță (Time Machine) înainte de acțiuni ireversibile
+(ex. eliminarea Rosetta 2).
+
+5. PERMISIUNI DE ADMINISTRATOR
+Anumite module (tuning rețea, curățare Time Machine, purjare RAM,
+Touch ID pentru sudo) necesită drepturi de administrator, solicitate
+explicit prin prompt-ul nativ macOS — niciodată colectate sau stocate
+de Aplicație.
+
+6. FĂRĂ COLECTARE DE DATE
+Aplicația nu colectează date personale, nu trimite telemetrie și nu are
+conexiune la niciun server, cu excepția verificării manuale/automate de
+actualizări (interoghează o singură dată numărul ultimei versiuni de pe
+GitHub) și a autorizării conturilor Cloud pe care tu le adaugi explicit
+(Google Drive, Dropbox etc. — prin motorul Rclone, local pe mașina ta).
+
+7. gordas.dev
+gordas.dev este o platformă administrată de dezvoltatori independenți.
+Aplicațiile și resursele sunt furnizate ca atare (AS IS), iar susținerea
+proiectului se bazează pe contribuții opționale de sprijin și donații.
