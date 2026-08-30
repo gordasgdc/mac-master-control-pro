@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.3.0 (2026-08-30)
+**Standard Global de Multi-Selecție** — extins peste v2.2.0 la modulele rămase:
+- **Spotlight Shield (Tweak-uri Sistem)**: pickerul cu un singur folder a devenit un manager cu listare automată `/Volumes/*` (discuri externe) + foldere adăugate multiplu (`NSOpenPanel` multi-select), fiecare cu bifă proprie ("protejat"/"neprotejat"), Selectează/Deselectează tot, contor „Protejate X din Y".
+- **Rețea**: plăcile de rețea detectate apar acum cu bifă individuală (nu doar un adaptor hardcodat); Tuning Gigabit/DNS/TCP se aplică pe toate plăcile bifate simultan.
+- **Cloud Manager**: conturile configurate au bifă proprie, Selectează/Deselectează tot, „Montează selecția"/„Demontează selecția" acționează pe toate conturile bifate deodată.
+
 ## v2.2.0 (2026-08-30)
 **Selecție granulară** (checkbox-uri per element) în locul acțiunilor "totul sau nimic":
 - **Curățare & RAM**: fiecare cache (DerivedData/Caches/Adobe/DaVinci) și fiecare snapshot Time Machine are bifă proprie, Selectează/Deselectează tot, contor live „X GB din Y GB" / „X din Y snapshots", butonul de ștergere acționează DOAR pe elementele bifate.
