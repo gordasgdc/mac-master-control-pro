@@ -1,5 +1,12 @@
 # Changelog — Master Control Studio Pro
 
+## v2.2.0 (2026-08-30)
+**Selecție granulară** (checkbox-uri per element) în locul acțiunilor "totul sau nimic":
+- **Curățare & RAM**: fiecare cache (DerivedData/Caches/Adobe/DaVinci) și fiecare snapshot Time Machine are bifă proprie, Selectează/Deselectează tot, contor live „X GB din Y GB" / „X din Y snapshots", butonul de ștergere acționează DOAR pe elementele bifate.
+- **Rosetta Inspector**: fiecare aplicație Intel are bifă; nou — „Trimite la Coș aplicațiile selectate" (dezinstalare reală, selectivă, restaurabilă din Coșul de gunoi), separat de eliminarea globală a Rosetta.
+- **Tweak-uri Sistem**: Finder avansat + blocare .DS_Store convertite în listă cu bife + „Aplică tweak-urile selectate".
+- Toate butoanele de acțiune sunt dezactivate când nu e bifat niciun element.
+
 ## v2.1.0 (2026-08-30)
 - **Buton „Activează Licența" persistent** în Sidebar Footer (badge Pro/Trial apăsabil oricând, nu doar declanșat de teasing).
 - **Contact WhatsApp** în modala de activare (`WhatsAppLink.swift`, port 1:1 din GDCVault/DataMover) — mesaj pre-completat cu numele aplicației și Machine ID.
