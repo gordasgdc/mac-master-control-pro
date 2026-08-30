@@ -14,7 +14,7 @@ from reportlab.platypus import (
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-APP_VERSION = "1.0.0"
+APP_VERSION = "2.0.0"
 
 pdfmetrics.registerFont(TTFont("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Bold", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"))
@@ -63,7 +63,7 @@ def _content_canvas(canvas, doc):
     canvas.rect(0, h - 0.4 * cm, w, 0.4 * cm, fill=1, stroke=0)
     canvas.setFont("Arial", 8)
     canvas.setFillColor(FAINT)
-    canvas.drawString(2 * cm, 1.2 * cm, "Mac Master Control Pro — Ghid de utilizare")
+    canvas.drawString(2 * cm, 1.2 * cm, "Master Control Studio Pro — Ghid de utilizare")
     canvas.drawRightString(w - 2 * cm, 1.2 * cm, f"{canvas.getPageNumber()}")
     canvas.restoreState()
 
@@ -81,7 +81,7 @@ def note(text):
 
 def build_doc(lang_data, out_path):
     flow = []
-    flow.append(Paragraph("Mac Master Control Pro", title_style))
+    flow.append(Paragraph("Master Control Studio Pro", title_style))
     flow.append(Paragraph(lang_data["subtitle"], subtitle_style))
 
     flow.append(Paragraph(lang_data["h_install"], h2_style))
@@ -109,7 +109,7 @@ def build_doc(lang_data, out_path):
     flow.append(Paragraph(lang_data["h_support"], h2_style))
     flow.append(Paragraph(lang_data["support"], body_style))
 
-    flow.append(Paragraph("Mac Master Control Pro — github.com/gordasgdc/mac-master-control-pro", footer_style))
+    flow.append(Paragraph("Master Control Studio Pro — github.com/gordasgdc/mac-master-control-pro", footer_style))
 
     doc = SimpleDocTemplate(
         out_path, pagesize=A4,
@@ -117,7 +117,7 @@ def build_doc(lang_data, out_path):
     )
     story = [
         Spacer(1, 3.4 * cm),
-        Paragraph("Mac Master Control Pro", cover_app_style),
+        Paragraph("Master Control Studio Pro", cover_app_style),
         Paragraph(lang_data["cover_sub"], cover_sub_style),
         Spacer(1, 3.2 * cm),
         Paragraph(f"Versiunea {APP_VERSION}", cover_ver_style),

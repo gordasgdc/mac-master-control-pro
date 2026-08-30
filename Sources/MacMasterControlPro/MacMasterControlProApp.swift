@@ -11,7 +11,7 @@ struct MacMasterControlProApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("Despre Mac Master Control Pro") { showAboutPanel() }
+                Button("Despre Master Control Studio Pro") { showAboutPanel() }
             }
             CommandGroup(replacing: .help) {
                 Button("Ghid de Utilizare (PDF)") { GuidePDF.open() }
@@ -21,7 +21,7 @@ struct MacMasterControlProApp: App {
 
     private func showAboutPanel() {
         NSApp.orderFrontStandardAboutPanel(options: [
-            .applicationName: "Mac Master Control Pro",
+            .applicationName: "Master Control Studio Pro",
             .credits: NSAttributedString(string: "© \(Calendar.current.component(.year, from: Date())) GDC. Toate drepturile rezervate."),
         ])
     }

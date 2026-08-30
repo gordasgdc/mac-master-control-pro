@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Builds "Mac Master Control Pro.app" apoi il impacheteaza intr-un .pkg
+# Builds "Master Control Studio Pro.app" apoi il impacheteaza intr-un .pkg
 # semnat + notarizat, cu panou de licenta (Regula 19).
 set -euo pipefail
 cd "$(dirname "$0")"
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
 PKG_ID="com.gordasgdc.macmastercontrolpro.installer"
-APP_NAME="Mac Master Control Pro.app"
+APP_NAME="Master Control Studio Pro.app"
 DIST_DIR="dist"
 PAYLOAD_ROOT="$DIST_DIR/payload"
 COMPONENT_PKG="$DIST_DIR/MacMasterControlPro-component.pkg"
@@ -21,7 +21,7 @@ fi
 
 echo "==> Building app…"
 swift build -c release --product MacMasterControlPro
-BUILD_OUT="/tmp/Mac Master Control Pro.app.build-$$"
+BUILD_OUT="/tmp/Master Control Studio Pro.app.build-$$"
 rm -rf "$BUILD_OUT"
 mkdir -p "$BUILD_OUT/Contents/MacOS" "$BUILD_OUT/Contents/Resources"
 cp .build/release/MacMasterControlPro "$BUILD_OUT/Contents/MacOS/MacMasterControlPro"
@@ -56,7 +56,7 @@ echo "==> Writing distribution definition…"
 cat > "$DIST_DIR/Distribution.xml" << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="1">
-    <title>Mac Master Control Pro $VERSION</title>
+    <title>Master Control Studio Pro $VERSION</title>
     <license file="License.txt" mime-type="text/plain"/>
     <options customize="never" require-scripts="false" rootVolumeOnly="true"/>
     <domains enable_localSystem="true"/>

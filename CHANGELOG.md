@@ -1,4 +1,15 @@
-# Changelog — Mac Master Control Pro
+# Changelog — Master Control Studio Pro
+
+## v2.0.0 (2026-08-30)
+**Rebranding** (MAJOR, Regula 14): "Mac Master Control Pro" → "Master
+Control Studio Pro" — nume neutru, pregătit pentru lansarea viitoare pe
+Windows. Actualizat peste tot: UI SwiftUI (titlu fereastră, About, alerte
+update), `Info.plist` (CFBundleName/DisplayName), landing page, ghidul PDF
+RO/EN/ES, panoul Furnizor (`GenerateSerialView.swift`) și `catalog.json`
+(Client). `productID` tehnic (`mac-master-control-pro`), identificatorul
+de bundle, numele repo-ului GitHub și numele fișierelor `.pkg`/`.zip`
+rămân neschimbate (schimbare cosmetică, nu structurală) — codurile de
+licență deja generate rămân valide.
 
 ## v1.0.0 (2026-08-30)
 Lansare inițială — conversie completă a `Mac_Master_Control.sh` în aplicație nativă SwiftUI:

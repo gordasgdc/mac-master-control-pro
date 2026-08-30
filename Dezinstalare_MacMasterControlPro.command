@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Dezinstalare_MacMasterControlPro.command
-# Dezinstalare & curatare completa pentru Mac Master Control Pro.
+# Dezinstalare & curatare completa pentru Master Control Studio Pro.
 #
 # Bundle ID: com.gordasgdc.macmastercontrolpro (Info.plist).
 #
@@ -16,14 +16,14 @@
 set -uo pipefail
 
 BUNDLE_ID="com.gordasgdc.macmastercontrolpro"
-APP_PATH="/Applications/Mac Master Control Pro.app"
+APP_PATH="/Applications/Master Control Studio Pro.app"
 
 echo "=================================================="
-echo " Mac Master Control Pro — Dezinstalare & Curatare"
+echo " Master Control Studio Pro — Dezinstalare & Curatare"
 echo "=================================================="
 echo ""
 
-read -p "Sigur vrei sa stergi Mac Master Control Pro si TOATE datele lui (profil, licenta)? [y/N] " confirm
+read -p "Sigur vrei sa stergi Master Control Studio Pro si TOATE datele lui (profil, licenta)? [y/N] " confirm
 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
     echo "Anulat."
     exit 0
@@ -32,7 +32,7 @@ echo ""
 
 echo "[1/2] Opresc orice instanta ramasa in fundal..."
 pkill -x "MacMasterControlPro" 2>/dev/null
-pkill -f "Mac Master Control Pro.app" 2>/dev/null
+pkill -f "Master Control Studio Pro.app" 2>/dev/null
 sleep 1
 echo "[+] Procese oprite."
 echo ""

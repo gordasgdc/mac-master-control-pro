@@ -85,7 +85,7 @@ enum UpdateChecker {
             alert.runModal()
         case .newVersion(let version, let pkgURL):
             alert.messageText = "Este disponibilă o versiune nouă"
-            alert.informativeText = "Mac Master Control Pro \(version) este disponibil (tu ai \(currentVersion)). Apasă „Actualizează acum” pentru a descărca și instala automat."
+            alert.informativeText = "Master Control Studio Pro \(version) este disponibil (tu ai \(currentVersion)). Apasă „Actualizează acum” pentru a descărca și instala automat."
             alert.addButton(withTitle: "Actualizează acum")
             alert.addButton(withTitle: "Mai târziu")
             let response = alert.runModal()
