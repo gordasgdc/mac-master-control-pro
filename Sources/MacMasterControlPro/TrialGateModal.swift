@@ -17,7 +17,7 @@ struct TrialGateModal: View {
                 .foregroundStyle(.yellow)
             Text("Analiza este 100% completă")
                 .font(.title2).bold()
-            Text("Introdu licența Lifetime (9€) pentru a aplica modificările fizic pe sistem.")
+            Text("Susține dezvoltarea cu o donație (9€, o singură dată) pentru a debloca aplicarea modificărilor.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
             TextField("Cheie de licență", text: $key)
@@ -27,7 +27,7 @@ struct TrialGateModal: View {
                 Text("Cheie invalidă.").foregroundStyle(.red).font(.caption)
             }
             HStack {
-                Button("Cumpără din GDC Plugin Manager") {
+                Button("Donează din GDC Plugin Manager") {
                     NSWorkspace.shared.open(URL(string: "https://gordas.dev/mac-master-control-pro")!)
                 }
                 Button("Activează") {
