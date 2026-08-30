@@ -9,7 +9,7 @@ struct NetworkModuleView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("🌐 Rețea & Cloud").font(.title2).bold()
+            Text("🌐 Rețea").font(.title2).bold()
 
             GroupBox("Adaptor selectat") {
                 HStack {
@@ -30,14 +30,11 @@ struct NetworkModuleView: View {
                 .padding(6)
             }
 
-            GroupBox("Cloud Mount (Rclone / Degoo)") {
+            GroupBox("Motor Cloud (Rclone / macFUSE)") {
                 VStack(alignment: .leading, spacing: 8) {
-                    TextField("Folder de montare", text: $service.cloudMountDir)
-                        .textFieldStyle(.roundedBorder)
-                    HStack {
-                        Button("Instalează Rclone + macFUSE") { service.installRcloneStack() }
-                        Button("Montează Cloud") { runGated { service.mountCloud() } }
-                    }
+                    Text("Configurarea conturilor Cloud s-a mutat în modulul „Cloud Manager” din bara laterală.")
+                        .foregroundStyle(.secondary)
+                    Button("Instalează Rclone + macFUSE") { service.installRcloneStack() }
                 }
                 .padding(6)
             }

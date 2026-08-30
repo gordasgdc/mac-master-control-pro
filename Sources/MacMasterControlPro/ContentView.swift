@@ -2,12 +2,13 @@ import SwiftUI
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case dashboard, network, cleanup, tweaks, rosetta, settings
+    case dashboard, network, cloud, cleanup, tweaks, rosetta, settings
     var id: String { rawValue }
     var label: String {
         switch self {
         case .dashboard: return "Dashboard"
-        case .network: return "Rețea & Cloud"
+        case .network: return "Rețea"
+        case .cloud: return "Cloud Manager"
         case .cleanup: return "Curățare & RAM"
         case .tweaks: return "Tweak-uri Sistem"
         case .rosetta: return "Rosetta Inspector"
@@ -18,6 +19,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         switch self {
         case .dashboard: return "gauge.with.dots.needle.67percent"
         case .network: return "network"
+        case .cloud: return "cloud"
         case .cleanup: return "trash.circle"
         case .tweaks: return "wrench.and.screwdriver"
         case .rosetta: return "cpu"
@@ -39,6 +41,10 @@ struct ContentView: View {
         } detail: {
             switch selection {
             case .network: NetworkModuleView()
+            case .cloud: CloudManagerView()
+            case .cleanup: CleanupModuleView()
+            case .tweaks: TweaksModuleView()
+            case .rosetta: RosettaModuleView()
             case .settings: SettingsView()
             default: DashboardView()
             }

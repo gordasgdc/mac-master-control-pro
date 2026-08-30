@@ -11,8 +11,6 @@ public final class NetworkService: ObservableObject {
     @Published public var adapters: [NetworkAdapter] = []
     @Published public var selectedAdapter: String = "USB 10/100/1000 LAN"
     @Published public var selectedInterface: String = "en8"
-    @Published public var cloudMountDir: String = NSHomeDirectory() + "/Desktop/Cloud_Degoo"
-    @Published public var chunkSize: String = "18G"
 
     /// Scanare libera - permisa si in Trial (teasing: arata ce s-ar optimiza).
     public func scanAdapters() {
@@ -35,10 +33,5 @@ public final class NetworkService: ObservableObject {
 
     public func installRcloneStack() {
         Shell.run("brew install --cask macfuse 2>/dev/null; brew install rclone 2>/dev/null")
-    }
-
-    public func mountCloud() {
-        try? FileManager.default.createDirectory(atPath: cloudMountDir, withIntermediateDirectories: true)
-        Shell.run("nohup rclone mount degoo_spart: \"\(cloudMountDir)\" --vfs-cache-mode off --bwlimit 0 > /tmp/mmc_rclone.log 2>&1 &")
     }
 }
