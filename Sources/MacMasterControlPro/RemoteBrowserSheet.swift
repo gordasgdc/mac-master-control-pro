@@ -54,7 +54,7 @@ struct RemoteBrowserSheet: View {
                 .onTapGesture(count: 2) { if entry.isDir { open(entry) } }
                 .onTapGesture(count: 1) { selectedEntry = entry }
             }
-            .frame(minWidth: 460, minHeight: 260)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             // Faza 4: actiuni reale de management de fisiere.
             HStack {
@@ -75,6 +75,7 @@ struct RemoteBrowserSheet: View {
             }
         }
         .padding(20)
+        .frame(minWidth: 560, idealWidth: 780, minHeight: 420, idealHeight: 560)
         .onAppear { reload() }
         .alert("Ștergi „\(selectedEntry?.name ?? "")”?", isPresented: $confirmDelete) {
             Button("Anulează", role: .cancel) {}

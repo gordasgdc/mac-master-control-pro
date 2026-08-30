@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.7.1 (2026-08-30) — Fereastra „Explorează” redimensionabilă
+
+Fereastra de explorare Cloud (`RemoteBrowserSheet`) era prea mică pentru
+liste lungi de fișiere — mărită implicit (780×560) și complet
+redimensionabilă, ca userul s-o adapteze după nevoie.
+
 ## v2.7.0 (2026-08-30) — Faza 4: Upload / Download / Sincronizare + Ghid PDF complet + Landing page
 
 - **Faza 4 — Cloud Manager, sistem complet de lucru cu fișiere**: din fereastra „Explorează" — încărcare fișiere/foldere de pe Mac, descărcare selecție pe Mac, ștergere (cu confirmare explicită, ireversibilă), și sincronizare folder local ↔ cloud (implicit non-distructiv — doar adaugă/actualizează; „Oglindă exactă" e opțională, explicit bifată, pentru sincronizare cu ștergere).
