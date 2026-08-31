@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.16.0 (2026-08-31) — Cloud Manager: indicator verde/roșu standardizat
+
+Rândul fiecărui remote Cloud arată acum punctul verde/roșu (montat/
+demontat) la fel ca restul aplicației, nu doar text — consistent cu
+Dashboard-ul și modulul de Securitate.
+
 ## v2.15.0 (2026-08-31) — Dashboard cu status verde/roșu per modul
 
 Ecranul principal arată acum carduri cu starea reală a modulelor cheie

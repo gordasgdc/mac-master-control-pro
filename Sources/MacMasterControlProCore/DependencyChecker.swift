@@ -8,6 +8,10 @@ public struct DependencyItem: Identifiable, Equatable {
     public var isInstalled: Bool
     public var version: String?
     public var installHint: String // afisat cand lipseste
+    /// Componentele optionale (ex. FFmpeg) NU blocheaza starea verde
+    /// generala — Regula 4 (Manager de Dependente): verde doar daca toate
+    /// componentele OBLIGATORII sunt OK.
+    public var isOptional: Bool = false
 }
 
 public final class DependencyChecker: ObservableObject {
@@ -21,7 +25,10 @@ public final class DependencyChecker: ObservableObject {
     /// comanda rulata, ca userul sa vada CONCRET ca se intampla ceva.
     @Published public var logLines: [String] = []
 
-    public var allInstalled: Bool { !items.isEmpty && items.allSatisfy { $0.isInstalled } }
+    public var allInstalled: Bool {
+        let required = items.filter { !$0.isOptional }
+        return !required.isEmpty && required.allSatisfy(\.isInstalled)
+    }
 
     private var brewPath: String? {
         if FileManager.default.fileExists(atPath: "/opt/homebrew/bin/brew") { return "/opt/homebrew/bin/brew" }
@@ -54,6 +61,15 @@ public final class DependencyChecker: ObservableObject {
         // macFUSE
         let macfuseInstalled = FileManager.default.fileExists(atPath: "/Library/Filesystems/macfuse.fs")
         results.append(DependencyItem(id: "macfuse", name: "macFUSE", isInstalled: macfuseInstalled, version: macfuseInstalled ? "instalat" : nil, installHint: "Necesar pentru montare Cloud ca disc virtual."))
+
+        // FFmpeg — opțional, util pentru codecuri de export pe care DaVinci
+        // Resolve (mai ales varianta Free) nu le acoperă nativ.
+        if let brew = brewPath, !Shell.run("\"\(brew)\" list --versions ffmpeg 2>/dev/null").isEmpty {
+            let v = Shell.run("ffmpeg -version 2>/dev/null | head -n1")
+            results.append(DependencyItem(id: "ffmpeg", name: "FFmpeg", isInstalled: true, version: v, installHint: "", isOptional: true))
+        } else {
+            results.append(DependencyItem(id: "ffmpeg", name: "FFmpeg", isInstalled: false, version: nil, installHint: "Opțional — codecuri suplimentare pentru export video.", isOptional: true))
+        }
 
         // Utilitare de sistem (parte din macOS, verificare simpla de prezenta)
         for tool in ["sysctl", "tmutil", "networksetup", "lipo"] {
@@ -108,6 +124,7 @@ public final class DependencyChecker: ObservableObject {
         switch id {
         case "rclone": brewPackage = "rclone"; isCask = false
         case "macfuse": brewPackage = "macfuse"; isCask = true
+        case "ffmpeg": brewPackage = "ffmpeg"; isCask = false
         default: completion(); return
         }
         isInstalling = true

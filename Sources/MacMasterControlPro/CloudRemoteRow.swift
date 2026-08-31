@@ -31,8 +31,14 @@ struct CloudRemoteRow: View {
                     }
                 }
                 Spacer()
+                // Standard vizual unic (2026-08-31): punct verde/rosu, ca in
+                // restul aplicatiei — nu doar text, la fel de scanabil dintr-o
+                // privire ca dashboard-ul si modulul de Securitate.
+                Circle()
+                    .fill(mountedDrive != nil ? Color.green : Color.red)
+                    .frame(width: 8, height: 8)
                 if let drive = mountedDrive {
-                    Label("Montat", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("Montat").font(.caption).foregroundStyle(.secondary)
                     Button("Deschide") { NSWorkspace.shared.open(URL(fileURLWithPath: drive.mountPath)) }
                         .buttonStyle(.plain).foregroundStyle(.blue).font(.caption)
                 } else {
