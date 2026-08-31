@@ -1,5 +1,27 @@
 # Changelog — Master Control Studio Pro
 
+## v2.9.0 (2026-08-31) — 7 module noi de optimizare workflow
+
+Cerință directă: "ce mai pot introduce ca să fie o aplicație foarte
+profesională de optimizare workflow?" — 7 funcționalități noi, alese din
+lista propusă:
+- **⚡️ Mod Randare** — oprește Time Machine + indexare Spotlight, ridică
+  prioritatea DaVinci Resolve, un singur comutator, o singură parolă.
+- **🔌 Pornire Sistem** — auditor servicii de fundal terțe, buton
+  roșu/verde per element, reversibil.
+- **💽 Sănătate Discuri** — spațiu liber, status SMART, test de viteză de
+  scriere la cerere.
+- **🎬 DaVinci Resolve** — Notificare la final de randare (+ opțional pe
+  email, ca să ajungă și pe telefon) + Auditor Media Pool (clipuri
+  offline/duplicate, prin Scripting API oficial) + Sincronizare LUT-uri/
+  Fusion între stații prin Cloud Manager.
+- **🪟 Layout Ferestre** — salvează/restaurează poziții de ferestre per
+  aplicație (util pentru configurații multi-monitor diferite).
+
+Toate testate live (Layout Ferestre confirmat funcțional cu TextEdit).
+Port complet și pe Windows, aceeași versiune de funcționalități
+(`mac-master-control-pro-win` v1.10.0).
+
 ## v2.8.0 (2026-08-30) — Upload Google Drive mult mai rapid + Setări performanță rclone
 
 Cerință reală, apărută în timpul testării DataMover cu rclone: upload-uri

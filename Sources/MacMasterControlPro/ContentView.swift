@@ -3,11 +3,16 @@ import AppKit
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case dashboard, network, cloud, cleanup, tweaks, rosetta, dependencies, settings
+    case dashboard, renderMode, loginItems, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, tweaks, rosetta, dependencies, settings
     var id: String { rawValue }
     var labelKey: String {
         switch self {
         case .dashboard: return "sidebar.dashboard"
+        case .renderMode: return "sidebar.renderMode"
+        case .loginItems: return "sidebar.loginItems"
+        case .diskHealth: return "sidebar.diskHealth"
+        case .resolveTools: return "sidebar.resolveTools"
+        case .windowLayouts: return "sidebar.windowLayouts"
         case .network: return "sidebar.network"
         case .cloud: return "sidebar.cloud"
         case .cleanup: return "sidebar.cleanup"
@@ -20,6 +25,11 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .dashboard: return "gauge.with.dots.needle.67percent"
+        case .renderMode: return "bolt.circle"
+        case .loginItems: return "power.circle"
+        case .diskHealth: return "internaldrive"
+        case .resolveTools: return "film"
+        case .windowLayouts: return "macwindow.on.rectangle"
         case .network: return "network"
         case .cloud: return "cloud"
         case .cleanup: return "trash.circle"
@@ -57,6 +67,11 @@ struct ContentView: View {
             .navigationTitle("Master Control Studio Pro")
         } detail: {
             switch selection {
+            case .renderMode: RenderModeView()
+            case .loginItems: LoginItemsView()
+            case .diskHealth: DiskHealthView()
+            case .resolveTools: ResolveToolsView()
+            case .windowLayouts: WindowLayoutsView()
             case .network: NetworkModuleView()
             case .cloud: CloudManagerView()
             case .cleanup: CleanupModuleView()
