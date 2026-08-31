@@ -91,7 +91,6 @@ struct ContentView: View {
             }
         }
         .id(language.current) // forteaza refresh la schimbarea limbii
-        .frame(minWidth: 900, minHeight: 600)
         .onAppear {
             dependencyChecker.checkAll()
             UpdateChecker.checkSilentlyOnLaunch { version, pkgURL in

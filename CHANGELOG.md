@@ -1,5 +1,16 @@
 # Changelog — Master Control Studio Pro
 
+## v2.20.0 (2026-08-31) — FIX REAL (2): Mărime Text tot nu se schimba
+
+v2.19.0 a înlocuit `dynamicTypeSize` cu scalare vizuală, dar Cristi a
+confirmat că butoanele tot nu produceau nicio schimbare. Cauza reală:
+`ContentView` avea propriul `.frame(minWidth: 900, minHeight: 600)` intern
+— acest minim câștiga mereu în fața dimensiunii mai mici cerute de
+tehnica de scalare la „Mare"/„Foarte mare", anulând complet efectul.
+Fix: minimul de fereastră mutat în AFARA scalării (la nivelul ferestrei,
+nu al conținutului scalat) — exact tiparul deja dovedit funcțional în
+GDC Plugin Manager, care nu avea acest minim intern.
+
 ## v2.19.0 (2026-08-31) — FIX REAL: Mărime Text nu făcea nimic + ghid PDF actualizat
 
 Raportat direct de Cristi ("la setări la Mac când aleg text mic normal

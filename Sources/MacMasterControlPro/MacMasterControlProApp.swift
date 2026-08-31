@@ -8,7 +8,15 @@ struct MacMasterControlProApp: App {
             ScaledContentView()
                 .onAppear { ThemeManager.shared.applyNow() }
         }
-        .windowResizability(.contentSize)
+        // BUG REAL, gasit 2026-08-31: `.windowResizability(.contentSize)`
+        // intra in conflict cu `ScaledContentView` (GeometryReader + scaleEffect,
+        // vezi mai jos) — GeometryReader nu are o dimensiune "ideala" proprie,
+        // deci macOS ramanea blocat pe dimensiunea initiala a ferestrei,
+        // Mararea/Micsorarea textului nu se vedea NICIODATA, indiferent ce
+        // optiune alegeai in Setari (confirmat: dimensiunea reala din
+        // Accessibility ramanea identica intre "Normal" si "Foarte mare").
+        // Eliminat complet — se aliniaza si cu Regula 18 (fereastra ramane
+        // liber redimensionabila), care oricum interzicea implicit acest mod.
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("Despre Master Control Studio Pro") { showAboutPanel() }
@@ -43,5 +51,13 @@ private struct ScaledContentView: View {
                 .scaleEffect(scale)
                 .position(x: geo.size.width / 2, y: geo.size.height / 2)
         }
+        // BUG REAL, gasit 2026-08-31: minimul de fereastra (Regula 18)
+        // trebuie aplicat AICI, pe containerul din AFARA scalarii — daca
+        // era pus in interiorul `ContentView` (cum era inainte), acel
+        // `.frame(minWidth:900, minHeight:600)` intern castiga mereu in
+        // fata dimensiunii mai mici cerute de `geo.size.width / scale`
+        // cand scale > 1, blocand complet efectul vizual (marimea textului
+        // parea sa nu faca NIMIC, indiferent ce optiune alegeai in Setari).
+        .frame(minWidth: 900, minHeight: 600)
     }
 }
