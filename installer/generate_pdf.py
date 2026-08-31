@@ -14,7 +14,7 @@ from reportlab.platypus import (
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-APP_VERSION = "2.7.0"
+APP_VERSION = "2.19.0"
 
 pdfmetrics.registerFont(TTFont("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Bold", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"))
@@ -165,11 +165,17 @@ RO = dict(
     deps_note="<b>Notă:</b> nu ai nevoie de Homebrew/Rclone/macFUSE decât dacă vrei să folosești Cloud Manager — restul modulelor funcționează fără ele.",
     h_modules="3. Modulele aplicației",
     modules=[
-        "<b>Rețea</b> — optimizare Gigabit/TCP la un click (necesită licență pentru aplicare).",
+        "<b>Rețea</b> — optimizare Gigabit/TCP la un click (necesită licență pentru aplicare). Apasă „Activează la pornire (persistent)” ca optimizarea să rămână activă și după ce repornești Mac-ul — altfel dispare la fiecare restart. Punctul verde/roșu arată dacă e chiar activă acum.",
+        "<b>Dashboard</b> — ecranul principal arată carduri cu starea reală (verde/roșu) a Securității, Rețelei și Dependențelor, fără să intri în fiecare modul — click pe orice card te duce direct acolo.",
+        "<b>DaVinci Resolve</b> — pe lângă auditul de Media Pool și sincronizarea de LUT-uri/Fusion: „Backup acum” salvează o copie .zip a bazei de date de proiecte (închide întâi Resolve!), iar aplicația te avertizează dacă Resolve pare blocat (proces activ, fără fereastră), cu buton de închidere forțată.",
         "<b>Cloud Manager</b> — adaugă conturi cloud, montează-le ca discuri, urcă/descarcă/sincronizează fișiere — vezi ghidul detaliat de mai jos (secțiunea 4).",
         "<b>Curățare & RAM</b> — „Analizează” arată spațiul recuperabil gratuit; curățarea efectivă necesită licență.",
         "<b>Tweak-uri Sistem</b> — Finder avansat, blocare .DS_Store, Touch ID pentru sudo, protecție Spotlight pe un folder ales.",
         "<b>Rosetta Inspector</b> — arată ce aplicații Intel mai ai; eliminarea Rosetta cere confirmare explicită (ireversibilă pentru acele aplicații).",
+        "<b>Dezinstalator</b> — alege orice aplicație instalată pe Mac (nu doar produse GDC), caut-o în listă, bifează ce urme vrei șters (Application Support, Cache, Preferințe, Loguri, LaunchAgents etc. — fiecare cu dimensiunea reală în MB) și apasă „Șterge selectate”. Categoriile marcate cu 🔒 (LaunchAgents/Daemons de sistem) cer parola de administrator, o singură dată. La final, aplicația verifică automat că programul chiar a dispărut din Applications.",
+        "<b>Monitor Procese</b> — arată în timp real ce consumă mult CPU/RAM chiar acum; apasă „Închide” lângă un proces blocat pentru a-l opri fără să deschizi Activity Monitor.",
+        "<b>Securitate</b> — verifică dintr-o privire (verde/roșu) dacă FileVault, System Integrity Protection, Gatekeeper, Firewall și XProtect sunt active; două butoane de acțiune sigură: „Activează Firewall + Stealth Mode” și „Cere parolă imediat la screensaver”.",
+        "<b>Fișiere mari</b> (în Curățare & RAM) — scanează Downloads/Desktop/Documents/Movies și arată cele mai mari 100 de fișiere; bifează ce vrei șters (trimis la Coșul de gunoi, nu definitiv).",
         "<b>Setări</b> — temă Sistem/Luminos/Întunecat, Mărime text, Limbă (Română/English/Español), profil (Nume/Email).",
     ],
     h_cloud="4. Cloud Manager — Ghid Complet",
@@ -252,11 +258,17 @@ EN = dict(
     deps_note="<b>Note:</b> you only need Homebrew/Rclone/macFUSE if you want to use Cloud Manager — the other modules work without them.",
     h_modules="3. App Modules",
     modules=[
-        "<b>Network</b> — one-click Gigabit/TCP tuning (requires a license to apply).",
+        "<b>Network</b> — one-click Gigabit/TCP tuning (requires a license to apply). Tap \"Enable at startup (persistent)\" so the tuning stays active after you restart your Mac — otherwise it resets on every reboot. The green/red dot shows whether it's actually active right now.",
+        "<b>Dashboard</b> — the home screen shows cards with the real status (green/red) of Security, Network and Dependencies, without opening each module — click any card to jump straight there.",
+        "<b>DaVinci Resolve</b> — besides the Media Pool audit and LUT/Fusion sync: \"Backup now\" saves a .zip copy of the project database (close Resolve first!), and the app warns you if Resolve seems stuck (process running, no window), with a force-quit button.",
         "<b>Cloud Manager</b> — add cloud accounts, mount them as drives, upload/download/sync files — see the detailed guide below (section 4).",
         "<b>Cleanup & RAM</b> — \"Analyze\" shows reclaimable space for free; actual cleanup requires a license.",
         "<b>System Tweaks</b> — advanced Finder, block .DS_Store, Touch ID for sudo, Spotlight protection on a chosen folder.",
         "<b>Rosetta Inspector</b> — shows which Intel apps you still have; removing Rosetta requires explicit confirmation (irreversible for those apps).",
+        "<b>Uninstaller</b> — pick any app installed on your Mac (not just GDC products), search it in the list, check which traces to remove (Application Support, Cache, Preferences, Logs, LaunchAgents, etc. — each with its real size in MB) and press \"Delete selected\". Categories marked 🔒 (system LaunchAgents/Daemons) require your admin password, once. At the end, the app confirms the program actually disappeared from Applications.",
+        "<b>Process Monitor</b> — shows in real time what's using a lot of CPU/RAM right now; press \"Close\" next to a stuck process to stop it without opening Activity Monitor.",
+        "<b>Security</b> — check at a glance (green/red) whether FileVault, System Integrity Protection, Gatekeeper, Firewall and XProtect are active; two safe one-click actions: \"Enable Firewall + Stealth Mode\" and \"Require password immediately at screensaver\".",
+        "<b>Large Files</b> (inside Cleanup & RAM) — scans Downloads/Desktop/Documents/Movies and shows the 100 largest files; check what to delete (sent to Trash, not permanently).",
         "<b>Settings</b> — System/Light/Dark theme, Text Size, Language (Română/English/Español), profile (Name/Email).",
     ],
     h_cloud="4. Cloud Manager — Full Guide",
@@ -339,11 +351,17 @@ ES = dict(
     deps_note="<b>Nota:</b> solo necesitas Homebrew/Rclone/macFUSE si quieres usar Cloud Manager — los demás módulos funcionan sin ellos.",
     h_modules="3. Módulos de la app",
     modules=[
-        "<b>Red</b> — optimización Gigabit/TCP con un clic (requiere licencia para aplicar).",
+        "<b>Red</b> — optimización Gigabit/TCP con un clic (requiere licencia para aplicar). Pulsa \"Activar al inicio (persistente)\" para que la optimización siga activa tras reiniciar el Mac — si no, se pierde en cada reinicio. El punto verde/rojo indica si está activa ahora mismo.",
+        "<b>Dashboard</b> — la pantalla principal muestra tarjetas con el estado real (verde/rojo) de Seguridad, Red y Dependencias, sin entrar en cada módulo — clic en cualquier tarjeta te lleva directo ahí.",
+        "<b>DaVinci Resolve</b> — además de la auditoría de Media Pool y la sincronización de LUTs/Fusion: \"Backup ahora\" guarda una copia .zip de la base de datos de proyectos (¡cierra Resolve primero!), y la app avisa si Resolve parece bloqueado (proceso activo, sin ventana), con botón de cierre forzado.",
         "<b>Cloud Manager</b> — añade cuentas cloud, móntalas como discos, sube/descarga/sincroniza archivos — ver la guía detallada abajo (sección 4).",
         "<b>Limpieza y RAM</b> — \"Analizar\" muestra el espacio recuperable gratis; la limpieza real requiere licencia.",
         "<b>Ajustes del Sistema</b> — Finder avanzado, bloqueo de .DS_Store, Touch ID para sudo, protección Spotlight en una carpeta elegida.",
         "<b>Inspector Rosetta</b> — muestra qué apps Intel aún tienes; eliminar Rosetta requiere confirmación explícita (irreversible para esas apps).",
+        "<b>Desinstalador</b> — elige cualquier app instalada en tu Mac (no solo productos GDC), búscala en la lista, marca qué rastros quieres borrar (Application Support, Caché, Preferencias, Registros, LaunchAgents, etc. — cada uno con su tamaño real en MB) y pulsa \"Eliminar seleccionados\". Las categorías marcadas con 🔒 (LaunchAgents/Daemons de sistema) piden tu contraseña de administrador, una sola vez. Al final, la app confirma que el programa realmente desapareció de Applications.",
+        "<b>Monitor de Procesos</b> — muestra en tiempo real qué consume mucho CPU/RAM ahora mismo; pulsa \"Cerrar\" junto a un proceso bloqueado para detenerlo sin abrir Monitor de Actividad.",
+        "<b>Seguridad</b> — comprueba de un vistazo (verde/rojo) si FileVault, System Integrity Protection, Gatekeeper, Firewall y XProtect están activos; dos acciones seguras con un clic: \"Activar Firewall + Modo Sigiloso\" y \"Pedir contraseña inmediatamente al salvapantallas\".",
+        "<b>Archivos grandes</b> (dentro de Limpieza y RAM) — escanea Downloads/Desktop/Documents/Movies y muestra los 100 archivos más grandes; marca qué borrar (enviado a la Papelera, no permanente).",
         "<b>Ajustes</b> — tema Sistema/Claro/Oscuro, Tamaño de texto, Idioma (Română/English/Español), perfil (Nombre/Correo).",
     ],
     h_cloud="4. Cloud Manager — Guía Completa",

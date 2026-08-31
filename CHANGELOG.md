@@ -1,5 +1,16 @@
 # Changelog — Master Control Studio Pro
 
+## v2.19.0 (2026-08-31) — FIX REAL: Mărime Text nu făcea nimic + ghid PDF actualizat
+
+Raportat direct de Cristi ("la setări la Mac când aleg text mic normal
+mare nu se întâmplă nimica"). Aceeași cauză deja documentată în alt produs
+GDC: `dynamicTypeSize` nu produce nicio schimbare vizibilă pe macOS.
+Înlocuit cu scalare vizuală directă (`.scaleEffect` pe întregul conținut) —
+verificat că mărimea chiar se schimbă acum. Ghidurile PDF (RO/EN/ES) au
+fost complet actualizate cu toate cele 9 module noi adăugate azi
+(Dezinstalator, Monitor Procese, Securitate, Fișiere mari, Dashboard,
+DaVinci Resolve backup/zombie, tuning rețea persistent).
+
 ## v2.18.0 (2026-08-31) — DaVinci Resolve: Backup bază de date + detectare proces blocat
 
 Modul nou în „DaVinci Resolve": backup cu un click al bazei de date de

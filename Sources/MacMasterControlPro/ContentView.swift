@@ -49,7 +49,6 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @State private var selection: SidebarItem? = .dashboard
-    @ObservedObject private var textScale = TextScaleManager.shared
     @ObservedObject private var language = LanguageStore.shared
     @StateObject private var dependencyChecker = DependencyChecker()
 
@@ -92,7 +91,6 @@ struct ContentView: View {
             }
         }
         .id(language.current) // forteaza refresh la schimbarea limbii
-        .dynamicTypeSize(textScale.current.dynamicTypeSize)
         .frame(minWidth: 900, minHeight: 600)
         .onAppear {
             dependencyChecker.checkAll()
