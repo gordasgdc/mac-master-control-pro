@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.15.0 (2026-08-31) — Dashboard cu status verde/roșu per modul
+
+Ecranul principal arată acum carduri cu starea reală a modulelor cheie
+(Securitate, Tuning rețea persistent, Dependențe) — verde/roșu vizibil
+FĂRĂ să intri în fiecare modul. Click pe orice card te duce direct acolo.
+
 ## v2.14.0 (2026-08-31) — Modul nou: Monitor Procese
 
 Vezi ce consumă CPU/RAM chiar acum (top 20, auto-actualizat la 3s) și
