@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.14.0 (2026-08-31) — Modul nou: Monitor Procese
+
+Vezi ce consumă CPU/RAM chiar acum (top 20, auto-actualizat la 3s) și
+închide direct un proces blocat — SIGTERM întâi, SIGKILL doar dacă
+insistă. Complementar „Aplicații de fundal la pornire" (Login Items).
+
 ## v2.13.0 (2026-08-31) — Curățare extinsă: Coș de gunoi, Mail, backup-uri iOS + Găsitor fișiere mari
 
 Categorii noi de curățare (tip CleanMyMac): Coșul de gunoi, atașamente
