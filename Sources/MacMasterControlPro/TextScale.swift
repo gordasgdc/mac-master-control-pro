@@ -34,14 +34,18 @@ enum TextScalePreference: String, CaseIterable, Identifiable {
 
 final class TextScaleManager: ObservableObject {
     static let shared = TextScaleManager()
-    private static let key = "MacMasterControlPro.textScale"
 
-    @Published var current: TextScalePreference {
-        didSet { UserDefaults.standard.set(current.rawValue, forKey: Self.key) }
-    }
+    // BUG REAL, gasit 2026-08-31 (raportat direct de Cristi): la un scale
+    // diferit de 1.0, `.scaleEffect` + `.position()` din `ScaledContentView`
+    // NU transforma corect zona de click (hit-testing) fata de ce se vede
+    // vizual pe ecran — daca aplicatia pornea deja cu o valoare salvata
+    // (ex. "Mare"), userul ramanea blocat AFARA din Setari, fara nicio cale
+    // sa revina la Normal din UI. Cerinta explicita: "aplicatiile sa se
+    // deschida in modul normal... dupa aia e la latitudinea fiecaruia cum
+    // vrea sa si-l modifice" — deci NU mai persistam alegerea intre
+    // repporniri, pornim mereu la Normal (safe, hit-testing corect din
+    // prima clipa), userul poate schimba oricand DIN sesiunea curenta.
+    @Published var current: TextScalePreference = .normal
 
-    private init() {
-        let raw = UserDefaults.standard.string(forKey: Self.key) ?? TextScalePreference.normal.rawValue
-        current = TextScalePreference(rawValue: raw) ?? .normal
-    }
+    private init() {}
 }
