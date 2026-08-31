@@ -5,3 +5,4 @@ dist/
 # la build din variabila de mediu GDC_GOOGLE_DRIVE_CLIENT_SECRET, vezi
 # build_installer.sh si GDCOAuthSecrets.generated.swift.
 Sources/MacMasterControlProCore/GDCOAuthSecrets.generated.swift
+GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.*
