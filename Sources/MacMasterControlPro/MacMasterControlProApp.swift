@@ -9,7 +9,7 @@ extension Notification.Name {
 struct MacMasterControlProApp: App {
     var body: some Scene {
         WindowGroup {
-            ScaledContentView()
+            ContentView()
                 .onAppear { ThemeManager.shared.applyNow() }
         }
         // BUG REAL, gasit 2026-08-31: `.windowResizability(.contentSize)`
@@ -48,29 +48,21 @@ struct MacMasterControlProApp: App {
     }
 }
 
-/// Mărime text (2026-08-31) — vezi nota din `TextScalePreference`
-/// (TextScale.swift) despre eșecul real al `dynamicTypeSize` pe această
-/// aplicație. Randăm `ContentView` la dimensiunea "1/scale" din spațiul
-/// disponibil, apoi îl mărim vizual cu `.scaleEffect` — port 1:1 al
-/// tehnicii deja dovedite în GDC Plugin Manager/Windows (`ScaleTransform`).
-private struct ScaledContentView: View {
-    @ObservedObject private var textScale = TextScaleManager.shared
-
-    var body: some View {
-        GeometryReader { geo in
-            let scale = textScale.current.scaleFactor
-            ContentView()
-                .frame(width: geo.size.width / scale, height: geo.size.height / scale)
-                .scaleEffect(scale)
-                .position(x: geo.size.width / 2, y: geo.size.height / 2)
-        }
-        // BUG REAL, gasit 2026-08-31: minimul de fereastra (Regula 18)
-        // trebuie aplicat AICI, pe containerul din AFARA scalarii — daca
-        // era pus in interiorul `ContentView` (cum era inainte), acel
-        // `.frame(minWidth:900, minHeight:600)` intern castiga mereu in
-        // fata dimensiunii mai mici cerute de `geo.size.width / scale`
-        // cand scale > 1, blocand complet efectul vizual (marimea textului
-        // parea sa nu faca NIMIC, indiferent ce optiune alegeai in Setari).
-        .frame(minWidth: 900, minHeight: 600)
-    }
-}
+// BUG REAL FINAL, confirmat direct de Cristi (2026-08-31): tehnica
+// `.scaleEffect` + `.position()` (fostul `ScaledContentView`, eliminat)
+// nu doar ca nu producea o schimbare vizibila (v2.19.0), dar dupa fix-ul
+// de layout (v2.20.0) a inceput sa rupa efectiv CLICK-urile — la orice
+// scale diferit de 1.0, tot ecranul Setari devenea neresponsiv (niciun
+// buton nu mai reactiona), blocand userul definitiv in acel ecran (nici
+// macar revenirea la "Normal" nu mai era posibila din UI). Motiv tehnic
+// probabil: NavigationSplitView e susdinut intern de NSSplitViewController
+// (AppKit), iar geometria de hit-testing a coloanelor lui nu se resincronizeaza
+// corect cu un `.scaleEffect` extern aplicat peste intreg continutul SwiftUI.
+//
+// Decizie: dupa 3 incercari esuate de reparare a acestei tehnici, o
+// ELIMINAM COMPLET — un bug care poate bloca ireversibil userul e mai grav
+// decat lipsa functiei. `TextScalePreference`/picker-ul din Setari raman
+// (Windows chiar functioneaza corect, port 1:1 confirmat de Cristi), dar
+// pe Mac raman DOAR cosmetic, fara efect vizual, pana la o implementare
+// non-riscanta (scalare reala per-Text/Font, nu transform global) —
+// de facut intr-o sesiune viitoare, dedicata, nu graba.

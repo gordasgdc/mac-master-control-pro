@@ -1,5 +1,17 @@
 # Changelog — Master Control Studio Pro
 
+## v2.22.0 (2026-08-31) — Mărime Text (Mac): eliminat mecanismul care bloca aplicația
+
+Confirmat de Cristi: v2.21.0 tot bloca aplicația la orice altă valoare
+decât „Normal" — nu doar navigarea, TOATE butoanele din Setări deveneau
+neresponsive. După 3 încercări de reparare a aceleiași tehnici
+(`scaleEffect`+`position`), am decis să o eliminăm complet — un bug care
+poate bloca ireversibil userul e mai grav decât lipsa efectului vizual.
+Selectorul „Mărime Text" rămâne în Setări (paritate UI cu Windows, unde
+funcționează corect), dar pe Mac rămâne DOAR cosmetic, fără efect vizual,
+până la o implementare non-riscantă într-o sesiune viitoare dedicată.
+Aplicația NU se mai poate bloca din acest ecran, indiferent ce alegi.
+
 ## v2.21.0 (2026-08-31) — FIX CRITIC: blocaj complet în Setări la Mărime Text ≠ Normal
 
 Raportat de Cristi: după ce alegea „Mare", aplicația rămânea blocată —
