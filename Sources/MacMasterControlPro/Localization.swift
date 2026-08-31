@@ -48,6 +48,7 @@ enum L {
         "sidebar.cloud": [.ro: "Cloud Manager", .en: "Cloud Manager", .es: "Gestor Cloud"],
         "sidebar.cleanup": [.ro: "Curățare & RAM", .en: "Cleanup & RAM", .es: "Limpieza y RAM"],
         "sidebar.uninstaller": [.ro: "Dezinstalator", .en: "Uninstaller", .es: "Desinstalador"],
+        "sidebar.security": [.ro: "Securitate", .en: "Security", .es: "Seguridad"],
         "sidebar.tweaks": [.ro: "Tweak-uri Sistem", .en: "System Tweaks", .es: "Ajustes del Sistema"],
         "sidebar.rosetta": [.ro: "Rosetta Inspector", .en: "Rosetta Inspector", .es: "Inspector Rosetta"],
         "sidebar.dependencies": [.ro: "Dependențe", .en: "Dependencies", .es: "Dependencias"],

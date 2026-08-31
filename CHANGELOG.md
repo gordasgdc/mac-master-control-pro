@@ -1,5 +1,13 @@
 # Changelog — Master Control Studio Pro
 
+## v2.12.0 (2026-08-31) — Modul nou: Securitate & Confidențialitate
+
+Verificări 🔴/🟢 (FileVault, System Integrity Protection, Gatekeeper,
+Firewall, XProtect, parolă la screensaver), plus 2 acțiuni sigure cu un
+click: activare Firewall + Stealth Mode, cerere parolă imediată la
+screensaver. Bazat pe recomandările din drduh/macOS-Security-and-Privacy-
+Guide — doar verificările/acțiunile care nu riscă să blocheze Mac-ul.
+
 ## v2.11.0 (2026-08-31) — Modul nou: Dezinstalator complet
 
 Șterge orice aplicație instalată (nu doar produse GDC) ÎMPREUNĂ cu toate
