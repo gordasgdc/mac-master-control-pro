@@ -25,6 +25,12 @@ struct ResolveToolsView: View {
     @State private var emailTestStatus: String?
     @State private var isSendingTest = false
 
+    @State private var dbSizeBytes: Int64 = 0
+    @State private var backups: [ResolveDatabaseBackupService.BackupEntry] = []
+    @State private var backupStatus: String?
+    @State private var isBackingUp = false
+    @State private var isResolveZombie = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("🎬 DaVinci Resolve").font(.title2).bold()
@@ -173,6 +179,59 @@ struct ResolveToolsView: View {
                 .padding(6)
             }
 
+            GroupBox("Backup bază de date proiecte") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Circle().fill(ResolveDatabaseBackupService.databaseExists() ? Color.green : Color.red).frame(width: 8, height: 8)
+                        Text(ResolveDatabaseBackupService.databaseExists()
+                             ? "Bază de date găsită — \(ByteCountFormatter.string(fromByteCount: dbSizeBytes, countStyle: .file))"
+                             : "Nicio bază de date locală găsită pe acest Mac")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Text("Închide Resolve înainte de backup — o copiere „la cald” poate corupe arhiva.")
+                        .font(.caption2).foregroundStyle(.orange)
+                    HStack {
+                        if isBackingUp { ProgressView().controlSize(.small) }
+                        Button("Backup acum") { runGated { performBackup() } }
+                            .disabled(isBackingUp || !ResolveDatabaseBackupService.databaseExists())
+                    }
+                    if let backupStatus {
+                        Text(backupStatus).font(.caption).foregroundStyle(backupStatus.hasPrefix("✔") ? .green : .red)
+                    }
+                    if !backups.isEmpty {
+                        Divider()
+                        Text("Backup-uri existente").font(.caption).bold()
+                        ForEach(backups.prefix(5)) { entry in
+                            HStack {
+                                Text(entry.date.formatted(date: .abbreviated, time: .shortened)).font(.caption)
+                                Spacer()
+                                Text(ByteCountFormatter.string(fromByteCount: entry.sizeBytes, countStyle: .file)).font(.caption2).foregroundStyle(.secondary)
+                                Button("Arată în Finder") { ResolveDatabaseBackupService.revealInFinder(entry.path) }
+                                    .font(.caption2).buttonStyle(.plain).foregroundStyle(.blue)
+                            }
+                        }
+                    }
+                }
+                .padding(6)
+            }
+
+            GroupBox("Resolve blocat (zombie)") {
+                HStack {
+                    Circle().fill(isResolveZombie ? Color.red : Color.green).frame(width: 8, height: 8)
+                    Text(isResolveZombie
+                         ? "Proces DaVinci Resolve activ, dar fără fereastră vizibilă — probabil blocat."
+                         : "Fără proces Resolve blocat detectat.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    if isResolveZombie {
+                        Button("Închide forțat", role: .destructive) {
+                            runGated { ResolveDatabaseBackupService.forceQuitResolve(); refreshResolveHealth() }
+                        }
+                    }
+                }
+                .padding(6)
+            }
+
             if !logLines.isEmpty {
                 TerminalLogView(lines: logLines)
             }
@@ -182,6 +241,8 @@ struct ResolveToolsView: View {
         .onAppear {
             cloud.refreshRemotes()
             if selectedRemote.isEmpty { selectedRemote = cloud.remotes.first?.name ?? "" }
+            refreshResolveHealth()
+            backups = ResolveDatabaseBackupService.listBackups()
         }
         .sheet(isPresented: $showGate) { TrialGateModal() }
     }
@@ -266,5 +327,30 @@ struct ResolveToolsView: View {
 
     private func runGated(_ action: @escaping () -> Void) {
         if license.isActivated { action() } else { showGate = true }
+    }
+
+    private func refreshResolveHealth() {
+        dbSizeBytes = ResolveDatabaseBackupService.databaseSizeBytes()
+        isResolveZombie = ResolveDatabaseBackupService.isResolveZombie()
+    }
+
+    private func performBackup() {
+        isBackingUp = true
+        backupStatus = nil
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let url = try ResolveDatabaseBackupService.createBackup()
+                DispatchQueue.main.async {
+                    backupStatus = "✔ Backup creat: \(url.lastPathComponent)"
+                    backups = ResolveDatabaseBackupService.listBackups()
+                    isBackingUp = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    backupStatus = "✘ \(error.localizedDescription)"
+                    isBackingUp = false
+                }
+            }
+        }
     }
 }

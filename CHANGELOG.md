@@ -1,5 +1,13 @@
 # Changelog — Master Control Studio Pro
 
+## v2.18.0 (2026-08-31) — DaVinci Resolve: Backup bază de date + detectare proces blocat
+
+Modul nou în „DaVinci Resolve": backup cu un click al bazei de date de
+proiecte (arhivă .zip, cu dată/oră, listă a backup-urilor existente) —
+blocat explicit dacă Resolve rulează, ca să nu corupă arhiva. Plus
+detectare „Resolve blocat" (proces activ, fără fereastră vizibilă) cu
+buton de închidere forțată.
+
 ## v2.17.0 (2026-08-31) — Dependențe: FFmpeg (opțional)
 
 Modulul Dependențe verifică acum și FFmpeg (codecuri suplimentare pentru
