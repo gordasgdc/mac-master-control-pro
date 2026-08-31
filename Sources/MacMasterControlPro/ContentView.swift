@@ -91,6 +91,7 @@ struct ContentView: View {
             }
         }
         .id(language.current) // forteaza refresh la schimbarea limbii
+        .frame(minWidth: 900, minHeight: 600)
         .onReceive(NotificationCenter.default.publisher(for: .mmcpOpenSettings)) { _ in
             selection = .settings
         }
