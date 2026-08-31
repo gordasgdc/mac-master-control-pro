@@ -3,7 +3,7 @@ import AppKit
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case dashboard, renderMode, loginItems, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, uninstaller, tweaks, rosetta, dependencies, settings
+    case dashboard, renderMode, loginItems, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, uninstaller, security, tweaks, rosetta, dependencies, settings
     var id: String { rawValue }
     var labelKey: String {
         switch self {
@@ -17,6 +17,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .cloud: return "sidebar.cloud"
         case .cleanup: return "sidebar.cleanup"
         case .uninstaller: return "sidebar.uninstaller"
+        case .security: return "sidebar.security"
         case .tweaks: return "sidebar.tweaks"
         case .rosetta: return "sidebar.rosetta"
         case .dependencies: return "sidebar.dependencies"
@@ -35,6 +36,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .cloud: return "cloud"
         case .cleanup: return "trash.circle"
         case .uninstaller: return "trash.slash"
+        case .security: return "checkmark.shield"
         case .tweaks: return "wrench.and.screwdriver"
         case .rosetta: return "cpu"
         case .dependencies: return "puzzlepiece.extension"
@@ -78,6 +80,7 @@ struct ContentView: View {
             case .cloud: CloudManagerView()
             case .cleanup: CleanupModuleView()
             case .uninstaller: UninstallerModuleView()
+            case .security: SecurityModuleView()
             case .tweaks: TweaksModuleView()
             case .rosetta: RosettaModuleView()
             case .dependencies: DependenciesModuleView(checker: dependencyChecker)
