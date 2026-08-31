@@ -91,6 +91,9 @@ struct ContentView: View {
             }
         }
         .id(language.current) // forteaza refresh la schimbarea limbii
+        .onReceive(NotificationCenter.default.publisher(for: .mmcpOpenSettings)) { _ in
+            selection = .settings
+        }
         .onAppear {
             dependencyChecker.checkAll()
             UpdateChecker.checkSilentlyOnLaunch { version, pkgURL in

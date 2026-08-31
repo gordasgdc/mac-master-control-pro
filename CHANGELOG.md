@@ -1,5 +1,20 @@
 # Changelog — Master Control Studio Pro
 
+## v2.21.0 (2026-08-31) — FIX CRITIC: blocaj complet în Setări la Mărime Text ≠ Normal
+
+Raportat de Cristi: după ce alegea „Mare", aplicația rămânea blocată —
+click pe „Setări" nu mai făcea nimic, nici măcar după repornire (valoarea
+rămânea salvată). Cauza reală: la un scale diferit de 1.0, zona de click
+nu se mai alinia cu ce se vedea pe ecran (limitare cunoscută a combinației
+`scaleEffect`+`position` din SwiftUI/macOS).
+
+**Fix, la cerere explicită**: aplicația pornește ACUM ÎNTOTDEAUNA cu
+Mărime Text „Normal", indiferent ce a fost ales anterior — alegerea nu se
+mai salvează între repporniri. Poți schimba oricând din sesiunea curentă.
+Plus: ⌘, (scurtătura standard macOS) deschide Setări direct, indiferent
+de starea sidebar-ului — plasă de siguranță dacă ar mai apărea vreodată o
+problemă similară.
+
 ## v2.20.0 (2026-08-31) — FIX REAL (2): Mărime Text tot nu se schimba
 
 v2.19.0 a înlocuit `dynamicTypeSize` cu scalare vizuală, dar Cristi a

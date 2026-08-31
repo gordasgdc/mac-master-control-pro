@@ -1,6 +1,10 @@
 import SwiftUI
 import AppKit
 
+extension Notification.Name {
+    static let mmcpOpenSettings = Notification.Name("mmcpOpenSettings")
+}
+
 @main
 struct MacMasterControlProApp: App {
     var body: some Scene {
@@ -23,6 +27,15 @@ struct MacMasterControlProApp: App {
             }
             CommandGroup(replacing: .help) {
                 Button("Ghid de Utilizare (PDF)") { GuidePDF.open() }
+            }
+            // Plasă de siguranță (2026-08-31): ⌘, e scurtătura STANDARD
+            // macOS pentru Preferences — deschide Setări indiferent de
+            // orice problemă viitoare de click în sidebar (vezi bug-ul de
+            // hit-testing de mai sus). Nu costă nimic sa existe, chiar daca
+            // sidebar-ul functioneaza normal.
+            CommandGroup(replacing: .appSettings) {
+                Button("Setări…") { NotificationCenter.default.post(name: .mmcpOpenSettings, object: nil) }
+                    .keyboardShortcut(",", modifiers: .command)
             }
         }
     }
