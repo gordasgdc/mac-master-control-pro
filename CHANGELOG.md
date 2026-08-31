@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.17.0 (2026-08-31) — Dependențe: FFmpeg (opțional)
+
+Modulul Dependențe verifică acum și FFmpeg (codecuri suplimentare pentru
+export video) — instalare cu un click prin Homebrew, la fel ca Rclone/
+macFUSE. Fiind opțional, lipsa lui nu blochează starea verde generală.
+
 ## v2.16.0 (2026-08-31) — Cloud Manager: indicator verde/roșu standardizat
 
 Rândul fiecărui remote Cloud arată acum punctul verde/roșu (montat/
