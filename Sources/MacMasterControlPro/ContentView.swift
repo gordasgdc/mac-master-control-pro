@@ -3,13 +3,14 @@ import AppKit
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case dashboard, renderMode, loginItems, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, uninstaller, security, tweaks, rosetta, dependencies, settings
+    case dashboard, renderMode, loginItems, processMonitor, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, uninstaller, security, tweaks, rosetta, dependencies, settings
     var id: String { rawValue }
     var labelKey: String {
         switch self {
         case .dashboard: return "sidebar.dashboard"
         case .renderMode: return "sidebar.renderMode"
         case .loginItems: return "sidebar.loginItems"
+        case .processMonitor: return "sidebar.processMonitor"
         case .diskHealth: return "sidebar.diskHealth"
         case .resolveTools: return "sidebar.resolveTools"
         case .windowLayouts: return "sidebar.windowLayouts"
@@ -29,6 +30,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .dashboard: return "gauge.with.dots.needle.67percent"
         case .renderMode: return "bolt.circle"
         case .loginItems: return "power.circle"
+        case .processMonitor: return "speedometer"
         case .diskHealth: return "internaldrive"
         case .resolveTools: return "film"
         case .windowLayouts: return "macwindow.on.rectangle"
