@@ -42,9 +42,32 @@ struct NetworkModuleView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Forțează 1 Gbps Full-Duplex, DNS Cloudflare/Google, buffere TCP 1MB pe plăcile bifate.")
                         .foregroundStyle(.secondary)
-                    Button("Aplică Tuning pe selecție") { runGated { service.applyTuning(selectedAdapters: selected) } }
+                    Button("Aplică Tuning pe selecție (acum, o dată)") { runGated { service.applyTuning(selectedAdapters: selected) } }
+                        .disabled(selected.isEmpty)
+
+                    Divider()
+
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(service.persistentTuningActive ? Color.green : Color.red)
+                            .frame(width: 8, height: 8)
+                        Text(service.persistentTuningActive
+                             ? "Tuning persistent ACTIV — se reaplică automat la fiecare pornire"
+                             : "Tuning persistent INACTIV — dispare la restart")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Button("Activează la pornire (persistent)") {
+                            runGated { service.installPersistentTuning(selectedAdapters: selected) }
+                        }
                         .buttonStyle(.borderedProminent)
                         .disabled(selected.isEmpty)
+
+                        if service.persistentTuningActive {
+                            Button("Dezactivează", role: .destructive) { runGated { service.removePersistentTuning() } }
+                        }
+                    }
                 }
                 .padding(6)
             }
@@ -61,7 +84,10 @@ struct NetworkModuleView: View {
             Spacer()
         }
         .padding(24)
-        .onAppear { service.scanAdapters() }
+        .onAppear {
+            service.scanAdapters()
+            service.refreshPersistentTuningStatus()
+        }
         .sheet(isPresented: $showGate) { TrialGateModal() }
     }
 

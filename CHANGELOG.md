@@ -1,5 +1,24 @@
 # Changelog — Master Control Studio Pro
 
+## v2.11.0 (2026-08-31) — Modul nou: Dezinstalator complet
+
+Șterge orice aplicație instalată (nu doar produse GDC) ÎMPREUNĂ cu toate
+urmele ei — Application Support, Caches, Preferences, Saved Application
+State, Logs, HTTPStorages, WebKit, Containers, Group Containers,
+LaunchAgents/LaunchDaemons (userul curent + sistem). Fiecare categorie e
+bifabilă separat, cu dimensiunea reală (MB), înainte de ștergere. Verifică
+la final că aplicația chiar a dispărut din `/Applications`.
+
+## v2.10.0 (2026-08-31) — Tuning de rețea persistent la pornire
+
+Tuning-ul Gigabit/TCP se putea aplica doar manual, din aplicație, și
+dispărea la fiecare repornire a Mac-ului (setările de kernel nu
+supraviețuiesc unui restart). Nou: buton „Activează la pornire
+(persistent)" — instalează un serviciu de sistem care reaplică automat
+aceeași configurare la fiecare pornire, fără să mai deschizi aplicația.
+Indicator 🔴/🟢 arată dacă tuning-ul e activ chiar acum, nu doar dacă a
+fost activat cândva.
+
 ## v2.9.1 (2026-08-31) — Preț dinamic din Furnizor
 Suma de donație din modalul de Trial + mesajul WhatsApp se citește acum
 din `pricing.json` (Furnizor), nu mai e fixă în cod — orice ofertă
