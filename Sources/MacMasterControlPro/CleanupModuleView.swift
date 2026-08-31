@@ -9,6 +9,9 @@ struct CleanupModuleView: View {
     @State private var selectedSnapshots: Set<String> = []
     @State private var status = ""
     @State private var logLines: [String] = []
+    @State private var bigFiles: [BigFile] = []
+    @State private var selectedBigFiles: Set<BigFile> = []
+    @State private var isScanningBigFiles = false
 
     private var selectedBytes: Int64 { selectedItems.reduce(0) { $0 + $1.sizeBytes } }
     private var totalBytes: Int64 { service.items.reduce(0) { $0 + $1.sizeBytes } }
@@ -100,6 +103,47 @@ struct CleanupModuleView: View {
                 .padding(6)
             }
 
+            GroupBox {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Fișiere mari (Downloads/Desktop/Documents/Movies)").font(.headline)
+                        Spacer()
+                        if isScanningBigFiles { ProgressView().controlSize(.small) }
+                        Button("Scanează (> 200 MB)") { scanBigFiles() }
+                    }
+                    if bigFiles.isEmpty && !isScanningBigFiles {
+                        Text("Apasă „Scanează” — arată cele mai mari 100 de fișiere din folderele unde se acumulează uitate.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    ForEach(bigFiles) { file in
+                        HStack {
+                            Toggle(isOn: Binding(
+                                get: { selectedBigFiles.contains(file) },
+                                set: { checked in
+                                    if checked { selectedBigFiles.insert(file) } else { selectedBigFiles.remove(file) }
+                                }
+                            )) {
+                                Text(file.name).lineLimit(1).truncationMode(.middle)
+                            }
+                            Spacer()
+                            Text(file.sizeDescription).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if !bigFiles.isEmpty {
+                        Button("Șterge fișierele selectate", role: .destructive) {
+                            runGated {
+                                let toDelete = bigFiles.filter { selectedBigFiles.contains($0) }
+                                BigFileFinderService.delete(toDelete) { logLines.append($0) }
+                                selectedBigFiles = []
+                                scanBigFiles()
+                            }
+                        }
+                        .disabled(selectedBigFiles.isEmpty)
+                    }
+                }
+                .padding(6)
+            }
+
             GroupBox("RAM & DNS") {
                 Button("Purjare RAM + Flush DNS") {
                     runGated { service.purgeRAMAndFlushDNS(); status = "✔ RAM eliberat, DNS golit." }
@@ -122,5 +166,16 @@ struct CleanupModuleView: View {
 
     private func runGated(_ action: @escaping () -> Void) {
         if license.isActivated { action() } else { showGate = true }
+    }
+
+    private func scanBigFiles() {
+        isScanningBigFiles = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = BigFileFinderService.scan()
+            DispatchQueue.main.async {
+                bigFiles = result
+                isScanningBigFiles = false
+            }
+        }
     }
 }

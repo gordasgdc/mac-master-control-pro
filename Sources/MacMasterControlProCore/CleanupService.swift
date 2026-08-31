@@ -28,6 +28,12 @@ public final class CleanupService: ObservableObject {
         ("System Caches", NSHomeDirectory() + "/Library/Caches"),
         ("Adobe Media Cache", NSHomeDirectory() + "/Library/Application Support/Adobe/Common/Media Cache Files"),
         ("DaVinci Resolve CacheClip", NSHomeDirectory() + "/Library/Application Support/Blackmagic Design/DaVinci Resolve/CacheClip"),
+        // Categorii tip CleanMyMac (2026-08-31), fara scanare de "malware"
+        // falsa/agresiva — doar locatii reale, verificabile, care se umplu
+        // in timp fara ca userul sa observe.
+        ("Coșul de gunoi (Trash)", NSHomeDirectory() + "/.Trash"),
+        ("Atașamente Mail descărcate", NSHomeDirectory() + "/Library/Containers/com.apple.mail/Data/Library/Mail Downloads"),
+        ("Backup-uri iOS (MobileSync)", NSHomeDirectory() + "/Library/Application Support/MobileSync/Backup"),
     ]
 
     /// Scanare libera (permisa in Trial) - calculeaza GB per item, fara sa stearga nimic.

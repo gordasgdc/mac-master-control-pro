@@ -1,5 +1,12 @@
 # Changelog — Master Control Studio Pro
 
+## v2.13.0 (2026-08-31) — Curățare extinsă: Coș de gunoi, Mail, backup-uri iOS + Găsitor fișiere mari
+
+Categorii noi de curățare (tip CleanMyMac): Coșul de gunoi, atașamente
+Mail descărcate, backup-uri iOS orfane (MobileSync). Plus modul nou
+„Fișiere mari" — scanează Downloads/Desktop/Documents/Movies și arată top
+100 fișiere peste 200 MB, cu ștergere selectivă (Coș de gunoi, reversibil).
+
 ## v2.12.0 (2026-08-31) — Modul nou: Securitate & Confidențialitate
 
 Verificări 🔴/🟢 (FileVault, System Integrity Protection, Gatekeeper,
