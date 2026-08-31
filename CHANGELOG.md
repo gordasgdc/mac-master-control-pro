@@ -1,5 +1,10 @@
 # Changelog — Master Control Studio Pro
 
+## v2.9.1 (2026-08-31) — Preț dinamic din Furnizor
+Suma de donație din modalul de Trial + mesajul WhatsApp se citește acum
+din `pricing.json` (Furnizor), nu mai e fixă în cod — orice ofertă
+programată apare automat, fără recompilare.
+
 ## v2.9.0 (2026-08-31) — 7 module noi de optimizare workflow
 
 Cerință directă: "ce mai pot introduce ca să fie o aplicație foarte
