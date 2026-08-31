@@ -75,6 +75,7 @@ struct ContentView: View {
             switch selection {
             case .renderMode: RenderModeView()
             case .loginItems: LoginItemsView()
+            case .processMonitor: ProcessMonitorView()
             case .diskHealth: DiskHealthView()
             case .resolveTools: ResolveToolsView()
             case .windowLayouts: WindowLayoutsView()
@@ -87,7 +88,7 @@ struct ContentView: View {
             case .rosetta: RosettaModuleView()
             case .dependencies: DependenciesModuleView(checker: dependencyChecker)
             case .settings: SettingsView()
-            default: DashboardView(checker: dependencyChecker, goToDependencies: { selection = .dependencies })
+            default: DashboardView(checker: dependencyChecker, navigate: { selection = $0 })
             }
         }
         .id(language.current) // forteaza refresh la schimbarea limbii
@@ -111,9 +112,48 @@ struct ContentView: View {
     }
 }
 
+/// Un modul + starea lui reala (verde/rosu), fara sa intri in el —
+/// cerinta directa (2026-08-31): "sa apara verde/rosu la orice tip de
+/// configurare, direct pe dashboard".
+private struct DashboardCard: View {
+    let icon: String
+    let title: String
+    let isGood: Bool?  // nil = inca se verifica
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: icon).font(.title2)
+                    Spacer()
+                    if let isGood {
+                        Circle().fill(isGood ? Color.green : Color.red).frame(width: 10, height: 10)
+                    } else {
+                        ProgressView().controlSize(.mini)
+                    }
+                }
+                Text(title).font(.headline).multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .frame(height: 90, alignment: .topLeading)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct DashboardView: View {
     @ObservedObject var checker: DependencyChecker
-    let goToDependencies: () -> Void
+    let navigate: (SidebarItem) -> Void
+
+    @State private var securityGood: Bool?
+    @State private var networkTuningActive: Bool?
+
+    private static let columns = [GridItem(.adaptive(minimum: 220), spacing: 14)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -121,9 +161,17 @@ struct DashboardView: View {
             Text(L.t("dashboard.tagline"))
                 .foregroundStyle(.secondary)
 
+            LazyVGrid(columns: Self.columns, spacing: 14) {
+                DashboardCard(icon: "checkmark.shield", title: "Securitate", isGood: securityGood) { navigate(.security) }
+                DashboardCard(icon: "network", title: "Tuning rețea persistent", isGood: networkTuningActive) { navigate(.network) }
+                DashboardCard(icon: "puzzlepiece.extension", title: "Dependențe",
+                              isGood: checker.items.isEmpty ? nil : checker.allInstalled) { navigate(.dependencies) }
+                DashboardCard(icon: "power.circle", title: "Aplicații de fundal", isGood: nil) { navigate(.loginItems) }
+            }
+
             if !checker.items.isEmpty, !checker.allInstalled {
                 Button {
-                    goToDependencies()
+                    navigate(.dependencies)
                 } label: {
                     Label(L.t("dashboard.depsWarning"), systemImage: "exclamationmark.triangle.fill")
                 }
@@ -134,6 +182,17 @@ struct DashboardView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .task { await refreshStatuses() }
+    }
+
+    private func refreshStatuses() async {
+        let net = NetworkService()
+        net.refreshPersistentTuningStatus()
+        let security = SecurityService.runAllChecks()
+        await MainActor.run {
+            networkTuningActive = net.persistentTuningActive
+            securityGood = security.allSatisfy(\.isGood)
+        }
     }
 }
 
