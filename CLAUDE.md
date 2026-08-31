@@ -749,6 +749,23 @@ de Cristi: dupa configurarea manuala a unui client propriu pe un cont de
 test (inainte de a fi embedded in cod), viteza masurata cu `nettop` a
 crescut de la ~2.5 Mbit/s la ~27-47 Mbit/s pe transferuri reale.
 
+## Etapa 2026-08-31 (2) — Notificare pe email pentru randare + release v2.9.0
+
+Completare la notificarea de randare (Etapa anterioară): Cristi a intrebat
+explicit "nu inteleg cum functioneaza daca nu vad sa pun nr de telefon" -
+clarificat ca WhatsApp NU poate trimite automat fara click manual (doar
+deschide o conversatie pre-completata, la fel ca la activarea licentei) -
+email e SINGURA varianta cu adevarat automata catre telefon.
+`EmailNotifierService.swift` (nou) - trimite prin `curl` (preinstalat pe
+orice Mac, `smtp://...--ssl-reqd`), evita implementarea manuala a
+protocolului SMTP. Stocare LOCALA in clar (`UserDefaults`) - UI recomanda
+explicit o "parola de aplicatie" Gmail/Outlook, nu parola reala a contului.
+Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
+
+**Release v2.9.0**: toate cele 7 module de mai sus + notificarea pe email,
+publicate ca produs final (Mac semnat+notarizat, Windows CI real +
+installer Inno Setup) - vezi CHANGELOG.md.
+
 ## Rebuild local
 
 ```bash

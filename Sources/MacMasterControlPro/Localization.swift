@@ -39,6 +39,11 @@ final class LanguageStore: ObservableObject {
 enum L {
     private static let strings: [String: [AppLanguage: String]] = [
         "sidebar.dashboard": [.ro: "Dashboard", .en: "Dashboard", .es: "Panel"],
+        "sidebar.renderMode": [.ro: "Mod Randare", .en: "Render Mode", .es: "Modo Renderizado"],
+        "sidebar.loginItems": [.ro: "Pornire Sistem", .en: "Startup Apps", .es: "Apps de Inicio"],
+        "sidebar.diskHealth": [.ro: "Sănătate Discuri", .en: "Disk Health", .es: "Salud de Discos"],
+        "sidebar.resolveTools": [.ro: "DaVinci Resolve", .en: "DaVinci Resolve", .es: "DaVinci Resolve"],
+        "sidebar.windowLayouts": [.ro: "Layout Ferestre", .en: "Window Layouts", .es: "Diseños de Ventanas"],
         "sidebar.network": [.ro: "Rețea", .en: "Network", .es: "Red"],
         "sidebar.cloud": [.ro: "Cloud Manager", .en: "Cloud Manager", .es: "Gestor Cloud"],
         "sidebar.cleanup": [.ro: "Curățare & RAM", .en: "Cleanup & RAM", .es: "Limpieza y RAM"],
