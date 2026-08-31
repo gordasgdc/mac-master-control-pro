@@ -6,6 +6,7 @@ import MacMasterControlProCore
 /// care scrie pe disc/sistem. Analiza (scanarile) ramane libera.
 struct TrialGateModal: View {
     @ObservedObject var license = LicenseStore.shared
+    @ObservedObject private var pricing = PricingChecker.shared
     @Environment(\.dismiss) private var dismiss
     @State private var key: String = ""
     @State private var showError = false
@@ -20,6 +21,14 @@ struct TrialGateModal: View {
             Text(L.t("trial.body"))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
+            // Preț dinamic (Regula 27) - vezi PricingChecker. Fail-open pe
+            // 17 € (valoarea hardcodata in L.t("trial.body")) daca
+            // pricing.json nu e accesibil.
+            if pricing.activePromo != nil {
+                Text("🔥 Ofertă activă: \(pricing.displayText)")
+                    .font(.caption).bold()
+                    .foregroundStyle(.orange)
+            }
             TextField(L.t("trial.key"), text: $key)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 280)
@@ -46,7 +55,7 @@ struct TrialGateModal: View {
                 .buttonStyle(.borderedProminent)
             }
             Button {
-                let message = "Salut! Doresc să achiziționez / activez licența Lifetime (17 EUR) pentru Mac-ul meu — Master Control Studio Pro. Machine ID: \(MachineID.display)"
+                let message = "Salut! Doresc să donez \(pricing.displayText) pentru licența Lifetime — Master Control Studio Pro. Machine ID: \(MachineID.display)"
                 NSWorkspace.shared.open(WhatsAppLink.url(text: message))
             } label: {
                 Label(L.t("trial.whatsapp"), systemImage: "message.fill")
@@ -60,5 +69,6 @@ struct TrialGateModal: View {
         }
         .padding(32)
         .frame(width: 380)
+        .onAppear { pricing.refresh() }
     }
 }
