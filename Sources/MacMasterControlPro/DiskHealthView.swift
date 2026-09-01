@@ -39,6 +39,7 @@ struct DiskHealthView: View {
                             }
                             .disabled(testingPath != nil)
                             .controlSize(.small)
+                            .help("Scrie temporar 256 MB pe acest disc și măsoară cât durează — un test real de viteză, nu o valoare din specificațiile producătorului.")
                         }
 
                         ProgressView(value: 100 - disk.freePercent, total: 100)

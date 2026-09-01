@@ -51,6 +51,7 @@ struct ProcessMonitorView: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 70, alignment: .trailing)
                     Button("Închide") { terminate(process, force: false) }
+                        .help("Cere procesului să se închidă normal — dacă nu răspunde în o secundă, insistă automat cu o închidere forțată.")
                         .controlSize(.small)
                 }
             }

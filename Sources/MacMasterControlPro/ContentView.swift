@@ -45,6 +45,30 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .settings: return "gearshape"
         }
     }
+
+    /// Descriere scurtă, afișată la hover pe rândul din sidebar — cerință
+    /// directă (2026-09-01): "cand te duci cu mouse-ul peste un buton,
+    /// sa-ti apara o descriere de ce face".
+    var tooltip: String {
+        switch self {
+        case .dashboard: return "Privire de ansamblu — starea generală a Mac-ului dintr-o privire."
+        case .renderMode: return "Oprește temporar Spotlight/Time Machine/alte procese de fundal cât randezi în DaVinci Resolve."
+        case .loginItems: return "Vezi și oprești aplicațiile care pornesc automat odată cu Mac-ul."
+        case .processMonitor: return "Procesele active acum, sortabile după CPU sau RAM — închide ce consumă prea mult."
+        case .diskHealth: return "Spațiu liber, status SMART și test de viteză pentru discurile montate."
+        case .resolveTools: return "Notificare la final de randare, verificare Media Pool, sincronizare LUT-uri, backup bază de date."
+        case .windowLayouts: return "Salvează și restaurează aranjamentul ferestrelor pe ecran."
+        case .network: return "Configurare și optimizare rețea, persistentă la repornire."
+        case .cloud: return "Conectează și gestionează conturi Cloud (Drive, Dropbox, S3 și altele)."
+        case .cleanup: return "Șterge cache-uri recuperabile, fișiere mari uitate, eliberează RAM."
+        case .uninstaller: return "Dezinstalează complet una sau mai multe aplicații, cu toate urmele lor."
+        case .security: return "Verifică setările de securitate ale Mac-ului, cu ghid pas-cu-pas pentru ce lipsește."
+        case .tweaks: return "Ajustări rapide de sistem și accesibilitate."
+        case .rosetta: return "Verifică ce aplicații rulează prin Rosetta (emulare Intel) pe un Mac Apple Silicon."
+        case .dependencies: return "Componentele externe de care aplicația are nevoie — instalare cu un click."
+        case .settings: return "Temă, limbă, licență și alte preferințe ale aplicației."
+        }
+    }
 }
 
 struct ContentView: View {
@@ -66,6 +90,7 @@ struct ContentView: View {
                         }
                     }
                     .tag(item)
+                    .help(item.tooltip)
                 }
                 SidebarFooterView()
             }

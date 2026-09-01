@@ -1,5 +1,19 @@
 # Changelog — Master Control Studio Pro
 
+## v2.24.0 (2026-09-01) — Dezinstalare în masă, scanare mult mai completă, tooltips
+
+- **Dezinstalator** — poți acum bifa mai multe aplicații deodată și le
+  dezinstalezi complet dintr-un singur click, nu una câte una.
+- **Scanare de resturi mult mai completă** — pe lângă locațiile deja
+  verificate, adaugă acum Preferences (ByHost), Application Scripts,
+  Autosave Information, containerul iCloud Drive, și multe locații de
+  sistem (Application Support/Preferences la nivel de sistem, panouri de
+  preferințe, plugin-uri Internet/QuickLook/Audio, widget-uri, meniuri
+  contextuale).
+- **Descrieri la hover (tooltips)** — pe toate elementele din meniul
+  lateral și pe câteva butoane mai puțin evidente, explică ce fac înainte
+  să apeși.
+
 ## v2.23.0 (2026-08-31) — Sănătate Discuri, Fișiere mari, Securitate
 
 - **„Testează viteza” (Sănătate Discuri) nu arăta niciun rezultat** —
