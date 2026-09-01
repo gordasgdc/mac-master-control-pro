@@ -3,7 +3,7 @@ import AppKit
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case dashboard, renderMode, loginItems, processMonitor, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, uninstaller, security, tweaks, rosetta, dependencies, settings
+    case dashboard, renderMode, loginItems, processMonitor, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, duplicates, uninstaller, security, tweaks, rosetta, dependencies, settings
     var id: String { rawValue }
     var labelKey: String {
         switch self {
@@ -17,6 +17,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .network: return "sidebar.network"
         case .cloud: return "sidebar.cloud"
         case .cleanup: return "sidebar.cleanup"
+        case .duplicates: return "sidebar.duplicates"
         case .uninstaller: return "sidebar.uninstaller"
         case .security: return "sidebar.security"
         case .tweaks: return "sidebar.tweaks"
@@ -37,6 +38,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .network: return "network"
         case .cloud: return "cloud"
         case .cleanup: return "trash.circle"
+        case .duplicates: return "doc.on.doc"
         case .uninstaller: return "trash.slash"
         case .security: return "checkmark.shield"
         case .tweaks: return "wrench.and.screwdriver"
@@ -61,6 +63,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .network: return "Configurare și optimizare rețea, persistentă la repornire."
         case .cloud: return "Conectează și gestionează conturi Cloud (Drive, Dropbox, S3 și altele)."
         case .cleanup: return "Șterge cache-uri recuperabile, fișiere mari uitate, eliberează RAM."
+        case .duplicates: return "Găsește fișiere identice ca și conținut și te lasă să alegi ce ștergi."
         case .uninstaller: return "Dezinstalează complet una sau mai multe aplicații, cu toate urmele lor."
         case .security: return "Verifică setările de securitate ale Mac-ului, cu ghid pas-cu-pas pentru ce lipsește."
         case .tweaks: return "Ajustări rapide de sistem și accesibilitate."
@@ -69,19 +72,73 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .settings: return "Temă, limbă, licență și alte preferințe ale aplicației."
         }
     }
+
+    /// Cuvinte-cheie suplimentare de căutare, dincolo de nume/descriere —
+    /// cerință directă (Cristi, 2026-09-01): "sa pot cauta ... reglare,
+    /// duplicate, dezinstalare ... prin toata aplicatia". Sinonime uzuale
+    /// care altfel n-ar da match pe numele oficial al modulului.
+    var searchKeywords: String {
+        switch self {
+        case .tweaks: return "reglare setari sistem accesibilitate"
+        case .uninstaller: return "dezinstalare sterge aplicatii dezinstalare"
+        case .duplicates: return "duplicate copii identice fisiere"
+        case .cleanup: return "curatare ram cache fisiere mari"
+        case .diskHealth: return "disc viteza smart"
+        case .security: return "securitate filevault sip gatekeeper firewall"
+        case .cloud: return "cloud drive dropbox onedrive rclone"
+        case .network: return "retea wifi dns"
+        case .resolveTools: return "davinci resolve randare email"
+        case .processMonitor: return "procese cpu ram inchide"
+        default: return ""
+        }
+    }
 }
 
 struct ContentView: View {
     @State private var selection: SidebarItem? = .dashboard
     @ObservedObject private var language = LanguageStore.shared
     @StateObject private var dependencyChecker = DependencyChecker()
+    @State private var searchText = ""
+
+    /// Cerință directă (Cristi, 2026-09-01): "un cautator ... sa pot cauta
+    /// prin toata aplicatia" — filtrare simplă pe nume + descriere +
+    /// sinonime, diacritice ignorate (userul scrie fără diacritice des).
+    private var filteredItems: [SidebarItem] {
+        guard !searchText.isEmpty else { return SidebarItem.allCases }
+        let query = searchText.folding(options: .diacriticInsensitive, locale: nil).lowercased()
+        return SidebarItem.allCases.filter { item in
+            let haystack = [L.t(item.labelKey), item.tooltip, item.searchKeywords]
+                .joined(separator: " ")
+                .folding(options: .diacriticInsensitive, locale: nil)
+                .lowercased()
+            return haystack.contains(query)
+        }
+    }
 
     var body: some View {
         NavigationSplitView {
             // Frati intr-un VStack, NICIODATA .safeAreaInset direct pe List
             // (Regula 24 — bug de suprapunere la resize rapid al ferestrei).
             VStack(spacing: 0) {
-                List(SidebarItem.allCases, selection: $selection) { item in
+                HStack {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Caută (ex: duplicate, dezinstalare, reglare)…", text: $searchText)
+                        .textFieldStyle(.plain)
+                    if !searchText.isEmpty {
+                        Button { searchText = "" } label: { Image(systemName: "xmark.circle.fill") }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(8)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.gray.opacity(0.15)))
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
+
+                if filteredItems.isEmpty {
+                    Text("Niciun rezultat.").font(.caption).foregroundStyle(.secondary).padding()
+                }
+                List(filteredItems, selection: $selection) { item in
                     HStack {
                         Label(L.t(item.labelKey), systemImage: item.icon)
                         if item == .dependencies, !dependencyChecker.allInstalled, !dependencyChecker.items.isEmpty {
@@ -106,6 +163,7 @@ struct ContentView: View {
             case .network: NetworkModuleView()
             case .cloud: CloudManagerView()
             case .cleanup: CleanupModuleView()
+            case .duplicates: DuplicateFinderView()
             case .uninstaller: UninstallerModuleView()
             case .security: SecurityModuleView()
             case .tweaks: TweaksModuleView()

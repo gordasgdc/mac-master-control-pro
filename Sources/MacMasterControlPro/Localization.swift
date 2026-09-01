@@ -47,6 +47,7 @@ enum L {
         "sidebar.network": [.ro: "Rețea", .en: "Network", .es: "Red"],
         "sidebar.cloud": [.ro: "Cloud Manager", .en: "Cloud Manager", .es: "Gestor Cloud"],
         "sidebar.cleanup": [.ro: "Curățare & RAM", .en: "Cleanup & RAM", .es: "Limpieza y RAM"],
+        "sidebar.duplicates": [.ro: "Duplicate", .en: "Duplicates", .es: "Duplicados"],
         "sidebar.uninstaller": [.ro: "Dezinstalator", .en: "Uninstaller", .es: "Desinstalador"],
         "sidebar.security": [.ro: "Securitate", .en: "Security", .es: "Seguridad"],
         "sidebar.processMonitor": [.ro: "Procese", .en: "Processes", .es: "Procesos"],
