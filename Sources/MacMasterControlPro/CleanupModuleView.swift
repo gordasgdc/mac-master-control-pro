@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MacMasterControlProCore
 
 struct CleanupModuleView: View {
@@ -9,6 +10,7 @@ struct CleanupModuleView: View {
     @State private var selectedSnapshots: Set<String> = []
     @State private var status = ""
     @State private var logLines: [String] = []
+    @StateObject private var scanFolders = BigFileScanFolders.shared
     @State private var bigFiles: [BigFile] = []
     @State private var selectedBigFiles: Set<BigFile> = []
     @State private var isScanningBigFiles = false
@@ -17,6 +19,15 @@ struct CleanupModuleView: View {
     private var totalBytes: Int64 { service.items.reduce(0) { $0 + $1.sizeBytes } }
 
     var body: some View {
+        // BUG REAL (raportat de Cristi, 2026-08-31: "imi apare o lista de
+        // bifat, dar nu vad butonul de sters sau sa ma intorc") — pagina
+        // intreaga era un VStack fara ScrollView; cu pana la 100 de
+        // fisiere mari listate, continutul depasea usor inaltimea
+        // ferestrei, iar tot ce era dedesubt (butonul "Sterge fisierele
+        // selectate", sectiunea RAM & DNS) devenea inaccesibil, in afara
+        // ecranului, fara nicio bara de scroll care sa arate ca mai
+        // exista continut. Fix: intreaga pagina scroleaza acum.
+        ScrollView {
         VStack(alignment: .leading, spacing: 20) {
             Text("🧹 Curățare & RAM").font(.title2).bold()
 
@@ -106,11 +117,47 @@ struct CleanupModuleView: View {
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Fișiere mari (Downloads/Desktop/Documents/Movies)").font(.headline)
+                        Text("Fișiere mari").font(.headline)
                         Spacer()
                         if isScanningBigFiles { ProgressView().controlSize(.small) }
                         Button("Scanează (> 200 MB)") { scanBigFiles() }
+                            .disabled(scanFolders.activeRoots.isEmpty)
                     }
+                    Text("Foldere de scanat — alege ce vrei, adaugă orice folder propriu:")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ForEach(BigFileFinderService.defaultRoots, id: \.self) { path in
+                        Toggle(isOn: Binding(
+                            get: { scanFolders.enabledDefaults.contains(path) },
+                            set: { _ in scanFolders.toggleDefault(path) }
+                        )) {
+                            Text((path as NSString).lastPathComponent)
+                        }
+                        .toggleStyle(.checkbox)
+                    }
+                    ForEach(scanFolders.customFolders, id: \.self) { path in
+                        HStack {
+                            Toggle(isOn: .constant(true)) {
+                                Text(path).lineLimit(1).truncationMode(.middle)
+                            }
+                            .toggleStyle(.checkbox)
+                            .disabled(true)
+                            Spacer()
+                            Button {
+                                scanFolders.removeCustomFolder(path)
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    Button("+ Adaugă folder…") { addCustomFolder() }
+                        .controlSize(.small)
+                    if scanFolders.activeRoots.isEmpty {
+                        Text("Bifează cel puțin un folder mai sus ca să poți scana.")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
+                    Divider()
                     if bigFiles.isEmpty && !isScanningBigFiles {
                         Text("Apasă „Scanează” — arată cele mai mari 100 de fișiere din folderele unde se acumulează uitate.")
                             .font(.caption).foregroundStyle(.secondary)
@@ -157,9 +204,9 @@ struct CleanupModuleView: View {
             if !logLines.isEmpty {
                 TerminalLogView(lines: logLines)
             }
-            Spacer()
         }
         .padding(24)
+        }
         .onAppear { service.scanReclaimable(); service.scanSnapshots() }
         .sheet(isPresented: $showGate) { TrialGateModal() }
     }
@@ -169,13 +216,26 @@ struct CleanupModuleView: View {
     }
 
     private func scanBigFiles() {
+        let roots = scanFolders.activeRoots
+        guard !roots.isEmpty else { return }
         isScanningBigFiles = true
         DispatchQueue.global(qos: .userInitiated).async {
-            let result = BigFileFinderService.scan()
+            let result = BigFileFinderService.scan(roots: roots)
             DispatchQueue.main.async {
                 bigFiles = result
                 isScanningBigFiles = false
             }
+        }
+    }
+
+    private func addCustomFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Adaugă"
+        if panel.runModal() == .OK, let url = panel.url {
+            scanFolders.addCustomFolder(url.path)
         }
     }
 }

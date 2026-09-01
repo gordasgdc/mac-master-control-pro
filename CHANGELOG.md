@@ -1,5 +1,24 @@
 # Changelog — Master Control Studio Pro
 
+## v2.23.0 (2026-08-31) — Sănătate Discuri, Fișiere mari, Securitate
+
+- **„Testează viteza” (Sănătate Discuri) nu arăta niciun rezultat** —
+  testul scria fișierul de probă direct în rădăcina discului de pornire,
+  o zonă protejată de sistem; scrierea eșua silențios, fără niciun mesaj.
+  Acum testul scrie într-un loc corect și, dacă tot eșuează, arată clar
+  motivul.
+- **„Fișiere mari” (Curățare & RAM) — butonul de ștergere părea că lipsește**
+  — pagina întreagă nu avea scroll; cu multe fișiere listate, butonul de
+  ștergere ajungea în afara ecranului, inaccesibil. Reparat.
+- **Securitate — verificările roșii nu ofereau nicio soluție** — fiecare
+  verificare care nu se poate rezolva automat (FileVault, System Integrity
+  Protection, Gatekeeper etc.) are acum un buton „Cum rezolv?” cu pași
+  expliciți, plus un buton care deschide direct panoul corect din System
+  Settings.
+- **Procese** — sortare acum după CPU sau RAM, crescător sau descrescător.
+- **DaVinci Resolve → notificare email** — butoane rapide pentru generarea
+  parolei de aplicație Gmail/Outlook, direct din ecranul de configurare.
+
 ## v2.22.0 (2026-08-31) — Mărime Text (Mac): eliminat mecanismul care bloca aplicația
 
 Confirmat de Cristi: v2.21.0 tot bloca aplicația la orice altă valoare

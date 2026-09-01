@@ -7,6 +7,7 @@ import MacMasterControlProCore
 struct DiskHealthView: View {
     @State private var disks: [DiskHealth] = []
     @State private var testingPath: String?
+    @State private var errors: [String: String] = [:]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -57,6 +58,10 @@ struct DiskHealthView: View {
                                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                             }
                         }
+                        if let error = errors[disk.mountPath] {
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption).foregroundStyle(.red)
+                        }
                     }
                     .padding(6)
                 }
@@ -73,11 +78,17 @@ struct DiskHealthView: View {
 
     private func runSpeedTest(_ disk: DiskHealth) {
         testingPath = disk.mountPath
+        errors[disk.mountPath] = nil
         DispatchQueue.global(qos: .userInitiated).async {
-            let speed = DiskHealthService.measureWriteSpeed(mountPath: disk.mountPath)
+            let result = DiskHealthService.measureWriteSpeed(mountPath: disk.mountPath)
             DispatchQueue.main.async {
-                if let index = disks.firstIndex(where: { $0.mountPath == disk.mountPath }) {
-                    disks[index].writeSpeedMBps = speed
+                switch result {
+                case .success(let speed):
+                    if let index = disks.firstIndex(where: { $0.mountPath == disk.mountPath }) {
+                        disks[index].writeSpeedMBps = speed
+                    }
+                case .failure(let error):
+                    errors[disk.mountPath] = error.message
                 }
                 testingPath = nil
             }
