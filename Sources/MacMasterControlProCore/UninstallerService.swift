@@ -87,20 +87,43 @@ public enum UninstallerService {
         if let c = category("appsupport", "Application Support", candidates(in: lib.appendingPathComponent("Application Support"))) { categories.append(c) }
         if let c = category("caches", "Caches", candidates(in: lib.appendingPathComponent("Caches"))) { categories.append(c) }
         if let c = category("prefs", "Preferences", candidates(in: lib.appendingPathComponent("Preferences"))) { categories.append(c) }
+        if let c = category("prefs-byhost", "Preferences (ByHost)", candidates(in: lib.appendingPathComponent("Preferences/ByHost"))) { categories.append(c) }
         if let c = category("savedstate", "Saved Application State", candidates(in: lib.appendingPathComponent("Saved Application State"))) { categories.append(c) }
         if let c = category("logs", "Logs", candidates(in: lib.appendingPathComponent("Logs"))) { categories.append(c) }
         if let c = category("httpstorages", "HTTP Storages", candidates(in: lib.appendingPathComponent("HTTPStorages"))) { categories.append(c) }
         if let c = category("webkit", "WebKit", candidates(in: lib.appendingPathComponent("WebKit"))) { categories.append(c) }
         if let c = category("containers", "Containers (sandbox)", candidates(in: lib.appendingPathComponent("Containers"))) { categories.append(c) }
         if let c = category("groupcontainers", "Group Containers", candidates(in: lib.appendingPathComponent("Group Containers"))) { categories.append(c) }
+        if let c = category("appscripts", "Application Scripts", candidates(in: lib.appendingPathComponent("Application Scripts"))) { categories.append(c) }
+        if let c = category("saved-search", "Saved Searches", candidates(in: lib.appendingPathComponent("Saved Searches"))) { categories.append(c) }
+        if let c = category("autosave", "Autosave Information", candidates(in: lib.appendingPathComponent("Autosave Information"))) { categories.append(c) }
+        if let c = category("icloud", "iCloud Drive (container)", candidates(in: lib.appendingPathComponent("Mobile Documents"))) { categories.append(c) }
         if let c = category("launchagents-user", "LaunchAgents (userul curent)", candidates(in: lib.appendingPathComponent("LaunchAgents"))) { categories.append(c) }
 
-        // Locatiile de sistem (privilegiate) — enumerare fara privilegiu
-        // (citirea listei nu cere root), doar STERGEREA cere.
-        let systemLaunchAgents = URL(fileURLWithPath: "/Library/LaunchAgents")
-        let systemLaunchDaemons = URL(fileURLWithPath: "/Library/LaunchDaemons")
-        if let c = category("launchagents-system", "LaunchAgents (sistem)", candidates(in: systemLaunchAgents), privileged: true) { categories.append(c) }
-        if let c = category("launchdaemons-system", "LaunchDaemons (sistem)", candidates(in: systemLaunchDaemons), privileged: true) { categories.append(c) }
+        // Locatiile de sistem — enumerare fara privilegiu (citirea listei
+        // nu cere root), doar STERGEREA cere (marcate `privileged: true`).
+        // Extindere (2026-09-01, cerinta explicita: "sa elimine tot tot
+        // tot, sa scaneze resturi") — pana acum doar LaunchAgents/Daemons
+        // de sistem erau verificate; multe aplicatii (in special cele cu
+        // panouri de preferinte, plugin-uri media, sau instalate prin
+        // .pkg cu root) lasa urme si in aceste locatii de sistem.
+        let systemLocations: [(String, String, String)] = [
+            ("launchagents-system", "LaunchAgents (sistem)", "/Library/LaunchAgents"),
+            ("launchdaemons-system", "LaunchDaemons (sistem)", "/Library/LaunchDaemons"),
+            ("appsupport-system", "Application Support (sistem)", "/Library/Application Support"),
+            ("prefs-system", "Preferences (sistem)", "/Library/Preferences"),
+            ("prefpanes", "Panouri de Preferințe (System Settings)", "/Library/PreferencePanes"),
+            ("internetplugins", "Internet Plug-Ins", "/Library/Internet Plug-Ins"),
+            ("quicklook", "Extensii QuickLook", "/Library/QuickLook"),
+            ("widgets", "Widget-uri", "/Library/Widgets"),
+            ("spotlight-importers", "Importatoare Spotlight", "/Library/Spotlight"),
+            ("audio-components", "Plugin-uri Audio (Components)", "/Library/Audio/Plug-Ins/Components"),
+            ("audio-vst", "Plugin-uri Audio (VST)", "/Library/Audio/Plug-Ins/VST"),
+            ("contextualmenu", "Elemente de meniu contextual", "/Library/Contextual Menu Items"),
+        ]
+        for (id, title, path) in systemLocations {
+            if let c = category(id, title, candidates(in: URL(fileURLWithPath: path)), privileged: true) { categories.append(c) }
+        }
 
         // Aplicatia insasi — categorie separata, mereu prima logic, dar
         // afisata distinct in UI (nu e o "urma", e produsul principal).
