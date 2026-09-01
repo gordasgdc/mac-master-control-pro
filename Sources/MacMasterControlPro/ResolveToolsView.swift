@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MacMasterControlProCore
 
 /// Unelte DaVinci Resolve (2026-08-31, Nivel 2 #6 + #7) - EXCLUSIV prin
@@ -58,8 +59,19 @@ struct ResolveToolsView: View {
                     Toggle("Trimite și pe email (ajunge pe telefon)", isOn: $emailSettings.enabled)
                         .onChange(of: emailSettings.enabled) { _, _ in EmailNotifierService.settings = emailSettings }
                     if emailSettings.enabled {
-                        Text("Recomandat: folosește o „parolă de aplicație” (App Password) Gmail/Outlook, NU parola reală a contului — se salvează local, în clar, pe acest Mac.")
-                            .font(.caption2).foregroundStyle(.secondary)
+                        HStack(spacing: 8) {
+                            Text("Recomandat: folosește o „parolă de aplicație” (App Password) Gmail/Outlook, NU parola reală a contului — se salvează local, în clar, pe acest Mac.")
+                                .font(.caption2).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Generează parolă Gmail") {
+                                NSWorkspace.shared.open(URL(string: "https://myaccount.google.com/apppasswords")!)
+                            }
+                            .controlSize(.small)
+                            Button("Generează parolă Outlook") {
+                                NSWorkspace.shared.open(URL(string: "https://account.live.com/proofs/AppPassword")!)
+                            }
+                            .controlSize(.small)
+                        }
                         Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
                             GridRow {
                                 Text("Server SMTP").font(.caption)

@@ -3,21 +3,43 @@ import MacMasterControlProCore
 
 /// Modul "Procese" — vezi ce consumă CPU/RAM acum, închide ce e blocat.
 /// Auto-actualizare la 3s cât timp ecranul e deschis.
+private enum ProcessSortKey: String, CaseIterable {
+    case cpu = "CPU", memory = "RAM"
+}
+
 struct ProcessMonitorView: View {
     @State private var processes: [RunningProcess] = []
     @State private var timer: Timer?
+    @State private var sortKey: ProcessSortKey = .cpu
+    @State private var largestFirst = true
+
+    private var sortedProcesses: [RunningProcess] {
+        let sorted: [RunningProcess]
+        switch sortKey {
+        case .cpu: sorted = processes.sorted { $0.cpuPercent > $1.cpuPercent }
+        case .memory: sorted = processes.sorted { $0.memoryMB > $1.memoryMB }
+        }
+        return largestFirst ? sorted : sorted.reversed()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("⚙️ Procese active").font(.title2).bold()
                 Spacer()
+                Picker("Sortează", selection: $sortKey) {
+                    ForEach(ProcessSortKey.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 140)
+                Button(largestFirst ? "Cel mai mare întâi" : "Cel mai mic întâi") { largestFirst.toggle() }
+                    .controlSize(.small)
                 Button("Actualizează") { refresh() }
             }
-            Text("Top 20 după consum CPU, actualizat automat la 3 secunde.")
+            Text("Top 20, actualizat automat la 3 secunde — sortabil după CPU sau RAM, crescător sau descrescător.")
                 .font(.caption).foregroundStyle(.secondary)
 
-            List(processes) { process in
+            List(sortedProcesses) { process in
                 HStack {
                     Text(process.name).lineLimit(1)
                     Spacer()

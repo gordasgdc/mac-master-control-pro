@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MacMasterControlProCore
 
 /// Modul "Securitate & Confidențialitate" — verificări 🔴/🟢 pe baza
@@ -11,6 +12,7 @@ struct SecurityModuleView: View {
     @State private var checks: [SecurityCheck] = []
     @State private var isBusy = false
     @State private var lastActionMessage: String?
+    @State private var guideCheck: SecurityCheck?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -35,6 +37,10 @@ struct SecurityModuleView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
+                            if !check.isGood, !check.manualSteps.isEmpty {
+                                Button("Cum rezolv?") { guideCheck = check }
+                                    .controlSize(.small)
+                            }
                         }
                     }
                     if checks.isEmpty {
@@ -81,6 +87,9 @@ struct SecurityModuleView: View {
         .padding(24)
         .onAppear { refresh() }
         .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(item: $guideCheck) { check in
+            SecurityGuideSheet(check: check) { guideCheck = nil }
+        }
     }
 
     private func refresh(message: String? = nil) {
@@ -101,5 +110,41 @@ struct SecurityModuleView: View {
         } else {
             showGate = true
         }
+    }
+}
+
+/// Ghid pas-cu-pas pentru o verificare de securitate care nu se poate
+/// rezolva automat (2026-08-31, raportat de Cristi: "arată doar roșu/
+/// verde, nu ajută cu nimic să rezolv, pare ca aplicația nu funcționează").
+private struct SecurityGuideSheet: View {
+    let check: SecurityCheck
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Cum activez: \(check.title)").font(.title3).bold()
+                Spacer()
+                Button("Închide", action: onClose)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(check.manualSteps.enumerated()), id: \.offset) { index, step in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("\(index + 1).").bold().frame(width: 18, alignment: .trailing)
+                        Text(step)
+                    }
+                }
+            }
+            if let pane = check.settingsPane {
+                Button("Deschide System Settings") {
+                    if let url = URL(string: "x-apple.systempreferences:\(pane)") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(24)
+        .frame(width: 440)
     }
 }
