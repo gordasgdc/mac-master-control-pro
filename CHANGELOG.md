@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.25.5 (2026-09-03) — Fix real: mesajul de la dezinstalare dispărea instant
+
+Cauza reală a impresiei "nu face nimic": panoul revenea instant la starea
+inițială după o ștergere eșuată, ștergând mesajul de eroare/diagnostic
+înainte să apuci să-l citești. Acum mesajul rămâne vizibil.
+
 ## v2.25.4 (2026-09-03) — Diagnostic suplimentar la dezinstalare
 
 Mesajul de rezultat la ștergerea unei aplicații arată acum mai multe

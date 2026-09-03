@@ -170,11 +170,19 @@ struct UninstallerModuleView: View {
         return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
-    private func selectApp(_ app: InstalledApp) {
+    /// `keepLog: true` pastreaza `logLines` neatinse - folosit dupa o
+    /// stergere esuata, ca sa NU se piarda mesajul de diagnostic chiar
+    /// inainte ca userul sa apuce sa-l citeasca (BUG REAL, 2026-09-03,
+    /// gasit dintr-o inregistrare video trimisa de Cristi: "il sterg, tot
+    /// apare" - mesajul real de eroare/diagnostic era calculat corect, dar
+    /// `selectApp` reseta `logLines = []` IMEDIAT dupa ce era adaugat,
+    /// inainte ca userul sa-l vada - panoul revenea instant la placeholder-ul
+    /// "Nicio urma gasita", ascunzand complet cauza reala).
+    private func selectApp(_ app: InstalledApp, keepLog: Bool = false) {
         selectedApp = app
         categories = UninstallerService.scanRelatedFiles(for: app)
         selectedCategoryIDs = Set(categories.map(\.id))
-        logLines = []
+        if !keepLog { logLines = [] }
     }
 
     private func performDelete() {
@@ -200,7 +208,7 @@ struct UninstallerModuleView: View {
                     logLines.append("✓ Confirmat: \(app.name) nu mai apare în /Applications.")
                 } else if let stillThere = apps.first(where: { $0.id == app.id }) {
                     logLines.append("⚠ \(app.name) tot apare în /Applications — vezi mesajul de eroare de mai sus (probabil aplicația era deschisă).")
-                    selectApp(stillThere)
+                    selectApp(stillThere, keepLog: true)
                 }
                 isBusy = false
             }
