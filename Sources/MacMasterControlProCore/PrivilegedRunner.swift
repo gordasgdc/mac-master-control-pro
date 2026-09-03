@@ -3,56 +3,78 @@ import Foundation
 /// Executie privilegiata pentru comenzile care necesita root
 /// (sysctl, networksetup, purge, tmutil, pam.d).
 ///
-/// V1: foloseste `osascript -e 'do shell script "..." with administrator
-/// privileges'` - solutia sanctionata Apple pentru GUI fara helper separat,
-/// arata promptul nativ de parola/Touch ID o singura data per apel.
-/// V2 (planificat): Privileged Helper via SMAppService.daemon + XPC, pentru
-/// zero prompturi repetate intr-o sesiune de lucru - necesita Developer ID
-/// separat pt. helper si un al doilea target semnat/notarizat in build.
+/// [2026-09-03] FIX REAL, raportat de Cristi: promptul de administrator
+/// nu mai apărea DELOC (nici fereastra de sistem) — eșec instant,
+/// "Promptul de administrator a fost respins", fără ca userul să apuce
+/// să vadă vreo fereastră. Fix-ul anterior (mutarea `NSAppleScript` pe
+/// main thread) trata doar eșecurile INTERMITENTE — asta era un eșec
+/// SISTEMATIC, cauza reală fiind alta: V1 folosea `NSAppleScript`
+/// IN-PROCES (`.executeAndReturnError`), care sub Hardened Runtime (
+/// obligatoriu pentru notarizare) poate fi refuzat de sistem înainte
+/// să ajungă la Security Agent — fără entitlement-ul de Apple Events
+/// (`com.apple.security.automation.apple-events`), absent intenționat
+/// din `entitlements.plist` (șablon comun, ne-sandboxat) fiindcă nu era
+/// clar că această cale chiar are nevoie de el.
+///
+/// Root-cauza reală, confirmată direct din `GDCVault/Sources/GDCVault/
+/// SelfUpdater.swift` (deja funcțional în producție, confirmat de
+/// Cristi): acolo `do shell script ... with administrator privileges`
+/// rulează prin `/usr/bin/osascript` ca PROCES EXTERN separat
+/// (`Process`), NU prin `NSAppleScript` in-proces. Un proces extern își
+/// are propria identitate TCC/Hardened-Runtime — nu moștenește restricțiile
+/// binarului nostru, deci promptul nativ de parolă/Touch ID apare mereu,
+/// exact ca la Terminal. Rescris identic cu acel tipar dovedit, plus
+/// citirea incrementală a pipe-ului (fix-ul de deadlock din Shell.swift,
+/// aplicat și aici — o comandă privilegiată poate produce output mare,
+/// ex. `rm -rf` verbose pe un folder mare).
 public enum PrivilegedRunner {
     public struct Result {
         public let output: String
         public let success: Bool
     }
 
-    /// [2026-09-03] FIX REAL, raportat de Cristi: "permisiune negată",
-    /// intermitent - Touch ID pentru sudo functiona uneori, alteori nu,
-    /// fara motiv aparent. Cauza reala: `NSAppleScript.executeAndReturnError`
-    /// e documentat explicit de Apple ca NEFIIND thread-safe si trebuie
-    /// apelat DOAR de pe thread-ul principal - dar toate cele 15 apeluri
-    /// `PrivilegedRunner.run(...)` din aplicatie vin din
-    /// `DispatchQueue.global().async` (ca sa nu blocheze UI-ul cat asteapta
-    /// parola). Executia de pe un thread de fundal poate produce erori
-    /// intermitente de autorizare de la Security Server (promptul nativ de
-    /// parola/Touch ID e legat de rularea pe main thread), exact tiparul
-    /// "cateodata merge, cateodata nu" raportat.
-    /// Fix: `run` forteaza executia efectiva a AppleScript-ului pe main
-    /// thread (`DispatchQueue.main.sync`, cu verificare `Thread.isMainThread`
-    /// ca sa nu ne blocam singuri daca apelantul e deja pe main) - apelantii
-    /// existenti raman neschimbati (tot pot chema din fundal), doar
-    /// AppleScript-ul insusi ruleaza mereu unde Apple cere.
     @discardableResult
     public static func run(_ command: String) -> Result {
         let escaped = command.replacingOccurrences(of: "\"", with: "\\\"")
         let script = "do shell script \"\(escaped)\" with administrator privileges"
 
-        func execute() -> Result {
-            var error: NSDictionary?
-            guard let appleScript = NSAppleScript(source: script) else {
-                return Result(output: "Nu s-a putut initializa AppleScript.", success: false)
-            }
-            let descriptor = appleScript.executeAndReturnError(&error)
-            if let error {
-                let message = (error[NSAppleScript.errorMessage] as? String) ?? "Eroare necunoscuta"
-                return Result(output: message, success: false)
-            }
-            return Result(output: descriptor.stringValue ?? "", success: true)
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", script]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        let outputData = NSMutableData()
+        let lock = NSLock()
+        pipe.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            lock.lock()
+            outputData.append(chunk)
+            lock.unlock()
         }
 
-        if Thread.isMainThread {
-            return execute()
+        do {
+            try process.run()
+        } catch {
+            pipe.fileHandleForReading.readabilityHandler = nil
+            return Result(output: "Nu s-a putut porni osascript: \(error.localizedDescription)", success: false)
         }
-        return DispatchQueue.main.sync { execute() }
+        process.waitUntilExit()
+        let remaining = pipe.fileHandleForReading.readDataToEndOfFile()
+        lock.lock()
+        if !remaining.isEmpty { outputData.append(remaining) }
+        let resultData = outputData as Data
+        lock.unlock()
+        pipe.fileHandleForReading.readabilityHandler = nil
+
+        let text = String(data: resultData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // osascript iese cu cod nenul atat la parola gresita/prompt respins
+        // (mesaj tipic "User canceled." sau eroare de autorizare in text)
+        // cat si la o comanda shell care ea insasi a esuat - in ambele
+        // cazuri, `success` reflecta exact ce s-a intamplat, text-ul
+        // exact al erorii ramane vizibil apelantului.
+        return Result(output: text, success: process.terminationStatus == 0)
     }
 
     /// Rulare multi-comanda (o singura solicitare de parola pentru tot lantul).

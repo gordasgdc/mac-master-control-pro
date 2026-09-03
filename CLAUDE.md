@@ -837,6 +837,46 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.26.1 (2026-09-03) — Fix REAL #2 la Touch ID: root-cauza era alta
+
+v2.26.0 mutase execuția `NSAppleScript` pe main thread (fix corect pentru
+eșecuri INTERMITENTE), dar Cristi a raportat ceva diferit: eșec
+SISTEMATIC, fără ca fereastra nativă de parolă să apară VREODATĂ —
+confirmat explicit, prin întrebare directă, că nu apărea nicio fereastră
+de sistem. Asta a exclus imediat "userul respinge promptul" și a arătat
+că fix-ul de threading, deși corect ca principiu, nu era root-cauza
+completă.
+
+**Root-cauza reală**: `PrivilegedRunner` folosea `NSAppleScript`
+IN-PROCES (`.executeAndReturnError`) — sub Hardened Runtime (obligatoriu
+pentru notarizare), fără entitlement-ul `com.apple.security.automation.
+apple-events`, sistemul poate refuza executarea INAINTE ca ea să ajungă
+la Security Agent, deci fără nicio fereastră vizibilă. Comparat direct
+cu `GDCVault/Sources/GDCVault/SelfUpdater.swift` (dovedit funcțional în
+producție, confirmat de Cristi) — acolo `do shell script ... with
+administrator privileges` rulează prin `/usr/bin/osascript` ca PROCES
+EXTERN (`Process`), nu `NSAppleScript` in-proces. Un proces extern are
+propria identitate TCC/Hardened-Runtime, neafectată de restricțiile
+binarului părinte.
+
+**Fix**: `PrivilegedRunner.run` rescris să lanseze `osascript -e "..."`
+ca proces extern, identic cu tiparul din `GDCVault`, plus citirea
+incrementală a pipe-ului (fix-ul de deadlock din `Shell.swift`, aplicat
+și aici — o comandă privilegiată poate produce output mare, ex. `rm -rf`
+verbose). Interfața publică (`Result{output, success}`) neschimbată — toți
+cei 15 apelanți existenți funcționează identic, fără nicio altă
+modificare.
+
+**Lecție de proces**: primul fix (threading) NU era greșit — doar
+incomplet, tratând un simptom (intermitență) fără să elimine o cale de
+eșec complet diferită (refuz sistematic, fără prompt). Verificarea
+"apare fereastra de sistem sau nu?" a fost decisivă pentru diagnostic —
+fără ea, aș fi continuat să presupun că threading-ul era singura cauză.
+
+**Verificat**: `swift build` — 0 erori. Instalat local (2.26.1 confirmat
+pe disc). **NU verificat live de Claude** — promptul de sistem efectiv
+cere interacțiune fizică; Cristi confirmă la următoarea încercare.
+
 ## v2.26.0 (2026-09-03) — Audit total: Analiză Disc + 2 bug-uri reale, sistemice
 
 Cerut de Cristi ca audit complet ("touch ID zice permisiune negată",

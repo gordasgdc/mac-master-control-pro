@@ -1,5 +1,14 @@
 # Changelog — Master Control Studio Pro
 
+## v2.26.1 (2026-09-03) — Fix real: Touch ID nu mai afișa deloc fereastra de parolă
+
+Continuarea fix-ului anterior (v2.26.0) — eșecul nu mai era intermitent,
+ci sistematic: nu apărea deloc fereastra de sistem la apăsarea butonului.
+Cauza reală era alta decât cea reparată prima dată — mecanismul intern de
+cerere a parolei a fost înlocuit cu unul dovedit deja funcțional în altă
+aplicație din familia GDC. Touch ID/parola de administrator ar trebui să
+funcționeze acum normal, la fiecare apăsare.
+
 ## v2.26.0 (2026-09-03) — Analiză Disc (nou), fix blocare la scanare, fix Touch ID intermitent
 
 **Modul nou: Analiză Disc.** Vezi ce ocupă spațiul pe disc, folder cu
