@@ -17,7 +17,7 @@ struct WindowLayoutsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("🪟 Layout Ferestre").font(.title2).bold()
+            Label("Layout Ferestre", systemImage: "macwindow.on.rectangle").font(.title2).bold()
             Text("Salvează pozițiile ferestrelor unei aplicații (ex. DaVinci Resolve) ca profil — util când schimbi frecvent între configurații de monitoare.")
                 .font(.caption).foregroundStyle(.secondary)
 

@@ -1,5 +1,18 @@
 # Changelog — Master Control Studio Pro
 
+## v2.27.0 (2026-09-03) — Mod Randare pentru orice aplicație + design mai profesional
+
+- **Mod Randare nu mai e limitat la DaVinci Resolve** — recunoaște acum și
+  ridică automat prioritatea pentru Final Cut Pro, Premiere Pro, Media
+  Encoder, After Effects, Logic Pro, Motion, Compressor și HandBrake,
+  oricare rulează în momentul activării (nu doar una singură).
+- **Titlurile secțiunilor** folosesc acum iconițe simple, consistente cu
+  meniul din stânga, în loc de simboluri emoji.
+- **Analiza de disc** arată acum un cronometru cât timp scanează, ca să
+  fie clar că aplicația lucrează, nu că s-a blocat.
+- **Protecția Spotlight** arată o etichetă verde „Protejat” lângă orice
+  disc/folder activat, plus un mesaj clar dacă o acțiune eșuează.
+
 ## v2.26.3 (2026-09-03) — Fix real: Touch ID activat corect + status vizual clar peste tot
 
 **Fix real, găsit prin panoul de diagnostic din v2.26.2**: activarea Touch

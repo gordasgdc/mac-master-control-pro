@@ -25,7 +25,7 @@ struct ProcessMonitorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("⚙️ Procese active").font(.title2).bold()
+                Label("Procese active", systemImage: "speedometer").font(.title2).bold()
                 Spacer()
                 Picker("Sortează", selection: $sortKey) {
                     ForEach(ProcessSortKey.allCases, id: \.self) { Text($0.rawValue).tag($0) }

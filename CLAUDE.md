@@ -837,6 +837,54 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.27.0 (2026-09-03) — Mod Randare universal + curățenie vizuală sistemică
+
+Feedback direct de la Cristi, în 3 părți, după fix-urile Touch ID:
+1. **"Mod Randare... l-am gândit doar pentru DaVinci Resolve, dar e valabil
+   pentru orice aplicație... Final Cut, Premiere, Media Encoder."**
+2. **"Nu văd un indicativ să văd dacă am făcut... Spotlight Shield...
+   analizatorul de disc durează mult și nu pot vedea... dacă e ok."**
+3. **"Nu-mi place stilul emoji/desen tipic de AI — trebuie profesional,
+   ca GDC Plugin Manager (SVG-uri simple), nu pop-up amator."**
+
+**(1) `RenderModeService.swift` — generalizat.** `resolvePID()` (un singur
+proces hardcodat, "DaVinci Resolve") înlocuit cu `knownRenderApps: [String]`
+(Final Cut Pro, Compressor, Motion, Premiere Pro, Media Encoder, After
+Effects, Logic Pro, Fusion, HandBrake) + `runningRenderApps()`, care
+verifică și ridică prioritatea TUTUROR celor care rulează ACUM, nu doar
+prima găsită — un flux real poate avea Premiere ȘI Media Encoder pornite
+simultan. Time Machine/Spotlight erau deja la nivel de sistem, neafectate
+de bug. Textul din `RenderModeView` actualizat să nu mai numească doar
+Resolve.
+
+**(2) Feedback vizual la acțiuni lente/discrete.**
+- `DiskAnalyzerView` — cronometru viu (`Timer.publish(every: 1)`) cât
+  scanează, ca un disc extern mare să nu pară o aplicație blocată.
+- Spotlight Shield (`TweaksModuleView`) — etichetă verde „Protejat" +
+  iconiță lângă orice țintă activă (nu doar bifa toggle-ului, ușor de
+  ratat), plus mesaj explicit de eroare dacă scrierea markerului eșuează
+  (înainte, un eșec silențios lăsa toggle-ul pur și simplu neschimbat,
+  fără nicio explicație).
+
+**(3) `StatusBanner.swift` (nou, v2.26.3) — extins conceptual, plus
+curățenie de iconițe.** Toate cele 16 titluri de secțiune (`Text("🛠️
+...")`, `"🧹 ..."`, etc.) înlocuite cu `Label(text, systemImage:)`,
+folosind EXACT aceleași SF Symbols ca în sidebar (`ContentView.icon`) —
+monocrome, consistente, fără niciun emoji ilustrativ. Botonul „🗑 Șterge
+selecția" (RemoteBrowserSheet) la fel.
+
+**TODO real, nu ascuns**: Cristi a cerut și iconițele OFICIALE ale
+aplicațiilor (Final Cut, Premiere) acolo unde sunt numite explicit (ex.
+lista din Mod Randare) — necesită extragerea `NSWorkspace.icon(forFile:)`
+din bundle-ul real al aplicației găsite (nu doar un SF Symbol generic),
+o bucată de lucru separată, mai mare, rămasă neimplementată în acest
+release. La fel, `logic`-ul de „state" pentru restul tweak-urilor
+(Finder avansat, DS_Store) tot n-are `onOutput`/Terminal Live — risc mic
+(scrieri `defaults` fără sudo), dar portul e trivial dacă devine necesar.
+
+**Verificat**: `swift build` — 0 erori. Instalat local, 2.27.0 confirmat
+pe disc.
+
 ## v2.26.3 (2026-09-03) — ROOT-CAUZA REALĂ a Touch ID + StatusBanner peste tot
 
 Panoul Terminal Live adăugat în v2.26.2 și-a dovedit imediat rostul:

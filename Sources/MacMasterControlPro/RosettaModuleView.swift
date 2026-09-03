@@ -12,7 +12,7 @@ struct RosettaModuleView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("🧭 Rosetta 2 Inspector").font(.title2).bold()
+            Label("Rosetta 2 Inspector", systemImage: "cpu").font(.title2).bold()
 
             GroupBox("Stare Rosetta 2") {
                 HStack {

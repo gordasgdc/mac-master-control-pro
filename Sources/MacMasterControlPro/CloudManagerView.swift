@@ -20,7 +20,7 @@ struct CloudManagerView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("☁️ Cloud Manager (Multi-Provider)").font(.title2).bold()
+                Label("Cloud Manager (Multi-Provider)", systemImage: "cloud").font(.title2).bold()
                 Spacer()
                 Button("+ Adaugă cont") { showAddSheet = true }
                 Button("Rescanează") { service.refreshRemotes() }

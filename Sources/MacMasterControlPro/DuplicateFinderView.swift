@@ -24,7 +24,7 @@ struct DuplicateFinderView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("🧬 Duplicate").font(.title2).bold()
+                Label("Duplicate", systemImage: "doc.on.doc").font(.title2).bold()
                 Text("Comparație REALĂ pe conținut (hash SHA256), nu doar nume/dată — două fișiere apar ca duplicate doar dacă sunt identice byte-cu-byte.")
                     .font(.caption).foregroundStyle(.secondary)
 

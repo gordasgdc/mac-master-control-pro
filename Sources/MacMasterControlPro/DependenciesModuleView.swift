@@ -9,7 +9,7 @@ struct DependenciesModuleView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("🧩 Dependențe & Cerințe Sistem").font(.title2).bold()
+                Label("Dependențe & Cerințe Sistem", systemImage: "puzzlepiece.extension").font(.title2).bold()
                 Spacer()
                 Button("Rescanează") { checker.checkAll() }
             }

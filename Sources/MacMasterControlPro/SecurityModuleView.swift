@@ -17,7 +17,7 @@ struct SecurityModuleView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text("🛡️ Securitate & Confidențialitate").font(.title2).bold()
+                Label("Securitate & Confidențialitate", systemImage: "checkmark.shield").font(.title2).bold()
                 Spacer()
                 if isBusy { ProgressView().controlSize(.small) }
                 Button("Rescanează") { refresh() }
