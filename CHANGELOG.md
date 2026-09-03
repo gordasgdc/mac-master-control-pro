@@ -1,5 +1,20 @@
 # Changelog — Master Control Studio Pro
 
+## v2.26.3 (2026-09-03) — Fix real: Touch ID activat corect + status vizual clar peste tot
+
+**Fix real, găsit prin panoul de diagnostic din v2.26.2**: activarea Touch
+ID pentru comenzi de administrator eșua mereu, indiferent de context —
+cauza era o eroare de sintaxă internă la trimiterea comenzii către
+sistem, niciodată vizibilă până acum. Reparată la sursă; ar trebui să
+funcționeze normal de această dată.
+
+**Îmbunătățire: mesajele de stare arată acum clar, vizual, ce s-a
+întâmplat** — un bloc verde cu bifă la succes, roșu cu X la eroare,
+albastru cât o acțiune e în desfășurare, în loc de un text gri identic
+indiferent de rezultat. Aplicat în toate secțiunile: Tweak-uri Sistem,
+Curățare & RAM, Cloud Manager, Duplicate, Rosetta Inspector, Layout
+Ferestre, DaVinci Resolve.
+
 ## v2.26.2 (2026-09-03) — Panou „Terminal Live” pentru Touch ID
 
 Butonul „Activează Touch ID pentru comenzi sudo” arată acum, direct sub

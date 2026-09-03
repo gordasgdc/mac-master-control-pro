@@ -60,7 +60,7 @@ struct DuplicateFinderView: View {
                                 .help("Scanează folderele alese și grupează fișierele identice ca și conținut.")
                         }
                         if !scanStatus.isEmpty {
-                            Text(scanStatus).font(.caption).foregroundStyle(.secondary)
+                            StatusBanner(text: scanStatus)
                         }
                     }
                     .padding(6)
