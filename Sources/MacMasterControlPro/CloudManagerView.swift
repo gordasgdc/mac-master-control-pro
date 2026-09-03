@@ -3,7 +3,7 @@ import AppKit
 import MacMasterControlProCore
 
 struct CloudManagerView: View {
-    @StateObject private var service = CloudManagerService()
+    @StateObject private var service = CloudManagerService.shared
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
     @State private var showAddSheet = false

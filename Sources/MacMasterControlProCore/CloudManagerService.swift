@@ -225,6 +225,11 @@ public enum RclonePerformanceSettings {
 /// Manager Universal Multi-Cloud - inlocuieste implementarea legata strict
 /// de Degoo. Orice remote Rclone (OAuth sau cu credentiale) e tratat identic.
 public final class CloudManagerService: ObservableObject {
+    /// [2026-09-03] Singleton — vezi comentariul din RenderModeService.
+    /// Motiv suplimentar aici: existau DEJA 2 instanțe SEPARATE în
+    /// aplicație (CloudManagerView + ResolveToolsView), fiecare cu
+    /// propria stare de conturi/transferuri, complet nesincronizate.
+    public static let shared = CloudManagerService()
     public init() { loadMountedState() }
 
     @Published public var remotes: [CloudRemote] = []

@@ -8,6 +8,8 @@ public struct IntelApp: Identifiable, Hashable {
 
 /// Modul D: scanare arhitectura + stare Rosetta 2 + curatare optionala.
 public final class RosettaInspector: ObservableObject {
+    /// [2026-09-03] Singleton — vezi comentariul din RenderModeService.
+    public static let shared = RosettaInspector()
     public init() {}
 
     @Published public var intelApps: [IntelApp] = []

@@ -14,7 +14,7 @@ private enum TweakID: String, CaseIterable, Identifiable {
 }
 
 struct TweaksModuleView: View {
-    @StateObject private var service = TweaksService()
+    @StateObject private var service = TweaksService.shared
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
     @State private var selected: Set<TweakID> = []

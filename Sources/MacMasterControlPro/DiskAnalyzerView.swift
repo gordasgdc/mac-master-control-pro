@@ -2,77 +2,67 @@ import SwiftUI
 import AppKit
 import MacMasterControlProCore
 
-/// Analiză de disc, gen DaisyDisk — drill-down pe niveluri cu bară
-/// proporțională + listă sortată descrescător după mărime.
+/// Analiză de disc, gen DaisyDisk/GrandPerspective — indexare completă,
+/// o singură dată, apoi navigare INSTANTĂ în arborele deja construit
+/// (vezi `DiskScanEngine`/`DiskAnalyzerViewModel` pentru mecanism).
 struct DiskAnalyzerView: View {
-    @State private var pathStack: [DiskEntry] = []
-    @State private var entries: [DiskEntry] = []
-    @State private var isScanning = false
-    @State private var toDelete: DiskEntry?
-    @State private var deleteError: String?
-    /// Previne o cursă intre scanari: daca userul schimbă folderul (sau se
-    /// întoarce la rădăcină) în timp ce o scanare veche, lentă, tot rulează
-    /// pe fundal, rezultatul ei întârziat NU mai trebuie să suprascrie
-    /// entries-urile folderului nou deschis — fiecare scanare își poartă
-    /// propriul număr, doar cea mai recentă are voie să scrie rezultatul.
-    @State private var scanGeneration = 0
-    /// [2026-09-03] Cerut explicit de Cristi: "durează mult să analizeze
-    /// și nu pot vedea... dacă e ok" — un `ProgressView` fără text care
-    /// se schimbă poate fi confundat cu o aplicație blocată la o scanare
-    /// cu adevărat lentă (disc extern mare). Un cronometru viu, care
-    /// crește vizibil la fiecare secundă, arată clar că analiza chiar
-    /// avansează, nu că s-a înghețat.
-    @State private var scanStartedAt: Date?
-    @State private var elapsedSeconds: Int = 0
-    private let scanTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    @StateObject private var vm = DiskAnalyzerViewModel.shared
+    @State private var toDelete: DiskTreeNode?
 
     private let palette: [Color] = [.orange, .cyan, .purple, .green, .pink, .yellow, .indigo, .mint, .teal, .brown]
 
-    private var currentPath: String? { pathStack.last?.path }
-    private var totalBytes: Int64 { entries.reduce(0) { $0 + $1.sizeBytes } }
+    private var totalBytes: Int64 { vm.currentChildren.reduce(0) { $0 + $1.sizeBytes } }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Label("Analiză Disc", systemImage: "chart.pie").font(.title2).bold()
-                Text("Vezi ce ocupă spațiul, folder cu folder — apasă pe orice segment sau rând ca să intri în el.")
+                Text("Indexare completă o singură dată — după aceea, navigarea în orice subfolder e instantă, chiar dacă navighezi în alt meniu între timp.")
                     .font(.callout).foregroundStyle(.secondary)
 
-                breadcrumb
-
-                if isScanning {
-                    HStack(spacing: 10) {
-                        ProgressView().controlSize(.small)
-                        Text("Scanez\(currentPath.map { " „\(($0 as NSString).lastPathComponent)”" } ?? "")… \(elapsedSeconds)s — poate dura la un disc mare, aplicația nu s-a blocat.")
-                            .font(.callout).foregroundStyle(.secondary)
-                            .contentTransition(.numericText())
+                if vm.isIndexing {
+                    indexingProgress
+                } else if vm.tree != nil {
+                    breadcrumb
+                    if vm.currentChildren.isEmpty {
+                        Text("Folder gol.").font(.callout).foregroundStyle(.secondary)
+                    } else {
+                        proportionalBar
+                        entryList
                     }
-                    .onReceive(scanTimer) { _ in
-                        guard let scanStartedAt else { return }
-                        elapsedSeconds = Int(Date().timeIntervalSince(scanStartedAt))
-                    }
-                } else if !entries.isEmpty {
-                    proportionalBar
-                    entryList
-                } else if pathStack.isEmpty {
-                    rootPicker
                 } else {
-                    Text("Folder gol.").font(.callout).foregroundStyle(.secondary)
+                    rootPicker
                 }
 
-                if let deleteError {
+                if let deleteError = vm.deleteError {
                     Text("✘ \(deleteError)").font(.caption).foregroundStyle(.red)
                 }
             }
             .padding(24)
         }
-        .onAppear { if pathStack.isEmpty { loadRoots() } }
+        .onAppear { vm.loadRootsIfNeeded() }
         .alert("Ștergi „\(toDelete?.name ?? "")”?", isPresented: Binding(get: { toDelete != nil }, set: { if !$0 { toDelete = nil } })) {
             Button("Anulează", role: .cancel) { toDelete = nil }
-            Button("Șterge", role: .destructive) { if let e = toDelete { delete(e) } }
+            Button("Șterge", role: .destructive) { if let n = toDelete { vm.delete(n) } }
         } message: {
             Text("Mută la Coșul de gunoi (\(toDelete?.sizeDescription ?? "")) — dacă permisiunile refuză, se cere automat parola de administrator.")
         }
+    }
+
+    // MARK: - Progres indexare
+
+    private var indexingProgress: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ProgressView().controlSize(.small)
+                Text("Indexez... \(vm.filesIndexed) fișiere, \(vm.indexedBytesDescription) până acum.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .contentTransition(.numericText())
+            }
+            Text("O singură trecere completă — după ce se termină, orice subfolder se deschide instant, fără rescanare.")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+        .animation(.default, value: vm.filesIndexed)
     }
 
     // MARK: - Breadcrumb
@@ -80,20 +70,29 @@ struct DiskAnalyzerView: View {
     private var breadcrumb: some View {
         HStack(spacing: 6) {
             Button {
-                resetToRoots()
+                vm.resetToRoots()
             } label: {
                 Image(systemName: "internaldrive")
             }
             .buttonStyle(.plain)
 
-            ForEach(Array(pathStack.enumerated()), id: \.element.id) { index, entry in
-                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
-                Button(entry.name) {
-                    pathStack = Array(pathStack.prefix(index + 1))
-                    scan(pathStack.last!.path)
+            if !vm.pathStack.isEmpty {
+                Button {
+                    vm.pathStack.removeLast()
+                } label: {
+                    Image(systemName: "chevron.left")
                 }
                 .buttonStyle(.plain)
-                .fontWeight(index == pathStack.count - 1 ? .semibold : .regular)
+                .help("Înapoi")
+            }
+
+            ForEach(Array(vm.pathStack.enumerated()), id: \.element.id) { index, node in
+                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
+                Button(node.name) {
+                    vm.jumpTo(index: index)
+                }
+                .buttonStyle(.plain)
+                .fontWeight(index == vm.pathStack.count - 1 ? .semibold : .regular)
             }
         }
         .font(.callout)
@@ -101,15 +100,12 @@ struct DiskAnalyzerView: View {
 
     // MARK: - Root picker (volume disponibile)
 
-    @State private var roots: [DiskEntry] = []
-
     private var rootPicker: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Alege ce vrei să analizezi:").font(.headline)
-            ForEach(roots) { root in
+            ForEach(vm.roots) { root in
                 Button {
-                    pathStack = [root]
-                    scan(root.path)
+                    vm.startIndexing(root: root)
                 } label: {
                     HStack {
                         Image(systemName: root.path == "/" ? "internaldrive" : "externaldrive")
@@ -127,35 +123,18 @@ struct DiskAnalyzerView: View {
         }
     }
 
-    private func loadRoots() {
-        roots = DiskAnalyzerService.availableRoots()
-    }
-
-    /// Anulează efectiv orice scanare veche in zbor (incrementând
-    /// generația — vezi comentariul de la `scanGeneration`) inainte de a
-    /// goli starea, ca un rezultat intarziat sa nu mai poata "reaparea"
-    /// peste ecranul de root dupa ce userul s-a intors deja acolo.
-    private func resetToRoots() {
-        scanGeneration += 1
-        isScanning = false
-        scanStartedAt = nil
-        entries = []
-        pathStack = []
-        loadRoots()
-    }
-
     // MARK: - Bara proportionala (stil DaisyDisk simplificat)
 
     private var proportionalBar: some View {
         GeometryReader { geo in
             HStack(spacing: 1) {
-                ForEach(Array(entries.prefix(30).enumerated()), id: \.element.id) { index, entry in
-                    let fraction = totalBytes > 0 ? CGFloat(entry.sizeBytes) / CGFloat(totalBytes) : 0
+                ForEach(Array(vm.currentChildren.prefix(30).enumerated()), id: \.element.id) { index, node in
+                    let fraction = totalBytes > 0 ? CGFloat(node.sizeBytes) / CGFloat(totalBytes) : 0
                     Rectangle()
                         .fill(palette[index % palette.count].opacity(0.85))
                         .frame(width: max(2, geo.size.width * fraction))
-                        .onTapGesture { open(entry) }
-                        .help("\(entry.name) — \(entry.sizeDescription)")
+                        .onTapGesture { vm.open(node) }
+                        .help("\(node.name) — \(node.sizeDescription)")
                 }
             }
         }
@@ -167,23 +146,23 @@ struct DiskAnalyzerView: View {
 
     private var entryList: some View {
         VStack(spacing: 0) {
-            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+            ForEach(Array(vm.currentChildren.enumerated()), id: \.element.id) { index, node in
                 HStack {
                     Circle().fill(palette[index % palette.count]).frame(width: 8, height: 8)
-                    Image(systemName: entry.isDirectory ? "folder.fill" : "doc")
+                    Image(systemName: node.isDirectory ? "folder.fill" : "doc")
                         .foregroundStyle(.secondary)
-                    Text(entry.name).lineLimit(1)
+                    Text(node.name).lineLimit(1)
                     Spacer()
-                    Text(entry.sizeDescription).foregroundStyle(.secondary).font(.system(.callout, design: .monospaced))
+                    Text(node.sizeDescription).foregroundStyle(.secondary).font(.system(.callout, design: .monospaced))
                     Button {
-                        NSWorkspace.shared.selectFile(entry.path, inFileViewerRootedAtPath: "")
+                        NSWorkspace.shared.selectFile(node.path, inFileViewerRootedAtPath: "")
                     } label: {
                         Image(systemName: "arrow.up.forward.app")
                     }
                     .buttonStyle(.plain)
                     .help("Arată în Finder")
                     Button(role: .destructive) {
-                        toDelete = entry
+                        toDelete = node
                     } label: {
                         Image(systemName: "trash")
                     }
@@ -191,51 +170,8 @@ struct DiskAnalyzerView: View {
                 }
                 .contentShape(Rectangle())
                 .padding(.vertical, 6)
-                .onTapGesture(count: 1) { if entry.isDirectory { open(entry) } }
+                .onTapGesture(count: 1) { if node.isDirectory { vm.open(node) } }
                 Divider()
-            }
-        }
-    }
-
-    // MARK: - Actiuni
-
-    private func open(_ entry: DiskEntry) {
-        guard entry.isDirectory else { return }
-        pathStack.append(entry)
-        scan(entry.path)
-    }
-
-    private func scan(_ path: String) {
-        isScanning = true
-        entries = []
-        scanStartedAt = Date()
-        elapsedSeconds = 0
-        scanGeneration += 1
-        let generation = scanGeneration
-        DispatchQueue.global(qos: .userInitiated).async {
-            let result = DiskAnalyzerService.scanLevel(path)
-            DispatchQueue.main.async {
-                // O scanare mai veche, terminată abia acum — irelevantă,
-                // userul a navigat deja altundeva intre timp.
-                guard generation == scanGeneration else { return }
-                entries = result
-                isScanning = false
-                scanStartedAt = nil
-            }
-        }
-    }
-
-    private func delete(_ entry: DiskEntry) {
-        toDelete = nil
-        deleteError = nil
-        DispatchQueue.global(qos: .userInitiated).async {
-            let error = PrivilegedFileOps.delete(entry.path)
-            DispatchQueue.main.async {
-                if let error {
-                    deleteError = error
-                } else if let current = currentPath {
-                    scan(current)
-                }
             }
         }
     }

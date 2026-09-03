@@ -837,6 +837,95 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.28.0 (2026-09-03) — Analiză Disc: indexare completă + 3 bug-uri reale, grave, prinse la testare
+
+Cerință explicită de la Cristi: "declanșează o nouă scanare de la zero" la
+fiecare intrare în subfolder — modelul vechi (`DiskAnalyzerService.
+scanLevel`, ȘTERS complet) rescana discul cu `du`/`find` la FIECARE
+navigare, ca o pagină web care se reîncarcă la fiecare click. Cerință: un
+explorator real (DaisyDisk/GrandPerspective/TreeSize) — indexare completă
+O SINGURĂ DATĂ, arbore în memorie, navigare instantă.
+
+**Arhitectură nouă**: `DiskTreeNode` (Core, nou) — nod de arbore (nume,
+cale, mărime, copii). `DiskScanEngine.buildTree(root:)` (Core, nou) — O
+SINGURĂ trecere recursivă (`find -x <root> -type f -exec stat -f '%z\t%N'
+{} +`, batching `+` nu `;` — mult mai rapid), streaming linie-cu-linie
+(Regula 21 — niciodată tot output-ul brut într-un blob uriaș). `remove(
+nodePath:from:)` actualizează arborele DUPĂ o ștergere reușită (scade
+mărimea din toți ancestorii), fără nicio rescanare. `DiskAnalyzerViewModel`
+rescris să navigheze prin noduri deja indexate (`pathStack: [DiskTreeNode]`),
+ZERO acces nou la disc la navigare.
+
+**3 bug-uri REALE, grave, găsite prin testare izolată înainte de livrare —
+niciunul vizibil doar din citirea codului:**
+
+1. **`-x` trebuie ÎNAINTEA căii, nu după.** Verificarea inițială a trecut
+   din greșeală pe un shim `find`/`bfs` din mediul de shell (Claude Code
+   își înlocuiește `find`-ul cu o unealtă proprie, mai permisivă) — binarul
+   REAL de sistem (`/usr/bin/find`, apelat aici prin cale absolută)
+   respinge `-x` după cale cu "illegal option". Lecție: o verificare de
+   comandă shell trebuie făcută cu path ABSOLUT către binarul real, nu prin
+   numele simplu care poate fi umbrit de mediul de dezvoltare.
+2. **Cursă de date REALĂ, cu crash reproductibil (SIGSEGV)** la fișiere
+   multe (500+): varianta inițială cu `readabilityHandler` (pattern deja
+   folosit "sigur" în `Shell.swift`) procesa date pe thread-ul intern al
+   dispatch source-ului, ÎN TIMP CE codul de după `waitUntilExit()` (alt
+   thread) citea/scria aceeași variabilă capturată — fără nicio
+   sincronizare. La puține fișiere mergea (fereastra de cursă prea mică
+   să se manifeste); la sute de fișiere, fie pierdea tăcut majoritatea, fie
+   crăpa. Fix: citire BLOCANTĂ, secvențială, pe UN SINGUR thread (deja pe
+   fundal) — `FileHandle.availableData` într-o buclă `while`, fără
+   `readabilityHandler`, fără acces concurent posibil.
+3. **`waitUntilExit()` nu garantează că tot output-ul a fost citit** — o
+   cursă documentată separat de #2: procesul copil se poate termina
+   ÎNAINTE ca ultimii octeți din bufferul kernel al pipe-ului să fi fost
+   livrați. Rezolvată implicit de fix-ul #2 (citirea blocantă se termină
+   abia la EOF real, nu la ieșirea procesului).
+
+**Metodologie de verificare, nu doar "swift build"**: pentru fiecare fix,
+un mic executabil de test separat (`Sources/DiskTreeTest`, ȘTERS după
+verificare — nu rămâne în repo), rulat REAL, de mai multe ori, pe date
+reale: 3 fișiere (caz simplu), 501 fișiere (caz care a expus cursa de
+date — 5 rulări consecutive, toate corecte), nume cu spații (caz real
+frecvent pe Mac), și `~/Developer/MacMasterControlPro` însuși (3791
+fișiere reale, 252 MB, indexat corect în 0.27s). Fiecare bug de mai sus a
+fost prins DOAR prin rulare reală, niciunul vizibil din citirea codului —
+motivul exact pentru care Regula de verificare izolată (deja aplicată la
+fix-ul de escaping AppleScript) rămâne obligatorie la orice schimbare cu
+potențial de eșec silențios sau concurență.
+
+**Verificat**: `swift build` — 0 erori. Instalat local, 2.28.0 confirmat
+pe disc.
+
+## v2.27.1 (2026-09-03) — Iconițe REALE, cerute explicit ("iconița oficială")
+
+TODO-ul lăsat deschis explicit în v2.27.0 rezolvat: `RenderModeService`
+rescris de la `pgrep -x` (potrivire EXACTĂ de nume de proces — fragil, un
+"Adobe Premiere Pro 2026" cu anul în nume n-ar mai fi fost găsit
+niciodată) la `NSWorkspace.shared.runningApplications` + potrivire prin
+SUBSTRING (`localizedCaseInsensitiveContains`) pe `localizedName` — mult
+mai robust la variații de nume între versiuni, ȘI oferă gratuit iconița
+REALĂ a aplicației (`NSRunningApplication.icon`), fără nicio dependință
+nouă — exact tiparul deja folosit de `InstalledApp.icon`
+(`UninstallerService.swift`).
+
+`DetectedRenderApp` (nou, Core) — nume + PID + `NSImage` reală. Secțiunea
+nouă „Aplicații detectate acum” din `RenderModeView` arată iconițele
+PERMANENT (nu doar în jurnalul de activare), cu reîmprospătare automată
+la 5 secunde (`Timer.publish`) — userul poate porni Premiere/Final Cut
+chiar cât se uită la ecran, fără să dea Refresh manual.
+
+**Verificat**: API-ul `NSRunningApplication.icon` confirmat funcțional
+izolat (test cu „Finder”, rulat separat de build — icon prezent, 32×32).
+Niciuna din aplicațiile din listă (DaVinci Resolve, Final Cut, Premiere
+etc.) nu rula pe acest Mac în momentul verificării — comportamentul cu o
+iconiță REALĂ afișată nu a fost văzut vizual de Claude, doar mecanismul
+de potrivire + API-ul de icon, separat. Cristi confirmă vizual la
+următoarea rulare cu o aplicație din listă deschisă.
+
+**Verificat build**: `swift build` — 0 erori. Instalat local, 2.27.1
+confirmat pe disc.
+
 ## v2.27.0 (2026-09-03) — Mod Randare universal + curățenie vizuală sistemică
 
 Feedback direct de la Cristi, în 3 părți, după fix-urile Touch ID:
