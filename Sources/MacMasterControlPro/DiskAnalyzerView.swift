@@ -8,8 +8,16 @@ import MacMasterControlProCore
 struct DiskAnalyzerView: View {
     @StateObject private var vm = DiskAnalyzerViewModel.shared
     @State private var toDelete: DiskTreeNode?
+    @State private var confirmingReset = false
 
     private let palette: [Color] = [.orange, .cyan, .purple, .green, .pink, .yellow, .indigo, .mint, .teal, .brown]
+
+    private static let lastScanFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMMM, HH:mm"
+        f.locale = Locale(identifier: "ro_RO")
+        return f
+    }()
 
     private var totalBytes: Int64 { vm.currentChildren.reduce(0) { $0 + $1.sizeBytes } }
 
@@ -23,6 +31,9 @@ struct DiskAnalyzerView: View {
                 if vm.isIndexing {
                     indexingProgress
                 } else if vm.tree != nil {
+                    if let lastScannedAt = vm.lastScannedAt {
+                        cacheBanner(lastScannedAt)
+                    }
                     breadcrumb
                     if vm.currentChildren.isEmpty {
                         Text("Folder gol.").font(.callout).foregroundStyle(.secondary)
@@ -47,6 +58,36 @@ struct DiskAnalyzerView: View {
         } message: {
             Text("Mută la Coșul de gunoi (\(toDelete?.sizeDescription ?? "")) — dacă permisiunile refuză, se cere automat parola de administrator.")
         }
+        .alert("Resetezi cache-ul și rescanezi tot discul de la zero?", isPresented: $confirmingReset) {
+            Button("Anulează", role: .cancel) {}
+            Button("Resetează & Rescanează", role: .destructive) { vm.resetCacheAndFullRescan() }
+        } message: {
+            Text("Poate dura mult pe un disc mare — folosește-l doar dacă analiza pare vizibil greșită. „Re-scanează doar modificările” e suficient în mod normal.")
+        }
+    }
+
+    // MARK: - Banner cache (ultima analiză + acțiuni de rescanare)
+
+    private func cacheBanner(_ scannedAt: Date) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
+            Text("Afișez datele din analiza de la **\(Self.lastScanFormatter.string(from: scannedAt))**.")
+                .font(.callout).foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            if vm.isRescanning {
+                ProgressView().controlSize(.small)
+                Text("Rescanez...").font(.caption).foregroundStyle(.secondary)
+            } else {
+                Button("Re-scanează doar modificările") { vm.rescanChangesOnly() }
+                    .buttonStyle(.bordered)
+                Button("Resetare Cache & Scanare Completă") { confirmingReset = true }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(10)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Progres indexare
@@ -155,12 +196,24 @@ struct DiskAnalyzerView: View {
                     Spacer()
                     Text(node.sizeDescription).foregroundStyle(.secondary).font(.system(.callout, design: .monospaced))
                     Button {
-                        NSWorkspace.shared.selectFile(node.path, inFileViewerRootedAtPath: "")
+                        // [2026-09-04] Cerință explicită: pentru un folder,
+                        // "Arată în Finder" (selectFile) doar îl evidenția
+                        // în fereastra PĂRINTELUI — userul voia să vadă
+                        // efectiv CE E ÎNĂUNTRU. Pentru foldere, deschidem
+                        // direct o fereastră Finder navigată ÎN el; pentru
+                        // fișiere, comportamentul vechi (evidențiat în
+                        // folderul care-l conține) rămâne corect — un
+                        // fișier nu se "deschide" ca fereastră de Finder.
+                        if node.isDirectory {
+                            NSWorkspace.shared.open(URL(fileURLWithPath: node.path))
+                        } else {
+                            NSWorkspace.shared.selectFile(node.path, inFileViewerRootedAtPath: "")
+                        }
                     } label: {
-                        Image(systemName: "arrow.up.forward.app")
+                        Image(systemName: node.isDirectory ? "folder" : "arrow.up.forward.app")
                     }
                     .buttonStyle(.plain)
-                    .help("Arată în Finder")
+                    .help(node.isDirectory ? "Deschide folderul în Finder" : "Arată în Finder")
                     Button(role: .destructive) {
                         toDelete = node
                     } label: {
