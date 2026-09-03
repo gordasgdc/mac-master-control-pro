@@ -33,10 +33,20 @@ public enum PrivilegedRunner {
         public let success: Bool
     }
 
+    /// [2026-09-03] `onOutput`, daca dat, primeste comanda exacta trimisa
+    /// si FIECARE linie reala de output/eroare, plus statusul final — cerut
+    /// explicit de Cristi dupa ce Touch ID a continuat sa esueze identic
+    /// dupa fix-ul de root-cauza: "o fereastra tip terminal in care sa
+    /// ramana comenzile ce s-au incercat si eroarea... sa nu dispara
+    /// fereastra". Port 1:1 al parametrului `onOutput` deja existent pe
+    /// Windows (`PrivilegedRunner.cs`) — asigura ca ORICE eșec, oricât de
+    /// ciudat, e vizibil și copiabil direct de user, fără să mai depindă
+    /// de un mesaj static presupus de noi dinainte.
     @discardableResult
-    public static func run(_ command: String) -> Result {
+    public static func run(_ command: String, onOutput: ((String) -> Void)? = nil) -> Result {
         let escaped = command.replacingOccurrences(of: "\"", with: "\\\"")
         let script = "do shell script \"\(escaped)\" with administrator privileges"
+        onOutput?("$ \(command)")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
@@ -74,7 +84,12 @@ public enum PrivilegedRunner {
         // cat si la o comanda shell care ea insasi a esuat - in ambele
         // cazuri, `success` reflecta exact ce s-a intamplat, text-ul
         // exact al erorii ramane vizibil apelantului.
-        return Result(output: text, success: process.terminationStatus == 0)
+        if !text.isEmpty {
+            for line in text.split(separator: "\n") { onOutput?(String(line)) }
+        }
+        let exitCode = process.terminationStatus
+        onOutput?(exitCode == 0 ? "✔ osascript a ieșit cu codul 0" : "✘ osascript a ieșit cu codul \(exitCode)")
+        return Result(output: text, success: exitCode == 0)
     }
 
     /// Rulare multi-comanda (o singura solicitare de parola pentru tot lantul).

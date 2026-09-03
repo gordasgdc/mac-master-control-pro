@@ -1,5 +1,13 @@
 # Changelog — Master Control Studio Pro
 
+## v2.26.2 (2026-09-03) — Panou „Terminal Live” pentru Touch ID
+
+Butonul „Activează Touch ID pentru comenzi sudo” arată acum, direct sub
+el, un mic panou tip terminal cu exact ce comandă a fost trimisă și
+răspunsul exact primit — rămâne pe ecran (nu dispare automat), cu buton
+„Copiază tot”, ca să poți trimite exact ce s-a întâmplat dacă ceva nu
+merge, în loc de un mesaj generic.
+
 ## v2.26.1 (2026-09-03) — Fix real: Touch ID nu mai afișa deloc fereastra de parolă
 
 Continuarea fix-ului anterior (v2.26.0) — eșecul nu mai era intermitent,
