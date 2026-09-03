@@ -27,6 +27,11 @@ struct MacMasterControlProApp: App {
             }
             CommandGroup(replacing: .help) {
                 Button("Ghid de Utilizare (PDF)") { GuidePDF.open() }
+                Divider()
+                Button("Ghid: Mod Randare (PDF)") { ModuleGuidePDF.renderMode.open() }
+                Button("Ghid: Analiză Disc (PDF)") { ModuleGuidePDF.diskAnalyzer.open() }
+                Button("Ghid: Tweak-uri Sistem (PDF)") { ModuleGuidePDF.systemTweaks.open() }
+                Button("Ghid: Backup & Securitate (PDF)") { ModuleGuidePDF.backupSecurity.open() }
             }
             // Plasă de siguranță (2026-08-31): ⌘, e scurtătura STANDARD
             // macOS pentru Preferences — deschide Setări indiferent de
