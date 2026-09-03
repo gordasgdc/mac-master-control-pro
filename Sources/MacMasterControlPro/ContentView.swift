@@ -3,7 +3,7 @@ import AppKit
 import MacMasterControlProCore
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case dashboard, renderMode, loginItems, processMonitor, diskHealth, resolveTools, windowLayouts, network, cloud, cleanup, duplicates, uninstaller, security, tweaks, rosetta, dependencies, settings
+    case dashboard, renderMode, loginItems, processMonitor, diskHealth, diskAnalyzer, resolveTools, windowLayouts, network, cloud, cleanup, duplicates, uninstaller, security, tweaks, rosetta, dependencies, settings
     var id: String { rawValue }
     var labelKey: String {
         switch self {
@@ -12,6 +12,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .loginItems: return "sidebar.loginItems"
         case .processMonitor: return "sidebar.processMonitor"
         case .diskHealth: return "sidebar.diskHealth"
+        case .diskAnalyzer: return "sidebar.diskAnalyzer"
         case .resolveTools: return "sidebar.resolveTools"
         case .windowLayouts: return "sidebar.windowLayouts"
         case .network: return "sidebar.network"
@@ -33,6 +34,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .loginItems: return "power.circle"
         case .processMonitor: return "speedometer"
         case .diskHealth: return "internaldrive"
+        case .diskAnalyzer: return "chart.pie"
         case .resolveTools: return "film"
         case .windowLayouts: return "macwindow.on.rectangle"
         case .network: return "network"
@@ -58,6 +60,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .loginItems: return "Vezi și oprești aplicațiile care pornesc automat odată cu Mac-ul."
         case .processMonitor: return "Procesele active acum, sortabile după CPU sau RAM — închide ce consumă prea mult."
         case .diskHealth: return "Spațiu liber, status SMART și test de viteză pentru discurile montate."
+        case .diskAnalyzer: return "Vezi ce ocupă spațiul pe disc, folder cu folder, ca în DaisyDisk."
         case .resolveTools: return "Notificare la final de randare, verificare Media Pool, sincronizare LUT-uri, backup bază de date."
         case .windowLayouts: return "Salvează și restaurează aranjamentul ferestrelor pe ecran."
         case .network: return "Configurare și optimizare rețea, persistentă la repornire."
@@ -84,6 +87,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
         case .duplicates: return "duplicate copii identice fisiere"
         case .cleanup: return "curatare ram cache fisiere mari"
         case .diskHealth: return "disc viteza smart"
+        case .diskAnalyzer: return "disc analiza spatiu foldere mari daisydisk"
         case .security: return "securitate filevault sip gatekeeper firewall"
         case .cloud: return "cloud drive dropbox onedrive rclone"
         case .network: return "retea wifi dns"
@@ -158,6 +162,7 @@ struct ContentView: View {
             case .loginItems: LoginItemsView()
             case .processMonitor: ProcessMonitorView()
             case .diskHealth: DiskHealthView()
+            case .diskAnalyzer: DiskAnalyzerView()
             case .resolveTools: ResolveToolsView()
             case .windowLayouts: WindowLayoutsView()
             case .network: NetworkModuleView()

@@ -1,5 +1,26 @@
 # Changelog — Master Control Studio Pro
 
+## v2.26.0 (2026-09-03) — Analiză Disc (nou), fix blocare la scanare, fix Touch ID intermitent
+
+**Modul nou: Analiză Disc.** Vezi ce ocupă spațiul pe disc, folder cu
+folder, cu bară proporțională + listă sortată descrescător (asemănător
+DaisyDisk) — alegi un disc/folder, intri în el cu un click, ștergi direct
+din listă (cu fallback automat pe parolă de administrator dacă e nevoie).
+
+**Fix real: aplicația se bloca (îngheța, uneori userul o închidea forțat)
+la scanarea unui disc extern mare.** Cauza: execuția de comenzi shell
+citea rezultatul abia după ce comanda se termina — pe un disc cu foarte
+multe fișiere, ieșirea depășea bufferul intern al sistemului, iar cele
+două părți (aplicația și comanda) ajungeau să aștepte una după alta la
+nesfârșit. Rezolvat la sursă, pentru toate acțiunile care rulează comenzi
+de sistem (Fișiere mari, Curățare, Cloud, etc.), nu doar pentru scanarea
+de disc.
+
+**Fix real: activarea Touch ID pentru comenzi de administrator eșua
+intermitent cu „permisiune negată”, fără motiv aparent.** Promptul de
+parolă rula pe un fir de execuție secundar — mutat pe firul principal,
+unde sistemul de securitate macOS îl așteaptă mereu.
+
 ## v2.25.7 (2026-09-03) — Aceeași protecție de administrator, la Fișiere mari/Duplicate/Rosetta Inspector
 
 Fix-ul pentru fișiere/aplicații deținute de administrator (v2.25.6) se
