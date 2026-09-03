@@ -241,12 +241,13 @@ struct DashboardView: View {
 
     @State private var securityGood: Bool?
     @State private var networkTuningActive: Bool?
+    @State private var loginItemsGood: Bool?
 
     private static let columns = [GridItem(.adaptive(minimum: 220), spacing: 14)]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(L.t("dashboard.title")).font(.largeTitle).bold()
+            Label(L.t("dashboard.title"), systemImage: "gauge.with.dots.needle.67percent").font(.largeTitle).bold()
             Text(L.t("dashboard.tagline"))
                 .foregroundStyle(.secondary)
 
@@ -255,7 +256,7 @@ struct DashboardView: View {
                 DashboardCard(icon: "network", title: "Tuning rețea persistent", isGood: networkTuningActive) { navigate(.network) }
                 DashboardCard(icon: "puzzlepiece.extension", title: "Dependențe",
                               isGood: checker.items.isEmpty ? nil : checker.allInstalled) { navigate(.dependencies) }
-                DashboardCard(icon: "power.circle", title: "Aplicații de fundal", isGood: nil) { navigate(.loginItems) }
+                DashboardCard(icon: "power.circle", title: "Aplicații de fundal", isGood: loginItemsGood) { navigate(.loginItems) }
             }
 
             if !checker.items.isEmpty, !checker.allInstalled {
@@ -278,9 +279,20 @@ struct DashboardView: View {
         let net = NetworkService()
         net.refreshPersistentTuningStatus()
         let security = SecurityService.runAllChecks()
+        // [2026-09-03] FIX REAL, gasit din capturi de ecran trimise de
+        // Cristi: cardul "Aplicații de fundal" arata un spinner static
+        // (`isGood: nil` hardcodat) care NU se rezolva NICIODATA — intentia
+        // documentata explicit mai sus ("verde/rosu la orice tip de
+        // configurare") nu era implementata pentru acest card. Verde daca
+        // niciun agent tert-parte NU concureaza activ pentru CPU/RAM chiar
+        // acum (nimic incarcat), rosu daca exista macar unul — acelasi
+        // motiv pentru care exista acest modul (contentie in timpul
+        // editarii/randarii).
+        let loginItemsLoaded = LoginItemsService.scan().contains { $0.isLoaded }
         await MainActor.run {
             networkTuningActive = net.persistentTuningActive
             securityGood = security.allSatisfy(\.isGood)
+            loginItemsGood = !loginItemsLoaded
         }
     }
 }
