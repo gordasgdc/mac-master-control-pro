@@ -120,15 +120,15 @@ public enum DuplicateFinderService {
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
-    /// Mută la Coșul de gunoi (reversibil), niciodată ștergere permanentă.
+    /// Mută la Coșul de gunoi (reversibil) — cade automat pe ștergere
+    /// privilegiată (2026-09-03, `PrivilegedFileOps`) dacă fișierul e
+    /// deținut de root/alt user, în loc să raporteze doar "EROARE".
     public static func delete(_ files: [DuplicateFile], log: (String) -> Void) {
-        let fm = FileManager.default
         for file in files {
-            let url = URL(fileURLWithPath: file.path)
-            if (try? fm.trashItem(at: url, resultingItemURL: nil)) != nil {
-                log("Mutat la Coșul de gunoi (\(file.sizeDescription)): \(file.path)")
+            if let error = PrivilegedFileOps.delete(file.path) {
+                log("EROARE, nu s-a putut șterge \(file.path): \(error)")
             } else {
-                log("EROARE, nu s-a putut șterge: \(file.path)")
+                log("Mutat/șters (\(file.sizeDescription)): \(file.path)")
             }
         }
     }

@@ -55,13 +55,14 @@ public final class RosettaInspector: ObservableObject {
     }
 
     /// Trimite la Cosul de gunoi DOAR aplicatiile bifate de utilizator -
-    /// dezinstalare reala, selectiva (nu "totul sau nimic").
+    /// dezinstalare reala, selectiva (nu "totul sau nimic"). Cade automat
+    /// pe stergere privilegiata (2026-09-03, `PrivilegedFileOps`) daca
+    /// aplicatia e detinuta de root/alt user.
     @discardableResult
     public func moveToTrash(_ selected: Set<IntelApp>) -> Int {
         var moved = 0
         for app in selected {
-            let url = URL(fileURLWithPath: app.path)
-            if (try? FileManager.default.trashItem(at: url, resultingItemURL: nil)) != nil {
+            if PrivilegedFileOps.delete(app.path) == nil {
                 moved += 1
             }
         }
