@@ -183,6 +183,7 @@ struct UninstallerModuleView: View {
         logLines = ["Încep ștergerea pentru \(app.name)…"]
         let toDelete = categories.filter { selectedCategoryIDs.contains($0.id) }
         DispatchQueue.global(qos: .userInitiated).async {
+            UninstallerService.terminateIfRunning(app)
             UninstallerService.delete(categories: toDelete) { line in
                 DispatchQueue.main.async { logLines.append(line) }
             }
@@ -198,6 +199,7 @@ struct UninstallerModuleView: View {
                     categories = []
                     logLines.append("✓ Confirmat: \(app.name) nu mai apare în /Applications.")
                 } else if let stillThere = apps.first(where: { $0.id == app.id }) {
+                    logLines.append("⚠ \(app.name) tot apare în /Applications — vezi mesajul de eroare de mai sus (probabil aplicația era deschisă).")
                     selectApp(stillThere)
                 }
                 isBusy = false
@@ -220,6 +222,7 @@ struct UninstallerModuleView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             for app in targets {
                 DispatchQueue.main.async { logLines.append("— \(app.name) —") }
+                UninstallerService.terminateIfRunning(app)
                 let foundCategories = UninstallerService.scanRelatedFiles(for: app)
                 UninstallerService.delete(categories: foundCategories) { line in
                     DispatchQueue.main.async { logLines.append(line) }

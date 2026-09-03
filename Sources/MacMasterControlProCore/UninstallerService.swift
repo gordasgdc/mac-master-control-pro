@@ -141,15 +141,96 @@ public enum UninstallerService {
 
     // MARK: - Stergere
 
-    /// Sterge aplicatia insasi (poate cere privilegiu daca nu apartine
-    /// userului curent — instalata printr-un .pkg cu root).
+    /// [2026-09-03] FIX REAL, raportat de Cristi ("Hedge for Mac — imi
+    /// spune ca l-a sters dar tot acolo apare"): `try? fm.trashItem(...)`
+    /// ARUNCA o eroare reala (macOS refuza sa trimita la Cos un `.app` cu
+    /// procesul INCA RULAND — "The operation can't be completed because
+    /// [app] is in use", exact ca in Finder) — dar `try?` o ARUNCA la gunoi
+    /// SILENTIOS, iar codul raporta "Sters" necondiționat, indiferent daca
+    /// operatia chiar reusise. Fix, doua parti:
+    /// 1. Inchide aplicatia (daca ruleaza) INAINTE de a incerca stergerea —
+    ///    `NSRunningApplication.terminate()`, cu o mica asteptare ca
+    ///    procesul chiar sa iasa (altfel executabilul ramane "in use" chiar
+    ///    dupa `terminate()`, care e doar o CERERE asincrona de inchidere).
+    /// 2. Verificare REALA dupa incercarea de stergere — `fileExists`, nu
+    ///    doar absenta unei exceptii Swift - raportam succes DOAR daca
+    ///    fisierul chiar a disparut de pe disc.
     public static func deleteAppBundle(_ app: InstalledApp) -> String {
+        terminateIfRunning(app)
+
+        // [2026-09-03] DIAGNOSTIC, nu doar fix - Hedge for Mac tot reapare
+        // dupa un "Sters" raportat cu succes, ceea ce contrazice verificarea
+        // `fileExists` de mai jos - trebuie sa vedem DE CE, nu sa ghicim din
+        // nou. Includem in mesaj: proprietarul real al bundle-ului si daca
+        // exista un al DOILEA exemplar cu acelasi nume in cealalta locatie
+        // scanata (~/Applications vs /Applications) - un duplicat ar explica
+        // exact "il sterg, tot apare" fara nicio eroare reala de stergere.
+        let owner = (try? fm.attributesOfItem(atPath: app.path.path))?[.ownerAccountName] as? String ?? "necunoscut"
+        let otherRoot = app.path.deletingLastPathComponent().path == "/Applications"
+            ? home.appendingPathComponent("Applications").path
+            : "/Applications"
+        let duplicatePath = otherRoot + "/" + app.path.lastPathComponent
+        let hasDuplicate = fm.fileExists(atPath: duplicatePath)
+        let diagnosticSuffix = hasDuplicate
+            ? " [ATENȚIE: există și \(duplicatePath) — un al doilea exemplar, neatins de această ștergere]"
+            : " [proprietar: \(owner)]"
+
         if fm.isDeletableFile(atPath: app.path.path) {
-            try? fm.trashItem(at: app.path, resultingItemURL: nil)
-            return "Șters: \(app.path.path)"
+            do {
+                try fm.trashItem(at: app.path, resultingItemURL: nil)
+            } catch {
+                return "EROARE la ștergerea \(app.path.path): \(error.localizedDescription)\(diagnosticSuffix)"
+            }
+            // Verificare intarziata (2026-09-03): posibil ceva relanseaza/
+            // recreeaza fisierul dupa mutarea la Cos - o singura verificare
+            // instant nu ar prinde asta.
+            Thread.sleep(forTimeInterval: 0.5)
+            if fm.fileExists(atPath: app.path.path) {
+                return "EROARE: \(app.path.path) tot există la 0.5s după ștergere — ceva îl recreează sau nu a fost mutat de fapt.\(diagnosticSuffix)"
+            }
+            return "Șters: \(app.path.path)\(diagnosticSuffix)"
         }
         let result = PrivilegedRunner.run("rm -rf \"\(app.path.path)\"")
-        return result.success ? "Șters (privilegiat): \(app.path.path)" : "EROARE la ștergerea \(app.path.path): \(result.output)"
+        if !result.success {
+            return "EROARE la ștergerea \(app.path.path): \(result.output)\(diagnosticSuffix)"
+        }
+        Thread.sleep(forTimeInterval: 0.5)
+        return fm.fileExists(atPath: app.path.path)
+            ? "EROARE: \(app.path.path) tot există la 0.5s după ștergerea privilegiată.\(diagnosticSuffix)"
+            : "Șters (privilegiat): \(app.path.path)\(diagnosticSuffix)"
+    }
+
+    /// Inchide aplicatia daca ruleaza — altfel `trashItem`/`rm -rf` pot
+    /// esua cu "resource busy"/"in use" pe executabilul deschis.
+    ///
+    /// [2026-09-03] Extins, cerinta directa a lui Cristi: "trebuie sa poata
+    /// sa-l stearga chiar daca ruleaza... sa-l oprim chiar fortat". Doua
+    /// cazuri reale acoperite acum, nu doar procesul principal:
+    /// 1. Aplicatia principala - `terminate()` (cerere politicoasa), apoi
+    ///    `forceTerminate()` (echivalent SIGKILL) daca nu iese la timp.
+    /// 2. Procese/helper-e de fundal ale ACELEIASI aplicatii, care pot avea
+    ///    un bundle ID DIFERIT (multe apps au un helper separat pentru
+    ///    login items/actualizari/servicii, invizibil in `NSRunningApplication`
+    ///    dupa bundle ID-ul aplicatiei principale) - `pkill -f` dupa CALEA
+    ///    reala a bundle-ului prinde orice proces al carui executabil traieste
+    ///    sub acel `.app`, indiferent de bundle ID declarat.
+    public static func terminateIfRunning(_ app: InstalledApp) {
+        if let bundleID = app.bundleID {
+            let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            for instance in running { instance.terminate() }
+            for _ in 0..<20 {
+                if NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty { break }
+                Thread.sleep(forTimeInterval: 0.1)
+            }
+            for instance in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) {
+                instance.forceTerminate()
+            }
+        }
+        // Forteaza orice proces/helper ramas cu executabilul sub acest bundle
+        // (SIGKILL, `pkill -9`) - acopera helper-e cu bundle ID diferit sau
+        // procese care ignora `terminate()`/`forceTerminate()` normal.
+        Shell.run("pkill -9 -f \"\(app.path.path)/\" 2>/dev/null")
+        Thread.sleep(forTimeInterval: 0.3)
     }
 
     /// Sterge categoriile bifate. Cele neprivilegiate direct prin
@@ -162,10 +243,13 @@ public enum UninstallerService {
                 if category.requiresPrivilege {
                     privilegedCommands.append("launchctl bootout system \"\(path.path)\" 2>/dev/null; launchctl bootout gui/$(id -u) \"\(path.path)\" 2>/dev/null; rm -f \"\(path.path)\"")
                 } else {
-                    if (try? fm.trashItem(at: path, resultingItemURL: nil)) != nil {
-                        log("Mutat la Coșul de gunoi: \(path.path)")
-                    } else {
-                        log("EROARE, nu s-a putut șterge: \(path.path)")
+                    do {
+                        try fm.trashItem(at: path, resultingItemURL: nil)
+                        log(fm.fileExists(atPath: path.path)
+                            ? "EROARE: \(path.path) tot există după ștergere."
+                            : "Mutat la Coșul de gunoi: \(path.path)")
+                    } catch {
+                        log("EROARE, nu s-a putut șterge \(path.path): \(error.localizedDescription)")
                     }
                 }
             }
