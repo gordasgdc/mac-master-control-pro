@@ -1,5 +1,20 @@
 # Changelog — Master Control Studio Pro
 
+## v2.25.4 (2026-09-03) — Diagnostic suplimentar la dezinstalare
+
+Mesajul de rezultat la ștergerea unei aplicații arată acum mai multe
+detalii (proprietar, verificare la scurt timp după ștergere, detectarea
+unui eventual al doilea exemplar instalat) — ajută la diagnosticarea
+cazurilor rare în care o aplicație pare să reapară după ștergere.
+
+## v2.25.3 (2026-09-03) — Fix: dezinstalarea raporta succes fals
+
+Dacă aplicația era încă deschisă în momentul ștergerii, mesajul arăta
+„Șters" chiar dacă macOS refuzase operația — aplicația rămânea instalată.
+Acum: aplicația (inclusiv orice proces de fundal al ei) se închide automat,
+forțat dacă e nevoie, înainte de ștergere, iar rezultatul arătat e
+verificat real pe disc, nu doar presupus.
+
 ## v2.25.2 (2026-09-03) — Fix critic: Setări nu se mai deschideau
 
 Încercarea de a reactiva "Mărime Text" din v2.25.1 bloca accesul la
