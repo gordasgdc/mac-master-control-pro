@@ -1,5 +1,24 @@
 # Changelog — Master Control Studio Pro
 
+## v2.30.0 (2026-09-04) — Analiză Disc: cache persistent + rescanare rapidă
+
+Analiza de disc nu mai reia totul de la zero la fiecare deschidere a
+aplicației. Ultima analiză completă rămâne salvată — la redeschidere,
+rezultatul apare instant, cu data și ora ultimei scanări afișate clar.
+Două butoane noi: „Re-scanează doar modificările" (atinge doar ce s-a
+schimbat de pe disc, câteva secunde în loc de ore) și „Resetare Cache &
+Scanare Completă", pentru cazurile rare când vrei o reindexare de la zero.
+Scanarea propriu-zisă a fost și ea rescrisă pentru viteză — paralelizată
+pe toate nucleele procesorului, folosind aceleași mecanisme rapide de
+nivel jos ca uneltele profesionale de analiză a discului.
+
+În plus: butonul de lângă un folder îl deschide acum efectiv într-o
+fereastră Finder (nu doar îl evidențiază în folderul părinte) — poți vedea
+imediat ce conține.
+
+**TODO paritate Windows**: acest modul nu are încă un echivalent pe
+Master Control Studio Pro (Windows) — de construit separat, de la zero.
+
 ## v2.29.0 (2026-09-03) — 4 ghiduri PDF noi, detaliate, per modul
 
 Meniul Help capătă 4 ghiduri noi, pe lângă cel general de instalare:

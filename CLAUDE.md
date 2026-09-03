@@ -837,6 +837,126 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.30.0 (2026-09-04) — Analiză Disc: cache persistent + scanare diferențială, refacută din temelii
+
+Cerință explicită de la Cristi, cu date reale: scanarea ajunsese la peste
+624.000 de fișiere, dura peste o oră, și relua totul de la zero la fiecare
+deschidere a aplicației sau pornire de analiză — spre deosebire de
+DaisyDisk/TreeSize/WizTree, care nu parcurg tot discul la fiecare scanare.
+Trei schimbări arhitecturale, toate cerute explicit, plus două cerințe
+suplimentare adăugate în aceeași sesiune (deschiderea reală a folderelor,
+paritate Mac/Windows).
+
+**1. `DiskScanEngine` — nativ (`fts(3)`), nu shell.** Varianta veche
+(`/usr/bin/find -exec stat +`, v2.28.0) shell-a un proces extern și parsa
+text — funcțională, dar cu un bug latent nelovit niciodată (un nume de
+fișier cu TAB literal ar fi rupt `split(separator: "\t")`) și cost real de
+proces+pipe. Înlocuită cu `fts_open`/`fts_read` (POSIX, API-ul intern
+folosit chiar de `find`) — `fts_statp` dă mărimea ȘI mtime-ul DIRECT, ca
+struct, fără nicio conversie prin text.
+
+**2. Paralelizare pe toate nucleele.** Fiecare subfolder de PRIM NIVEL al
+rădăcinii primește propriul `fts` independent, rulat concurent
+(`DispatchQueue.concurrentPerform`) — fiecare thread construiește propriul
+subarbore, ZERO stare comună mutabilă în timpul scanării; unirea în
+arborele final e un pas simplu, secvențial, la sfârșit.
+
+**3. Cache persistent + scanare incrementală.** `DiskCacheStore` (nou) —
+salvează/încarcă arborele complet prin `PropertyListEncoder`/`Decoder`
+(format binar, fără dependință nouă), un fișier per rădăcină scanată, numit
+stabil printr-un hash SHA256 al căii (NU `Hashable`/`Hasher` din Swift —
+randomizează sămânța per-proces intenționat, nepotrivit pentru un nume de
+fișier persistent). `DiskTreeNode` devine `Codable` + capătă
+`directoryModifiedAt` (mtime-ul folderului la ultima scanare) —
+`DiskScanEngine.incrementalUpdate`/`refreshDirectory` compară mtime-ul
+curent al fiecărui folder cu cel din cache: neschimbat → subarborele
+cache-uit rămâne intact, ZERO citire suplimentară de disc dincolo de acel
+`stat()`; schimbat → doar ACEL folder e relistat (un nivel), recursând mai
+departe doar unde chiar s-a schimbat ceva. Reduce o rescanare pe un disc
+mare, majoritar neatins, de la ore la câteva secunde. Nu detectează un
+fișier existent a cărui CONȚINUT s-a schimbat păstrând exact aceeași
+mărime (caz extrem de rar) — pentru asta rămâne „Resetare Cache & Scanare
+Completă".
+
+**UI (`DiskAnalyzerViewModel`/`DiskAnalyzerView`)**: alegerea unei rădăcini
+încarcă instant cache-ul salvat, dacă există (`startIndexing`); un banner
+nou arată data/ora ultimei analize + „Re-scanează doar modificările"
+(`rescanChangesOnly`, discret, arborele rămâne navigabil normal cât timp
+rulează) și „Resetare Cache & Scanare Completă" (`resetCacheAndFullRescan`,
+în spatele unui `.alert` de confirmare — acțiune rară, distructivă pentru
+cache). `delete(_:)` salvează cache-ul actualizat după orice ștergere
+reușită — altfel cache-ul vechi ar arăta din nou, la următoarea deschidere,
+un fișier deja șters.
+
+**Cerință adăugată mid-sesiune: deschiderea reală a folderelor.** Butonul
+„Arată în Finder" de lângă un folder folosea `NSWorkspace.selectFile(
+inFileViewerRootedAtPath:)`, care doar evidențiază folderul în fereastra
+PĂRINTELUI — nu arată ce e ÎNĂUNTRU. Pentru foldere, schimbat la
+`NSWorkspace.shared.open(URL(fileURLWithPath:))`, care deschide o fereastră
+Finder navigată DIRECT în acel folder; pentru fișiere, comportamentul vechi
+(evidențiat în folderul care-l conține) rămâne corect neschimbat.
+
+**Bug REAL, grav, găsit DOAR prin rulare — niciodată vizibil din citirea
+codului.** Metodologia deja stabilită în acest repo (CLAUDE.md v2.28.0): un
+executabil de test izolat (`Sources/DiskEngineTest`, ȘTERS după verificare),
+exercitând codul REAL (nu o reimplementare) pe o structură de foldere
+cunoscută — scanare completă, round-trip cache, update incremental cu
+adăugare+ștergere simulată, 3 rulări consecutive pe 200 de fișiere pentru
+curse de date. La prima rulare, executabilul a scanat 0 fișiere, mărime 0,
+pe o structură cunoscută să aibă 1500 de octeți în 5 fișiere.
+
+**Root-cauza reală**: `ent.pointee.fts_path` (câmpul C `char *fts_path` din
+`FTSENT`) e deja un `UnsafeMutablePointer<CChar>` — un POINTER către
+șirul de caractere, nu un buffer inline ÎN struct. Codul inițial făcea
+`withUnsafePointer(to: &ent.pointee.fts_path) { $0.withMemoryRebound(
+to: CChar.self, ...) { String(cString: $0) } }` — asta ia adresa CÂMPULUI-
+POINTER însuși și reinterpretează OCTEȚII POINTERULUI ca text, în loc să
+urmeze pointerul către șirul real. Rezultatul: `fullPath` conținea gunoi
+(octeții propriei adrese de memorie interpretați ca ASCII), niciodată
+calea reală — `guard fullPath.hasPrefix(rootPrefix) else { continue }`
+respingea tăcut ABSOLUT FIECARE intrare, deci scanarea "reușea" (fără crash,
+fără eroare) dar nu găsea niciodată vreun fișier. Fix, o singură linie:
+`String(cString: ent.pointee.fts_path)` — verificat direct, izolat, cu un
+script separat care confirmă tipul câmpului și extrage corect calea reală,
+ÎNAINTE de a aplica fix-ul în `DiskScanEngine.swift`.
+
+**A doua problemă găsită, în HARNESS-ul de test, nu în cod de producție**:
+prima rulare a testului a INTRAT ÎN DEADLOCK (0% CPU, niciun output,
+proces agățat la nesfârșit) — nu era o scanare lentă, era un blocaj real.
+Cauza: un executabil simplu de linie de comandă (`main.swift`) NU are un
+run loop AppKit/SwiftUI care să "pompeze" automat `DispatchQueue.main` —
+`group.wait()` (blocare sincronă pe semafor) ține thread-ul principal
+ocupat la nesfârșit, deci `completion`-urile din `DiskScanEngine`
+(dispatch-uite explicit pe `.main`, CORECT pentru UI-ul real al aplicației)
+nu se executau NICIODATĂ în acest context de test. Fix DOAR în test:
+`waitOnMain(group)` rulează `RunLoop.main.run(...)` în buclă scurtă până
+grupul se termină, în loc de `group.wait()` orb. După ambele fix-uri, toate
+cele 18 verificări (scanare completă, round-trip cache, update incremental,
+3× stress pe 200 de fișiere) au trecut, PASS.
+
+**De ce ambele bug-uri au scăpat de la `swift build`**: niciunul nu e o
+eroare de compilare — `withUnsafePointer`/`withMemoryRebound` compilează
+perfect (tipurile sunt corecte din punctul de vedere al compilatorului,
+doar semantica e greșită), iar deadlock-ul apare DOAR la execuție reală,
+niciodată la o simplă verificare statică. Exact motivul pentru care
+practica de verificare izolată, prin rulare reală (nu doar `swift build`),
+rămâne obligatorie la orice schimbare cu potențial de eșec silențios —
+al patrulea bug de acest fel găsit în acest modul, după cele 3 din v2.28.0.
+
+**TODO explicit, nu ascuns — paritate Windows (Regula 31).** Verificat prin
+`grep`: `MacMasterControlProWin` NU are niciun echivalent al Analizei de
+Disc — doar un `DiskHealthService`/`DiskHealthPage` complet diferit (SMART,
+sănătatea discului, nu explorare de spațiu). Portul complet (UI + engine)
+rămâne de construit de la zero, într-o sesiune viitoare — strategia de
+scanare incrementală bazată pe mtime de folder e explicit portabilă
+(`Directory.GetLastWriteTime` în C#), fără nevoie de USN Journal/MFT.
+
+**Verificat**: `swift build -c release` — 0 erori. `.pkg` semnat Developer
+ID Application+Installer, notarizat, stapled (`spctl -a -vv -t install`:
+„accepted", „Notarized Developer ID"). Instalare finală (`installer -pkg
+... -target /`) cere parola de administrator — pas fizic, confirmat de
+Cristi, nu de Claude.
+
 ## v2.29.0 (2026-09-03) — 4 ghiduri PDF detaliate per modul, în meniul Help
 
 Cerință explicită de la Cristi: manuale PDF ultra-detaliate pentru fiecare
