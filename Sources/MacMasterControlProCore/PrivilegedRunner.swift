@@ -44,7 +44,22 @@ public enum PrivilegedRunner {
     /// de un mesaj static presupus de noi dinainte.
     @discardableResult
     public static func run(_ command: String, onOutput: ((String) -> Void)? = nil) -> Result {
-        let escaped = command.replacingOccurrences(of: "\"", with: "\\\"")
+        // [2026-09-03] ROOT-CAUZA REALĂ a "Touch ID nu merge NICIODATĂ",
+        // confirmată direct din panoul Terminal Live nou-adăugat (fără el,
+        // n-am fi văzut asta): "176:177: syntax error: Expected "\"" but
+        // found unknown token. (-2741)". Scăpam DOAR ghilimelele
+        // (`"` -> `\"`), NICIODATĂ backslash-urile proprii ale comenzii —
+        // scriptul Touch ID conține `\.`/`\1` (escape-uri regex in `sed`).
+        // Un backslash NEESCAPAT într-un literal AppleScript e interpretat
+        // de PARSERUL AppleScript ca începutul unei secvențe de escape
+        // proprii lui — rupe literalul de string ÎNAINTE ca osascript să
+        // ajungă vreodată să CEARĂ parola, deci NICIO fereastră de sistem
+        // nu apărea vreodată, exact simptomul raportat. Ordinea contează:
+        // backslash-urile se scapă ÎNTÂI (`\` -> `\\`), ghilimelele DUPĂ —
+        // altfel am duplica escape-urile deja introduse la primul pas.
+        let escaped = command
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
         let script = "do shell script \"\(escaped)\" with administrator privileges"
         onOutput?("$ \(command)")
 

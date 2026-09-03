@@ -138,7 +138,7 @@ struct TweaksModuleView: View {
             }
 
             if !status.isEmpty {
-                Text(status).font(.caption).foregroundStyle(.secondary)
+                StatusBanner(text: status)
             }
             Spacer()
         }

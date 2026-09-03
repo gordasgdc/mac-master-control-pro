@@ -101,7 +101,7 @@ struct ResolveToolsView: View {
                                 .disabled(isSendingTest)
                         }
                         if let emailTestStatus {
-                            Text(emailTestStatus).font(.caption2).foregroundStyle(.secondary)
+                            StatusBanner(text: emailTestStatus)
                         }
                     }
                 }
@@ -208,7 +208,7 @@ struct ResolveToolsView: View {
                             .disabled(isBackingUp || !ResolveDatabaseBackupService.databaseExists())
                     }
                     if let backupStatus {
-                        Text(backupStatus).font(.caption).foregroundStyle(backupStatus.hasPrefix("✔") ? .green : .red)
+                        StatusBanner(text: backupStatus)
                     }
                     if !backups.isEmpty {
                         Divider()

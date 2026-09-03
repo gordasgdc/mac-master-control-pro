@@ -837,6 +837,54 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.26.3 (2026-09-03) — ROOT-CAUZA REALĂ a Touch ID + StatusBanner peste tot
+
+Panoul Terminal Live adăugat în v2.26.2 și-a dovedit imediat rostul:
+Cristi a trimis output-ul real la prima încercare, dezvăluind eroarea
+adevărată — `176:177: syntax error: Expected """ but found unknown
+token. (-2741)`. NU era deloc o problemă de permisiuni/prompt — era un
+bug de escaping AppleScript, prezent probabil din prima implementare a
+`PrivilegedRunner`, doar că niciun apelant anterior nu trimisese o
+comandă cu destule backslash-uri ca să-l declanșeze vizibil.
+
+**Root-cauza exactă**: `PrivilegedRunner.run` scăpa DOAR ghilimelele
+(`"` → `\"`) când construia literalul de string AppleScript, niciodată
+backslash-urile proprii ale comenzii. Scriptul Touch ID conține
+`\.`/`\1` (escape-uri regex din `sed`) — un backslash neescapat într-un
+literal AppleScript e interpretat de PARSERUL AppleScript ca începutul
+propriei sale secvențe de escape, rupând literalul de string ÎNAINTE ca
+`osascript` să ajungă vreodată să compileze scriptul, darămite să ceară
+parola — exact de-aia nicio fereastră de sistem nu apărea NICIODATĂ, în
+niciuna din cele 2 versiuni anterioare (amândouă reparau cauze reale,
+dar nu ȘI pe asta).
+
+**Fix**: ordinea corectă de escaping — backslash-urile ÎNTÂI (`\` →
+`\\`), ghilimelele DUPĂ. Verificat izolat, ÎNAINTE de a declara fixul
+gata: `osacompile -e "<scriptul escapat>"` → compilare validă (confirmat
+"SINTAXA VALIDA"), spre deosebire de varianta veche care ar fi eșuat
+identic cu eroarea raportată.
+
+**A doua cerință, mai largă**: Cristi a semnalat că starea aplicației e
+general ambiguă — "nu știi ce face, a rulat, nu a rulat... clientul
+trebuie psihologic să înțeleagă, să zică ok, l-am rulat, e bine".
+`StatusBanner.swift` (nou) — bloc COLORAT (verde/roșu/albastru), cu
+iconiță, care înlocuiește tiparul vechi `Text(status).font(.caption)
+.foregroundStyle(.secondary)` (identic vizual la succes și eșec) —
+folosește convenția deja existentă în tot codul (`"✔ ..."`/`"✘ ..."` la
+începutul mesajului), deci niciun apelant nu trece un enum nou, doar
+textul deja scris. Aplicat în toate cele 8 locuri reale unde exista un
+mesaj de status/rezultat: Tweak-uri Sistem, Curățare & RAM, Cloud
+Manager, Duplicate, Rosetta Inspector, Layout Ferestre, DaVinci Resolve
+(2 locuri). NU aplicat peste texte informative neutre (dimensiuni,
+descrieri, numărători) — acelea rămân caption gri, corect, fiindcă nu
+sunt un rezultat de succes/eșec.
+
+**Verificat**: `swift build` — 0 erori. Instalat local, 2.26.3 confirmat
+pe disc. **Touch ID efectiv NU verificat live de Claude** (cere
+interacțiune fizică cu promptul de sistem) — dar de data asta cu o
+explicație tehnică completă și verificabilă independent (nu doar o
+presupunere), spre deosebire de v2.26.0/v2.26.1.
+
 ## v2.26.2 (2026-09-03) — Terminal Live pentru Touch ID (diagnostic vizibil)
 
 Cristi a confirmat, cu screenshot: v2.26.1 (fix osascript-ca-proces-extern)

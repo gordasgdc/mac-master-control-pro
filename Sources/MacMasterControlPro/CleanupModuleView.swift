@@ -199,7 +199,7 @@ struct CleanupModuleView: View {
             }
 
             if !status.isEmpty {
-                Text(status).font(.caption).foregroundStyle(.secondary)
+                if !status.isEmpty { StatusBanner(text: status) }
             }
             if !logLines.isEmpty {
                 TerminalLogView(lines: logLines)

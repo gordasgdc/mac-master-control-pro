@@ -180,7 +180,7 @@ struct AddCloudRemoteSheet: View {
                 .textFieldStyle(.roundedBorder)
             }
 
-            if let status { Text(status).font(.caption).foregroundStyle(.secondary) }
+            if let status { StatusBanner(text: status) }
 
             HStack {
                 Button("Anulează") { dismiss() }

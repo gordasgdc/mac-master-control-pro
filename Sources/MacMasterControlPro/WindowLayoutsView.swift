@@ -83,7 +83,7 @@ struct WindowLayoutsView: View {
             }
 
             if let status {
-                Text(status).font(.caption).foregroundStyle(.secondary)
+                StatusBanner(text: status)
             }
             Spacer()
         }
