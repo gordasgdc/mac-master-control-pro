@@ -42,6 +42,7 @@ enum L {
         "sidebar.renderMode": [.ro: "Mod Randare", .en: "Render Mode", .es: "Modo Renderizado"],
         "sidebar.loginItems": [.ro: "Pornire Sistem", .en: "Startup Apps", .es: "Apps de Inicio"],
         "sidebar.diskHealth": [.ro: "Sănătate Discuri", .en: "Disk Health", .es: "Salud de Discos"],
+        "sidebar.diskAnalyzer": [.ro: "Analiză Disc", .en: "Disk Analyzer", .es: "Analizador de Disco"],
         "sidebar.resolveTools": [.ro: "DaVinci Resolve", .en: "DaVinci Resolve", .es: "DaVinci Resolve"],
         "sidebar.windowLayouts": [.ro: "Layout Ferestre", .en: "Window Layouts", .es: "Diseños de Ventanas"],
         "sidebar.network": [.ro: "Rețea", .en: "Network", .es: "Red"],

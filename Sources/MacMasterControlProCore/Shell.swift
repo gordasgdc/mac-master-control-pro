@@ -16,25 +16,61 @@ public enum Shell {
         return "/opt/homebrew/bin:/usr/local/bin:" + existing
     }()
 
-    @discardableResult
-    public static func run(_ command: String) -> String {
+    /// [2026-09-03] FIX REAL, raportat de Cristi: scanarea unui hard disk
+    /// extern mare (ex. Big File Finder, `find ... -exec stat`) bloca toata
+    /// aplicatia pana la un force-quit. Cauza reala: `run`/`runElevated`
+    /// citeau output-ul DUPA `process.waitUntilExit()` — deadlock clasic de
+    /// `Process`/`Pipe`, documentat de Apple: pipe-ul kernel are un buffer
+    /// FIX (~64 KB); daca procesul copil scrie mai mult decat atat inainte
+    /// ca cineva sa citeasca din pipe, copilul se blocheaza in `write()`
+    /// (bufferul e plin), iar parintele asteapta la nesfarsit in
+    /// `waitUntilExit()` un proces care nu mai poate iesi niciodata —
+    /// ambii asteapta unul dupa celalalt. Un `find` pe un disc cu sute de
+    /// mii de fisiere mari depaseste garantat 64 KB de output.
+    /// Fix: citim pipe-ul INCREMENTAL, pe masura ce datele sosesc
+    /// (`readabilityHandler`), NU dupa ce procesul s-a terminat — parintele
+    /// goleste mereu bufferul, copilul nu se mai poate bloca la scriere.
+    private static func runProcess(_ command: String, extraEnv: [String: String] = [:]) -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
         process.arguments = ["-c", command]
         var env = ProcessInfo.processInfo.environment
         env["PATH"] = augmentedPath
+        for (key, value) in extraEnv { env[key] = value }
         process.environment = env
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
+
+        let outputData = NSMutableData()
+        let lock = NSLock()
+        pipe.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            lock.lock()
+            outputData.append(chunk)
+            lock.unlock()
+        }
         do {
             try process.run()
-            process.waitUntilExit()
         } catch {
+            pipe.fileHandleForReading.readabilityHandler = nil
             return "Eroare executie: \(error.localizedDescription)"
         }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        process.waitUntilExit()
+        // readabilityHandler poate mai avea un ultim chunk in zbor la
+        // momentul waitUntilExit — golim explicit, apoi oprim handler-ul.
+        let remaining = pipe.fileHandleForReading.readDataToEndOfFile()
+        lock.lock()
+        if !remaining.isEmpty { outputData.append(remaining) }
+        let result = outputData as Data
+        lock.unlock()
+        pipe.fileHandleForReading.readabilityHandler = nil
+        return String(data: result, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    @discardableResult
+    public static func run(_ command: String) -> String {
+        runProcess(command)
     }
 
     /// [2026-09-03] FIX REAL, raportat de Cristi: instalarea `macFUSE` prin
@@ -79,23 +115,6 @@ public enum Shell {
     /// ffmpeg) nu au nevoie de asta — doar cask-urile care ating sistemul.
     @discardableResult
     public static func runElevated(_ command: String) -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-c", command]
-        var env = ProcessInfo.processInfo.environment
-        env["PATH"] = augmentedPath
-        env["SUDO_ASKPASS"] = askpassScriptPath
-        process.environment = env
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return "Eroare executie: \(error.localizedDescription)"
-        }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        runProcess(command, extraEnv: ["SUDO_ASKPASS": askpassScriptPath])
     }
 }

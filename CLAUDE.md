@@ -703,6 +703,38 @@ clase, cauze tehnice) unei audiențe publice necunoscute.
   `MediaFlow-Monitor` (v1.0.0/v1.0.1) — restul release-urilor mai vechi din
   ecosistem rămân de verificat incremental, nu toate dintr-o dată.
 
+**30. Zero cod "impur" sau nelalocul lui — orice implementare TREBUIE
+finalizată complet, nu doar compilată (2026-09-03).** Cerință explicită de
+la Cristi, după un incident real: un fix scris în cod dar nepropagat peste
+tot unde era nevoie (versiune, `update.json`, ambele platforme, ambele
+aplicații) a lăsat sistemul într-o stare pe jumătate — "să nu rămână nimic
+inpur și nelalocul lui, să se implementeze tot ce am actualizat și am
+creat, să nu mai avem probleme". Regulă practică, obligatorie la orice
+schimbare de cod:
+- Orice constantă/valoare copiată dintr-un alt fișier/repo (chei, ID-uri,
+  praguri, URL-uri) se verifică ACTIV cu `grep`, nu se presupune corectă
+  doar pentru că a fost copiată — un audit se oprește abia când TOATE
+  aparițiile au fost verificate, nu doar cea raportată inițial.
+- O funcționalitate nouă/modificată se declară "gata" abia după ce
+  TOATE piesele ei sunt implementate și verificate — cod, rebuild+reinstall
+  (Regula 0), versiune sincronizată peste tot unde trebuie (Regula 14),
+  paritate Mac/Windows dacă aplică (regula de mai jos), `CHANGELOG.md`
+  (Regula 25). O piesă lăsată "pentru mai târziu" se spune EXPLICIT, nu se
+  ascunde într-un răspuns care sună ca "gata".
+- Orice implementare/îmbunătățire nouă a acestei Părți 1 se scrie DIN
+  START în `CLAUDE.md`-ul TUTUROR proiectelor din `~/Developer/` (Regula
+  11) — nu doar în repo-ul unde a pornit discuția.
+
+**31. Paritate Mac/Windows imediată, în aceeași sesiune (2026-09-03).**
+Completare la Regula 30: orice schimbare de cod livrată pe Mac care are un
+echivalent Windows în ecosistem (și invers) se portează 1:1 ÎN ACEEAȘI
+SESIUNE, fără să aștepți o cerere separată de la Cristi — portul e parte
+integrantă a schimbării, nu un TODO ulterior. Dacă portul chiar nu poate
+fi făcut acum (acces la mediul Windows indisponibil, testare reală
+imposibilă), se spune EXPLICIT ce lipsește și de ce, marcat clar în
+`CHANGELOG.md` ca "TODO paritate Windows/Mac" (Regula existentă de
+documentație) — nu se lasă nemenționat.
+
 ## [PARTEA 2: SPECIFICATII TEHNICE PROIECT]
 
 ## Structura repo-ului
@@ -804,6 +836,59 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 **Release v2.9.0**: toate cele 7 module de mai sus + notificarea pe email,
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
+
+## v2.26.0 (2026-09-03) — Audit total: Analiză Disc + 2 bug-uri reale, sistemice
+
+Cerut de Cristi ca audit complet ("touch ID zice permisiune negată",
+"scanezi fișiere mari și hard disk mare se blochează, se închide") +
+cerință nouă (analiză vizuală de disc, gen DaisyDisk).
+
+**1. `Shell.swift` — deadlock clasic `Process`/`Pipe`, cauza REALĂ a
+blocării la scanare.** `run`/`runElevated` citeau output-ul
+(`readDataToEndOfFile()`) abia DUPĂ `process.waitUntilExit()`. Pipe-ul
+kernel are un buffer FIX (~64 KB) — un `find` pe un disc extern cu sute
+de mii de fișiere mari (Big File Finder) depășește garantat asta:
+procesul copil se blochează la `write()` (buffer plin, nimeni nu
+citește), părintele așteaptă la nesfârșit `waitUntilExit()` un proces
+care nu mai poate ieși — cei doi se blochează reciproc. Simptom exact
+raportat: aplicația înghețată, userul o închide forțat. Afecta TOATE
+cele ~15 fișiere care folosesc `Shell.run`, nu doar scanarea de disc.
+**Fix**: citire INCREMENTALĂ a pipe-ului (`readabilityHandler`), pe
+măsură ce datele sosesc — părintele nu mai lasă niciodată bufferul să se
+umple, indiferent cât de mare e output-ul.
+
+**2. `PrivilegedRunner.swift` — Touch ID/sudo eșua intermitent cu
+"permisiune negată".** `NSAppleScript.executeAndReturnError` e
+documentat explicit de Apple ca NEFIIND thread-safe, trebuie apelat DOAR
+de pe main thread — dar toate cele 15 apeluri `PrivilegedRunner.run(...)`
+din aplicație vin din `DispatchQueue.global().async` (ca UI-ul să nu se
+blocheze cât așteaptă parola). Execuția de pe fundal producea erori
+intermitente de autorizare de la Security Server — tiparul exact
+"câteodată merge, câteodată nu" raportat. **Fix**: `run` forțează
+executarea efectivă a AppleScript-ului pe main thread
+(`DispatchQueue.main.sync`, cu verificare `Thread.isMainThread` ca să nu
+se auto-blocheze dacă apelantul e deja pe main) — apelanții existenți nu
+s-au schimbat, tot pot chema din fundal.
+
+**3. Modul nou: `DiskAnalyzerService.swift` + `DiskAnalyzerView.swift`
+("Analiză Disc", gen DaisyDisk).** Drill-down pe niveluri (nu sunburst
+complet — efort disproporționat față de valoarea reală): `du -xsk` pentru
+subfoldere (nu traversează alte volume montate, ca Finder), `find
+-maxdepth 1 -type f` + `stat` pentru fișiere individuale de la același
+nivel (pe care `du -d 1` nu le listează separat) — ambele prin `Shell.run`
+(fix-ul de mai sus, sigur chiar și pe un folder cu sute de mii de
+fișiere). UI: breadcrumb + bară proporțională colorată (click = drill-down)
++ listă cu Arată în Finder/Șterge (`PrivilegedFileOps`, fallback automat
+pe parolă admin). Protecție împotriva cursei intre scanări: un
+`scanGeneration` (token incrementat la fiecare navigare) — dacă userul
+schimbă folderul cât timp o scanare veche, lentă, tot rulează pe fundal,
+rezultatul ei întârziat NU mai suprascrie folderul nou deschis.
+
+**Verificat**: `swift build -c release` — 0 erori. Instalat local
+(2.26.0 confirmat pe disc), lansat, logica de parsare `du`/`stat`
+verificată manual byte-cu-byte (confirmat: `\t` dintr-un literal Swift
+devine tab real ÎNAINTE să ajungă la shell — niciun bug de escaping,
+verificare făcută explicit ca să nu presupun).
 
 ## Rebuild local
 
