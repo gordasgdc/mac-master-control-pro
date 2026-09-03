@@ -1,5 +1,13 @@
 # Changelog — Master Control Studio Pro
 
+## v2.25.6 (2026-09-03) — Fix real: dezinstalarea unei aplicații deținute de root
+
+Unele aplicații (instalate cu drepturi de administrator) refuzau ștergerea
+la Coșul de gunoi standard, deși aveau tehnic permisiunile potrivite pe
+folder — macOS cere autentificare de administrator pentru ele, la fel ca
+în Finder. Dezinstalatorul trece acum automat pe ștergere cu parolă de
+administrator când e nevoie, în loc să se oprească la primul refuz.
+
 ## v2.25.5 (2026-09-03) — Fix real: mesajul de la dezinstalare dispărea instant
 
 Cauza reală a impresiei "nu face nimic": panoul revenea instant la starea

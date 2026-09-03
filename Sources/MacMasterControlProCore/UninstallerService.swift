@@ -175,20 +175,30 @@ public enum UninstallerService {
             ? " [ATENȚIE: există și \(duplicatePath) — un al doilea exemplar, neatins de această ștergere]"
             : " [proprietar: \(owner)]"
 
+        // [2026-09-03] FIX REAL nr. 2, confirmat direct din log-ul lui
+        // Cristi: "Hedge for Mac.app couldn't be moved to the trash because
+        // you don't have permission to access it. [proprietar: root]" —
+        // `isDeletableFile(atPath:)` intoarce TRUE (permisiunile brute pe
+        // /Applications permit userului admin sa scrie acolo), dar
+        // `trashItem` foloseste intern un canal diferit (Finder/
+        // NSWorkspace), care CERE explicit autentificare admin pentru un
+        // item detinut de root — exact promptul pe care Finder l-ar arata
+        // in acelasi caz. Fix: la ORICE esec al caii neprivilegiate
+        // (`isDeletableFile` fals SAU `trashItem` care arunca), trecem
+        // AUTOMAT pe calea privilegiata (`PrivilegedRunner`, prompt nativ
+        // de parola) — nu ne mai oprim la primul refuz.
         if fm.isDeletableFile(atPath: app.path.path) {
             do {
                 try fm.trashItem(at: app.path, resultingItemURL: nil)
+                Thread.sleep(forTimeInterval: 0.5) // vezi nota de mai sus
+                if !fm.fileExists(atPath: app.path.path) {
+                    return "Șters: \(app.path.path)\(diagnosticSuffix)"
+                }
+                // a "reusit" fara eroare dar fisierul tot exista - cade pe
+                // calea privilegiata mai jos, ca la orice alt esec.
             } catch {
-                return "EROARE la ștergerea \(app.path.path): \(error.localizedDescription)\(diagnosticSuffix)"
+                // cade pe calea privilegiata mai jos.
             }
-            // Verificare intarziata (2026-09-03): posibil ceva relanseaza/
-            // recreeaza fisierul dupa mutarea la Cos - o singura verificare
-            // instant nu ar prinde asta.
-            Thread.sleep(forTimeInterval: 0.5)
-            if fm.fileExists(atPath: app.path.path) {
-                return "EROARE: \(app.path.path) tot există la 0.5s după ștergere — ceva îl recreează sau nu a fost mutat de fapt.\(diagnosticSuffix)"
-            }
-            return "Șters: \(app.path.path)\(diagnosticSuffix)"
         }
         let result = PrivilegedRunner.run("rm -rf \"\(app.path.path)\"")
         if !result.success {
