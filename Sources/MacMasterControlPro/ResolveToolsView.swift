@@ -17,7 +17,7 @@ struct ResolveToolsView: View {
 
     @StateObject private var notifier = RenderNotificationService()
 
-    @StateObject private var cloud = CloudManagerService()
+    @StateObject private var cloud = CloudManagerService.shared
     @State private var selectedRemote: String = ""
     @State private var syncDirection: SyncDirection = .upload
     @State private var isSyncing = false

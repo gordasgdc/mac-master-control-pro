@@ -1,5 +1,20 @@
 # Changelog — Master Control Studio Pro
 
+## v2.28.0 (2026-09-03) — Analiză Disc: indexare completă, navigare instantă
+
+Analiza de disc funcționează acum ca un explorator real (DaisyDisk/
+GrandPerspective): la alegerea unui disc/folder, aplicația indexează O
+SINGURĂ DATĂ toată structura, într-o singură trecere. După aceea, intrarea
+în orice subfolder — oricât de adânc — e INSTANTĂ, fără nicio rescanare.
+Bară de navigare completă (cale întreagă) + buton Înapoi.
+
+## v2.27.1 (2026-09-03) — Iconițe reale ale aplicațiilor în Mod Randare
+
+Secțiunea „Mod Randare” arată acum, permanent, iconițele OFICIALE (nu
+simboluri generice) ale aplicațiilor de editare detectate rulând acum —
+DaVinci Resolve, Final Cut Pro, Premiere Pro, Media Encoder etc. —
+actualizate automat la fiecare câteva secunde.
+
 ## v2.27.0 (2026-09-03) — Mod Randare pentru orice aplicație + design mai profesional
 
 - **Mod Randare nu mai e limitat la DaVinci Resolve** — recunoaște acum și

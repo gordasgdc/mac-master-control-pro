@@ -3,7 +3,7 @@ import AppKit
 import MacMasterControlProCore
 
 struct CleanupModuleView: View {
-    @StateObject private var service = CleanupService()
+    @StateObject private var service = CleanupService.shared
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
     @State private var selectedItems: Set<CleanableItem> = []

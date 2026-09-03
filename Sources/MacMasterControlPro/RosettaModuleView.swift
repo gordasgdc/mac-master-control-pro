@@ -2,7 +2,7 @@ import SwiftUI
 import MacMasterControlProCore
 
 struct RosettaModuleView: View {
-    @StateObject private var service = RosettaInspector()
+    @StateObject private var service = RosettaInspector.shared
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
     @State private var showConfirmRemove = false

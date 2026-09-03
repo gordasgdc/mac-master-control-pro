@@ -18,6 +18,9 @@ public struct CleanableItem: Identifiable, Hashable {
 /// Mapeaza 1:1 pe menu_cleanup din Mac_Master_Control.sh. Restructurat
 /// pentru selectie granulara (checkbox per item) in loc de "totul sau nimic".
 public final class CleanupService: ObservableObject {
+    /// [2026-09-03] Singleton — vezi comentariul din RenderModeService pentru
+    /// motiv (starea nu trebuie sa se resetteze la schimbarea de meniu).
+    public static let shared = CleanupService()
     public init() {}
 
     @Published public var items: [CleanableItem] = []

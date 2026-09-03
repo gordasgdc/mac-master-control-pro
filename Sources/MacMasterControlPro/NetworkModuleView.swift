@@ -3,7 +3,7 @@ import MacMasterControlProCore
 
 /// Primul modul: Retea & Cloud (mapare directa pe menu_network_cloud din script).
 struct NetworkModuleView: View {
-    @StateObject private var service = NetworkService()
+    @StateObject private var service = NetworkService.shared
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
     @State private var selected: Set<String> = []

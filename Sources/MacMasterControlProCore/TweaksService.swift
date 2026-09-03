@@ -12,6 +12,8 @@ public struct SpotlightTarget: Identifiable, Hashable {
 
 /// Mapeaza 1:1 pe menu_system_tweaks din Mac_Master_Control.sh.
 public final class TweaksService: ObservableObject {
+    /// [2026-09-03] Singleton — vezi comentariul din RenderModeService.
+    public static let shared = TweaksService()
     @Published public var spotlightTargets: [SpotlightTarget] = []
     /// Bifa = protejat (fisier `.metadata_never_index` prezent) - citita
     /// direct de pe disc la fiecare scanare, nu presupusa din persistenta.

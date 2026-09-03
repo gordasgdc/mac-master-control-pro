@@ -7,6 +7,8 @@ public struct NetworkAdapter: Identifiable {
 }
 
 public final class NetworkService: ObservableObject {
+    /// [2026-09-03] Singleton — vezi comentariul din RenderModeService.
+    public static let shared = NetworkService()
     public init() {}
     @Published public var adapters: [NetworkAdapter] = []
     @Published public var selectedInterface: String = "en8"
