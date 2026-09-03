@@ -1,5 +1,13 @@
 # Changelog — Master Control Studio Pro
 
+## v2.29.0 (2026-09-03) — 4 ghiduri PDF noi, detaliate, per modul
+
+Meniul Help capătă 4 ghiduri noi, pe lângă cel general de instalare:
+„Mod Randare”, „Analiză Disc”, „Tweak-uri Sistem” și „Backup &
+Securitate” — fiecare explică exact ce face fiecare opțiune și cum se
+folosește la capacitate maximă. Disponibile în română, engleză și
+spaniolă, se deschid direct în vizualizatorul nativ de PDF al sistemului.
+
 ## v2.28.1 (2026-09-03) — Dashboard: 3 corecturi găsite din capturi de ecran
 
 - Cardul „Aplicații de fundal" arăta un indicator care se învârtea la

@@ -54,7 +54,11 @@ mkdir -p "$BUILD_OUT/Contents/MacOS" "$BUILD_OUT/Contents/Resources"
 cp .build/release/MacMasterControlPro "$BUILD_OUT/Contents/MacOS/MacMasterControlPro"
 cp Info.plist "$BUILD_OUT/Contents/Info.plist"
 cp AppIcon.icns "$BUILD_OUT/Contents/Resources/AppIcon.icns"
-for pdf in installer/Instructiuni_Utilizare_RO.pdf installer/Instructiuni_Utilizare_EN.pdf installer/Instructiuni_Utilizare_ES.pdf; do
+for pdf in installer/Instructiuni_Utilizare_RO.pdf installer/Instructiuni_Utilizare_EN.pdf installer/Instructiuni_Utilizare_ES.pdf \
+           installer/Ghid_ModRandare_RO.pdf installer/Ghid_ModRandare_EN.pdf installer/Ghid_ModRandare_ES.pdf \
+           installer/Ghid_AnalizaDisc_RO.pdf installer/Ghid_AnalizaDisc_EN.pdf installer/Ghid_AnalizaDisc_ES.pdf \
+           installer/Ghid_TweaksSistem_RO.pdf installer/Ghid_TweaksSistem_EN.pdf installer/Ghid_TweaksSistem_ES.pdf \
+           installer/Ghid_BackupSecuritate_RO.pdf installer/Ghid_BackupSecuritate_EN.pdf installer/Ghid_BackupSecuritate_ES.pdf; do
     if [ -f "$pdf" ]; then cp "$pdf" "$BUILD_OUT/Contents/Resources/"; fi
 done
 

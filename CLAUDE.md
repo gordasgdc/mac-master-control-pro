@@ -837,6 +837,47 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.29.0 (2026-09-03) — 4 ghiduri PDF detaliate per modul, în meniul Help
+
+Cerință explicită de la Cristi: manuale PDF ultra-detaliate pentru fiecare
+modul important, integrate în meniul Help, deschise prin viewer-ul nativ
+de sistem (Preview) — nu doar ghidul general de instalare deja existent.
+
+**`installer/generate_module_guides.py`** (nou, autonom — NU importă din
+`generate_pdf.py`, aceeași convenție ca `codesigning/` copiat neschimbat
+între repo-uri: stilul vizual — Arial pentru diacritice, aceleași culori
+accent — e duplicat intenționat, nu partajat prin import, ca fiecare
+script să rămână independent rulabil). Generează 4 ghiduri × 3 limbi = 12
+PDF-uri în `installer/`:
+- `Ghid_ModRandare_{RO,EN,ES}.pdf` — ce face exact `tmutil disable`/
+  `mdutil -a -i off`/`renice`, cele 10 aplicații recunoscute automat,
+  avertismentul de dezactivare manuală.
+- `Ghid_AnalizaDisc_{RO,EN,ES}.pdf` — cum funcționează indexarea completă
+  + navigarea instantă (v2.28.0), cum se citește bara proporțională.
+- `Ghid_TweaksSistem_{RO,EN,ES}.pdf` — ce schimbă exact Finder avansat,
+  ce e `.metadata_never_index` (Spotlight Shield), ce fișier de sistem
+  modifică Touch ID (`/etc/pam.d/sudo_local`).
+- `Ghid_BackupSecuritate_{RO,EN,ES}.pdf` — notificare randare + email,
+  Auditor Media Pool, sincronizare LUT/Fusion, backup bază de date
+  (de ce trebuie închis Resolve întâi), ce înseamnă fiecare verificare de
+  Securitate + de ce 3 acțiuni NU sunt automate (FileVault/SIP/DNS).
+
+**`ModuleGuidePDF.swift`** (nou) — enum cu 4 cazuri, port 1:1 al tiparului
+deja existent în `GuidePDF.swift` (deschide limba curentă din
+`LanguageStore`, fallback RO dacă fișierul lipsește), parametrizat pe
+numele de bază al ghidului — nu repetă logica de 4 ori.
+
+**`MacMasterControlProApp.swift`** — meniul Help capătă 4 butoane noi,
+sub un separator, după ghidul general existent.
+
+**`build_installer.sh`** — actualizat să copieze toate cele 12 PDF-uri noi
+în `Contents/Resources`, alături de cele 3 existente (15 total).
+
+**Verificat**: `swift build` — 0 erori. Fiecare din cele 12 PDF-uri
+verificat cu `pypdf` — diacritice românești corecte (ă/ș/î/â/ț), 3 pagini
+fiecare, footer + numerotare corectă. Instalat local, 2.29.0 confirmat pe
+disc, cele 12 fișiere confirmate prezente în bundle.
+
 ## v2.28.1 (2026-09-03) — Audit din capturi de ecran (20 poze trimise de Cristi)
 
 Cristi a trimis 20 de capturi de ecran (v2.27.0) cerând analiză vizuală
