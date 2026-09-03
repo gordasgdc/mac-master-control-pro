@@ -9,7 +9,7 @@ extension Notification.Name {
 struct MacMasterControlProApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ScaledContentView()
                 .onAppear { ThemeManager.shared.applyNow() }
         }
         // BUG REAL, gasit 2026-08-31: `.windowResizability(.contentSize)`
@@ -48,21 +48,30 @@ struct MacMasterControlProApp: App {
     }
 }
 
-// BUG REAL FINAL, confirmat direct de Cristi (2026-08-31): tehnica
-// `.scaleEffect` + `.position()` (fostul `ScaledContentView`, eliminat)
-// nu doar ca nu producea o schimbare vizibila (v2.19.0), dar dupa fix-ul
-// de layout (v2.20.0) a inceput sa rupa efectiv CLICK-urile — la orice
-// scale diferit de 1.0, tot ecranul Setari devenea neresponsiv (niciun
-// buton nu mai reactiona), blocand userul definitiv in acel ecran (nici
-// macar revenirea la "Normal" nu mai era posibila din UI). Motiv tehnic
-// probabil: NavigationSplitView e susdinut intern de NSSplitViewController
-// (AppKit), iar geometria de hit-testing a coloanelor lui nu se resincronizeaza
-// corect cu un `.scaleEffect` extern aplicat peste intreg continutul SwiftUI.
+// BUG ISTORIC (2026-08-31): 3 incercari anterioare de `.scaleEffect` +
+// `.position()` au rupt hit-testing-ul (click-uri moarte in Setari la
+// scale != 1.0), motiv pentru care tehnica fusese ELIMINATA complet aici.
 //
-// Decizie: dupa 3 incercari esuate de reparare a acestei tehnici, o
-// ELIMINAM COMPLET — un bug care poate bloca ireversibil userul e mai grav
-// decat lipsa functiei. `TextScalePreference`/picker-ul din Setari raman
-// (Windows chiar functioneaza corect, port 1:1 confirmat de Cristi), dar
-// pe Mac raman DOAR cosmetic, fara efect vizual, pana la o implementare
-// non-riscanta (scalare reala per-Text/Font, nu transform global) —
-// de facut intr-o sesiune viitoare, dedicata, nu graba.
+// [2026-09-03] REPUS, cu tehnica EXACTA (nu doar similara) care functioneaza
+// deja confirmat in GDC Plugin Manager — acelasi NavigationSplitView, acelasi
+// SwiftUI/macOS. Diferenta reala fata de incercarile anterioare de-aici:
+// randam ContentView() la `geo.size / scale` (compensare de frame INAINTE
+// de scaleEffect, nu dupa) intr-un GeometryReader care ii da mereu
+// dimensiunea REALA curenta a ferestrei — asta pastreaza layout-ul si
+// hit-testing-ul sincronizate cu ce se vede vizual, indiferent de
+// NavigationSplitView/NSSplitViewController dedesubt. Daca acest fix
+// reproduce vreodata bug-ul vechi (click-uri moarte), revino la varianta
+// eliminata mai sus, dar cu diagnostic real (nu presupunere) inainte.
+private struct ScaledContentView: View {
+    @ObservedObject private var textScale = TextScaleManager.shared
+
+    var body: some View {
+        GeometryReader { geo in
+            let scale = textScale.current.scaleFactor
+            ContentView()
+                .frame(width: geo.size.width / scale, height: geo.size.height / scale)
+                .scaleEffect(scale)
+                .position(x: geo.size.width / 2, y: geo.size.height / 2)
+        }
+    }
+}

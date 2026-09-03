@@ -35,17 +35,23 @@ enum TextScalePreference: String, CaseIterable, Identifiable {
 final class TextScaleManager: ObservableObject {
     static let shared = TextScaleManager()
 
-    // BUG REAL, gasit 2026-08-31 (raportat direct de Cristi): la un scale
-    // diferit de 1.0, `.scaleEffect` + `.position()` din `ScaledContentView`
-    // NU transforma corect zona de click (hit-testing) fata de ce se vede
-    // vizual pe ecran — daca aplicatia pornea deja cu o valoare salvata
-    // (ex. "Mare"), userul ramanea blocat AFARA din Setari, fara nicio cale
-    // sa revina la Normal din UI. Cerinta explicita: "aplicatiile sa se
-    // deschida in modul normal... dupa aia e la latitudinea fiecaruia cum
-    // vrea sa si-l modifice" — deci NU mai persistam alegerea intre
-    // repporniri, pornim mereu la Normal (safe, hit-testing corect din
-    // prima clipa), userul poate schimba oricand DIN sesiunea curenta.
-    @Published var current: TextScalePreference = .normal
+    private static let key = "MacMasterControlPro.textScale"
 
-    private init() {}
+    // [2026-09-03] Persistenta reactivata — lockout-ul vechi (userul ramanea
+    // blocat afara din Setari daca pornea deja pe "Mare") era cauzat de
+    // implementarea GRESITA a scaleEffect-ului, nu de persistenta in sine
+    // (vezi MacMasterControlProApp.swift, ScaledContentView). Cu tehnica
+    // corecta (portata identic din GDC Plugin Manager), hit-testing-ul
+    // ramane corect la orice scala, deci nu mai exista risc de blocare.
+    @Published var current: TextScalePreference {
+        didSet {
+            guard current != oldValue else { return }
+            UserDefaults.standard.set(current.rawValue, forKey: Self.key)
+        }
+    }
+
+    private init() {
+        let saved = UserDefaults.standard.string(forKey: Self.key)
+        current = saved.flatMap(TextScalePreference.init(rawValue:)) ?? .normal
+    }
 }

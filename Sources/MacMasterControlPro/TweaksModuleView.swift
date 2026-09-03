@@ -105,7 +105,10 @@ struct TweaksModuleView: View {
 
             GroupBox("Touch ID") {
                 Button("Activează Touch ID pentru comenzi sudo") {
-                    runGated { service.enableTouchIDForSudo() }
+                    runGated {
+                        status = "Se activează…"
+                        service.enableTouchIDForSudo { _, message in status = message }
+                    }
                 }
                 .padding(6)
             }
