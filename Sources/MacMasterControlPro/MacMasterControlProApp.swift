@@ -9,7 +9,7 @@ extension Notification.Name {
 struct MacMasterControlProApp: App {
     var body: some Scene {
         WindowGroup {
-            ScaledContentView()
+            ContentView()
                 .onAppear { ThemeManager.shared.applyNow() }
         }
         // BUG REAL, gasit 2026-08-31: `.windowResizability(.contentSize)`
@@ -52,26 +52,15 @@ struct MacMasterControlProApp: App {
 // `.position()` au rupt hit-testing-ul (click-uri moarte in Setari la
 // scale != 1.0), motiv pentru care tehnica fusese ELIMINATA complet aici.
 //
-// [2026-09-03] REPUS, cu tehnica EXACTA (nu doar similara) care functioneaza
-// deja confirmat in GDC Plugin Manager — acelasi NavigationSplitView, acelasi
-// SwiftUI/macOS. Diferenta reala fata de incercarile anterioare de-aici:
-// randam ContentView() la `geo.size / scale` (compensare de frame INAINTE
-// de scaleEffect, nu dupa) intr-un GeometryReader care ii da mereu
-// dimensiunea REALA curenta a ferestrei — asta pastreaza layout-ul si
-// hit-testing-ul sincronizate cu ce se vede vizual, indiferent de
-// NavigationSplitView/NSSplitViewController dedesubt. Daca acest fix
-// reproduce vreodata bug-ul vechi (click-uri moarte), revino la varianta
-// eliminata mai sus, dar cu diagnostic real (nu presupunere) inainte.
-private struct ScaledContentView: View {
-    @ObservedObject private var textScale = TextScaleManager.shared
-
-    var body: some View {
-        GeometryReader { geo in
-            let scale = textScale.current.scaleFactor
-            ContentView()
-                .frame(width: geo.size.width / scale, height: geo.size.height / scale)
-                .scaleEffect(scale)
-                .position(x: geo.size.width / 2, y: geo.size.height / 2)
-        }
-    }
-}
+// [2026-09-03] A 4-A INCERCARE, cu tehnica EXACTA din GDC Plugin Manager
+// (`geo.size / scale` + `.scaleEffect` + `.position`) — REPRODUS ACELASI
+// BUG, confirmat direct de Cristi ("apas pe meniul setari dar nu se
+// deschide"). Deci NU e o diferenta de implementare intre cele doua
+// aplicatii (ambele folosesc NavigationSplitView identic) — e specific
+// combinatiei GeometryReader+scaleEffect cu NSSplitViewController-ul din
+// spatele NavigationSplitView-ului ACESTEI aplicatii macOS, indiferent
+// cat de exact copiem reteta care functioneaza in GDC Plugin Manager.
+// RE-ELIMINAT. Nu mai incerca aceasta tehnica aici fara un mediu de
+// testare interactiv real (nu doar `swift build`) — 4 incercari esuate
+// identic e suficient sa marcheze asta ca ne-viabil pentru acest layout,
+// nu doar "inca nereparat".

@@ -1,5 +1,13 @@
 # Changelog — Master Control Studio Pro
 
+## v2.25.2 (2026-09-03) — Fix critic: Setări nu se mai deschideau
+
+Încercarea de a reactiva "Mărime Text" din v2.25.1 bloca accesul la
+Setări — reparat urgent, prin revenirea la varianta stabilă anterioară.
+Mărimea textului rămâne doar cosmetică pe Mac deocamdată (opțiunile
+Mic/Normal/Mare/Foarte mare există în listă, dar nu au încă efect vizual),
+până la o soluție fără acest risc.
+
 ## v2.25.1 (2026-09-03) — Fix: instalare macFUSE, Touch ID pentru sudo, mărime text
 
 - **Instalarea macFUSE eșua constant** cu o eroare despre parolă în
