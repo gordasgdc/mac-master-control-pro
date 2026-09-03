@@ -1,5 +1,15 @@
 # Changelog — Master Control Studio Pro
 
+## v2.28.1 (2026-09-03) — Dashboard: 3 corecturi găsite din capturi de ecran
+
+- Cardul „Aplicații de fundal" arăta un indicator care se învârtea la
+  nesfârșit, fără să se stabilească niciodată. Arată acum verde/roșu
+  real, ca toate celelalte carduri.
+- Titlul Dashboard avea o iconiță generică în loc de una consecventă cu
+  restul aplicației.
+- Textul descriptiv de sub titlu, netradus, apărea în engleză indiferent
+  de limba aleasă.
+
 ## v2.28.0 (2026-09-03) — Analiză Disc: indexare completă, navigare instantă
 
 Analiza de disc funcționează acum ca un explorator real (DaisyDisk/

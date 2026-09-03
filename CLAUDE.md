@@ -837,6 +837,40 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.28.1 (2026-09-03) — Audit din capturi de ecran (20 poze trimise de Cristi)
+
+Cristi a trimis 20 de capturi de ecran (v2.27.0) cerând analiză vizuală
+completă + curățenie de cod legacy. Am revizuit fiecare ecran sistematic —
+majoritatea confirmă că design-ul curent (StatusBanner, iconițe SF Symbols
+din v2.27.x) funcționează corect. 3 probleme REALE găsite, toate în
+`DashboardView`:
+
+1. **Cardul "Aplicații de fundal" (`DashboardCard`) avea `isGood: nil`
+   HARDCODAT** — un `ProgressView` care se învârte etern, niciodată
+   înlocuit cu un cerc verde/roșu real, CONTRAR intenției documentate
+   explicit chiar în comentariul de deasupra clasei ("verde/roșu la orice
+   tip de configurare, direct pe dashboard"). Fix: `loginItemsGood`
+   calculat real din `LoginItemsService.scan()` — verde daca niciun agent
+   terț nu e încărcat acum (nimic concurează pentru CPU/RAM), roșu altfel.
+2. **`"dashboard.title"` avea emoji `📊` hardcodat** — scăpat la trecerea
+   sistemică de emoji→SF Symbols din v2.27.0, fiindcă e citit prin
+   `L.t(...)` (Localization.swift), nu un `Text("📊 ...")` direct — grep-ul
+   de atunci nu l-a prins. Fix: text curat + `Label(..., systemImage:
+   "gauge.with.dots.needle.67percent")`, aceeași iconiță ca-n sidebar.
+3. **`"dashboard.tagline"` avea `.ro` IDENTIC cu `.en`** (text de marketing
+   englezesc, netradus) — singura appariție de text englez într-o
+   aplicație altfel complet localizată RO/EN/ES. `.es` era deja tradus
+   corect; doar `.ro` rămăsese netradus. Fix: traducere reală RO + EN
+   reformulat mai concis.
+
+**Verificare sistemică suplimentară**: `grep` pentru alte apariții
+`isGood: nil` (zero găsite) și emoji rămase în `Localization.swift` (zero
+găsite) — confirmă că acestea au fost singurele 3, nu doar cele vizibile
+în capturile trimise.
+
+**Verificat**: `swift build` — 0 erori. Instalat local, 2.28.1 confirmat
+pe disc.
+
 ## v2.28.0 (2026-09-03) — Analiză Disc: indexare completă + 3 bug-uri reale, grave, prinse la testare
 
 Cerință explicită de la Cristi: "declanșează o nouă scanare de la zero" la

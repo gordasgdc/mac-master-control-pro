@@ -57,11 +57,11 @@ enum L {
         "sidebar.dependencies": [.ro: "Dependențe", .en: "Dependencies", .es: "Dependencias"],
         "sidebar.settings": [.ro: "Setări", .en: "Settings", .es: "Ajustes"],
 
-        "dashboard.title": [.ro: "📊 Dashboard", .en: "📊 Dashboard", .es: "📊 Panel"],
+        "dashboard.title": [.ro: "Dashboard", .en: "Dashboard", .es: "Panel"],
         "dashboard.tagline": [
-            .ro: "Ultimate System Tuning, Cloud Mount, Media Cache & Future macOS Readiness Panel",
-            .en: "Ultimate System Tuning, Cloud Mount, Media Cache & Future macOS Readiness Panel",
-            .es: "Panel definitivo de optimización, montaje Cloud, caché multimedia y preparación para futuros macOS"
+            .ro: "Optimizare de sistem, montare Cloud, cache media și pregătire pentru viitoarele versiuni de macOS",
+            .en: "System tuning, Cloud mounting, media cache, and readiness for future macOS versions",
+            .es: "Optimización del sistema, montaje Cloud, caché multimedia y preparación para futuras versiones de macOS"
         ],
         "dashboard.depsWarning": [
             .ro: "Dependențe lipsă — apasă pentru a rezolva",
