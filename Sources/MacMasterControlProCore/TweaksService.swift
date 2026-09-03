@@ -37,11 +37,50 @@ public final class TweaksService: ObservableObject {
         Shell.run("defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true")
     }
 
-    public func enableTouchIDForSudo() {
-        PrivilegedRunner.run([
-            "test -f /etc/pam.d/sudo_local || cp /etc/pam.d/sudo_local.template /etc/pam.d/sudo_local",
-            "sed -i '' 's/#auth       sufficient     pam_tid.so/auth       sufficient     pam_tid.so/g' /etc/pam.d/sudo_local"
-        ])
+    /// [2026-09-03] FIX REAL, raportat de Cristi: "nu funcționa tot timpul,
+    /// tot îmi cerea parola" — DOUĂ probleme reale găsite în implementarea
+    /// veche, nu una singură:
+    /// 1. **Rezultatul era ARUNCAT complet** — dacă promptul de admin era
+    ///    respins, sau `sed` nu găsea nimic de înlocuit, userul nu vedea
+    ///    NICIUN semnal — credea că a activat Touch ID, dar de fapt nimic
+    ///    nu se schimbase.
+    /// 2. **`sed` cerea o potrivire EXACTĂ de spații** pe linia comentată
+    ///    (`'#auth       sufficient     pam_tid.so'`) — șablonul
+    ///    `/etc/pam.d/sudo_local.template` al Apple diferă vizibil ca
+    ///    formatare de spații/tab-uri între versiuni de macOS; pe orice
+    ///    Mac unde formatarea nu se potrivea EXACT, `sed` rula cu succes
+    ///    (exit 0) dar înlocuia ZERO linii — Touch ID rămânea dezactivat,
+    ///    fără nicio eroare vizibilă. Exact tiparul "merge pe un Mac, nu pe
+    ///    altul" raportat.
+    /// Fix: regex tolerant la spații (`[[:space:]]+`) pentru linia deja
+    /// comentată; dacă TOT nu găsește nimic (șablon complet diferit sau
+    /// lipsă), adaugă linia direct la ÎNCEPUTUL fișierului (metoda oficială
+    /// documentată de Apple, funcționează indiferent de conținutul
+    /// existent) — și verifică REAL, la final, că linia activă chiar
+    /// există în fișier, înainte să raporteze succes.
+    private static let touchIDPattern = "^[[:space:]]*auth[[:space:]]+sufficient[[:space:]]+pam_tid\\.so"
+
+    public func enableTouchIDForSudo(completion: @escaping (Bool, String) -> Void) {
+        let check = "grep -qE '\(Self.touchIDPattern)' /etc/pam.d/sudo_local"
+        let script = """
+        test -f /etc/pam.d/sudo_local || cp /etc/pam.d/sudo_local.template /etc/pam.d/sudo_local; \
+        \(check) || sed -E -i '' 's/^#[[:space:]]*(auth[[:space:]]+sufficient[[:space:]]+pam_tid\\.so)/\\1/' /etc/pam.d/sudo_local; \
+        \(check) || (printf '%s\\n' 'auth       sufficient     pam_tid.so' | cat - /etc/pam.d/sudo_local > /etc/pam.d/sudo_local.mmcpnew && mv /etc/pam.d/sudo_local.mmcpnew /etc/pam.d/sudo_local); \
+        \(check) && echo MMCP_TID_OK || echo MMCP_TID_FAIL
+        """
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = PrivilegedRunner.run(script)
+            DispatchQueue.main.async {
+                let ok = result.success && result.output.contains("MMCP_TID_OK")
+                if ok {
+                    completion(true, "✔ Touch ID activat pentru comenzi sudo. Repornește Terminal-ul ca să vezi promptul nou.")
+                } else if !result.success {
+                    completion(false, "✘ Promptul de administrator a fost respins — Touch ID nu a fost activat.")
+                } else {
+                    completion(false, "✘ Nu am putut confirma activarea — verifică manual: sudo cat /etc/pam.d/sudo_local")
+                }
+            }
+        }
     }
 
     // MARK: - Spotlight Shield (Manager Multi-Select)

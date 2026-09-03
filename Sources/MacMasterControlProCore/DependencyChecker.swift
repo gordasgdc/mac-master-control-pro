@@ -60,7 +60,12 @@ public final class DependencyChecker: ObservableObject {
 
         // macFUSE
         let macfuseInstalled = FileManager.default.fileExists(atPath: "/Library/Filesystems/macfuse.fs")
-        results.append(DependencyItem(id: "macfuse", name: "macFUSE", isInstalled: macfuseInstalled, version: macfuseInstalled ? "instalat" : nil, installHint: "Necesar pentru montare Cloud ca disc virtual."))
+        // [2026-09-03] Hint extins: instalarea cere parola de administrator
+        // (dialog nativ, vezi Shell.runElevated) - normal, macFUSE instaleaza
+        // o extensie de sistem. macOS poate arăta separat o notificare
+        // "Software from 'Benjamin Fleischer' can run in the background" -
+        // e dezvoltatorul oficial al macFUSE, nu un semnal de alarmă.
+        results.append(DependencyItem(id: "macfuse", name: "macFUSE", isInstalled: macfuseInstalled, version: macfuseInstalled ? "instalat" : nil, installHint: "Necesar pentru montare Cloud ca disc virtual. Instalarea cere parola de administrator (extensie de sistem) — o notificare macOS despre \"Benjamin Fleischer\" e normală, e dezvoltatorul oficial al macFUSE."))
 
         // FFmpeg — opțional, util pentru codecuri de export pe care DaVinci
         // Resolve (mai ales varianta Free) nu le acoperă nativ.
@@ -103,7 +108,10 @@ public final class DependencyChecker: ObservableObject {
                 log += Shell.run("\"\(brew)\" install rclone 2>&1") + "\n"
             }
             if self.items.first(where: { $0.id == "macfuse" })?.isInstalled == false {
-                log += Shell.run("\"\(brew)\" install --cask macfuse 2>&1") + "\n"
+                // Cask, nu formula - instaleaza o extensie de sistem, are
+                // nevoie de sudo intern -> Shell.runElevated (askpass), nu
+                // Shell.run simplu (vezi comentariul din Shell.swift).
+                log += Shell.runElevated("\"\(brew)\" install --cask macfuse 2>&1") + "\n"
             }
             DispatchQueue.main.async {
                 self.lastLog = log
@@ -130,7 +138,14 @@ public final class DependencyChecker: ObservableObject {
         isInstalling = true
         logLines.append("$ brew install \(isCask ? "--cask " : "")\(brewPackage)")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let output = Shell.run("\"\(brew)\" install \(isCask ? "--cask " : "")\(brewPackage) 2>&1")
+            // macFUSE (cask) instaleaza o extensie de sistem prin `installer
+            // -pkg ... -target /`, care ruleaza intern `sudo` FARA terminal
+            // disponibil - are nevoie de askpass (Shell.runElevated), altfel
+            // esueaza mereu cu "sudo: a terminal is required" (vezi
+            // comentariul din Shell.swift). Formulele simple (rclone/ffmpeg)
+            // nu ating sistemul, raman pe Shell.run.
+            let cmd = "\"\(brew)\" install \(isCask ? "--cask " : "")\(brewPackage) 2>&1"
+            let output = isCask ? Shell.runElevated(cmd) : Shell.run(cmd)
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.logLines.append(contentsOf: output.split(separator: "\n").map(String.init))
@@ -147,7 +162,9 @@ public final class DependencyChecker: ObservableObject {
         guard let brew = brewPath else { completion(); return }
         isInstalling = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let log = Shell.run("\"\(brew)\" update 2>&1 && \"\(brew)\" upgrade rclone macfuse 2>&1")
+            // "upgrade macfuse" poate re-rula installer-ul pkg (sudo intern) -
+            // acelasi motiv ca la instalare, foloseste askpass.
+            let log = Shell.runElevated("\"\(brew)\" update 2>&1 && \"\(brew)\" upgrade rclone macfuse 2>&1")
             DispatchQueue.main.async {
                 self?.lastLog = log
                 self?.isInstalling = false

@@ -1,5 +1,17 @@
 # Changelog — Master Control Studio Pro
 
+## v2.25.1 (2026-09-03) — Fix: instalare macFUSE, Touch ID pentru sudo, mărime text
+
+- **Instalarea macFUSE eșua constant** cu o eroare despre parolă în
+  Terminal — reparat: instalarea cere acum parola de administrator direct
+  printr-un dialog nativ, în loc să eșueze silențios.
+- **„Activează Touch ID pentru comenzi sudo” nu funcționa pe toate
+  Mac-urile** — acum verifică rezultatul real și reușește indiferent de
+  configurația existentă a sistemului, cu mesaj clar dacă totuși eșuează.
+- **Setarea „Mărime Text” (Mic/Normal/Mare/Foarte mare) repusă** — eliminată
+  anterior din cauza unui bug real de click-uri blocate; readusă cu o
+  tehnică deja confirmată funcțională, cu memorarea alegerii.
+
 ## v2.25.0 (2026-09-01) — Duplicate, căutare în meniu
 
 - **Modul nou „Duplicate”** — alegi ce foldere se caută, aplicația
