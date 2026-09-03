@@ -1,5 +1,11 @@
 # Changelog — Master Control Studio Pro
 
+## v2.25.7 (2026-09-03) — Aceeași protecție de administrator, la Fișiere mari/Duplicate/Rosetta Inspector
+
+Fix-ul pentru fișiere/aplicații deținute de administrator (v2.25.6) se
+aplică acum și la ștergerea din „Fișiere mari", „Duplicate" și „Rosetta
+Inspector" — nu doar la Dezinstalator.
+
 ## v2.25.6 (2026-09-03) — Fix real: dezinstalarea unei aplicații deținute de root
 
 Unele aplicații (instalate cu drepturi de administrator) refuzau ștergerea

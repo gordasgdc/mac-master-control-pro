@@ -94,14 +94,16 @@ public enum BigFileFinderService {
         }
     }
 
+    /// [2026-09-03] Foloseste `PrivilegedFileOps` (extras din fix-ul de
+    /// dezinstalare) - cade automat pe stergere privilegiata daca fisierul
+    /// e detinut de root/alt user, in loc sa raporteze doar "EROARE" fara
+    /// nicio cale de rezolvare pentru user.
     public static func delete(_ files: [BigFile], log: (String) -> Void) {
-        let fm = FileManager.default
         for file in files {
-            let url = URL(fileURLWithPath: file.path)
-            if (try? fm.trashItem(at: url, resultingItemURL: nil)) != nil {
-                log("Mutat la Coșul de gunoi (\(file.sizeDescription)): \(file.path)")
+            if let error = PrivilegedFileOps.delete(file.path) {
+                log("EROARE, nu s-a putut șterge \(file.path): \(error)")
             } else {
-                log("EROARE, nu s-a putut șterge: \(file.path)")
+                log("Mutat/șters (\(file.sizeDescription)): \(file.path)")
             }
         }
     }

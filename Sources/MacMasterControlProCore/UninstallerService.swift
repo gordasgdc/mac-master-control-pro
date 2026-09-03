@@ -183,31 +183,14 @@ public enum UninstallerService {
         // `trashItem` foloseste intern un canal diferit (Finder/
         // NSWorkspace), care CERE explicit autentificare admin pentru un
         // item detinut de root — exact promptul pe care Finder l-ar arata
-        // in acelasi caz. Fix: la ORICE esec al caii neprivilegiate
-        // (`isDeletableFile` fals SAU `trashItem` care arunca), trecem
-        // AUTOMAT pe calea privilegiata (`PrivilegedRunner`, prompt nativ
-        // de parola) — nu ne mai oprim la primul refuz.
-        if fm.isDeletableFile(atPath: app.path.path) {
-            do {
-                try fm.trashItem(at: app.path, resultingItemURL: nil)
-                Thread.sleep(forTimeInterval: 0.5) // vezi nota de mai sus
-                if !fm.fileExists(atPath: app.path.path) {
-                    return "Șters: \(app.path.path)\(diagnosticSuffix)"
-                }
-                // a "reusit" fara eroare dar fisierul tot exista - cade pe
-                // calea privilegiata mai jos, ca la orice alt esec.
-            } catch {
-                // cade pe calea privilegiata mai jos.
-            }
+        // in acelasi caz. `PrivilegedFileOps.delete` (extras aici, apoi
+        // generalizat la Fisiere mari/Duplicate/Rosetta Inspector) trece
+        // AUTOMAT pe calea privilegiata la orice esec — nu ne mai oprim la
+        // primul refuz.
+        if let error = PrivilegedFileOps.delete(app.path.path) {
+            return "EROARE la ștergerea \(app.path.path): \(error)\(diagnosticSuffix)"
         }
-        let result = PrivilegedRunner.run("rm -rf \"\(app.path.path)\"")
-        if !result.success {
-            return "EROARE la ștergerea \(app.path.path): \(result.output)\(diagnosticSuffix)"
-        }
-        Thread.sleep(forTimeInterval: 0.5)
-        return fm.fileExists(atPath: app.path.path)
-            ? "EROARE: \(app.path.path) tot există la 0.5s după ștergerea privilegiată.\(diagnosticSuffix)"
-            : "Șters (privilegiat): \(app.path.path)\(diagnosticSuffix)"
+        return "Șters: \(app.path.path)\(diagnosticSuffix)"
     }
 
     /// Inchide aplicatia daca ruleaza — altfel `trashItem`/`rm -rf` pot
