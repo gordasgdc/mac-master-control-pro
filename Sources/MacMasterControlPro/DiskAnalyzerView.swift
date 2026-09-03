@@ -16,6 +16,15 @@ struct DiskAnalyzerView: View {
     /// entries-urile folderului nou deschis — fiecare scanare își poartă
     /// propriul număr, doar cea mai recentă are voie să scrie rezultatul.
     @State private var scanGeneration = 0
+    /// [2026-09-03] Cerut explicit de Cristi: "durează mult să analizeze
+    /// și nu pot vedea... dacă e ok" — un `ProgressView` fără text care
+    /// se schimbă poate fi confundat cu o aplicație blocată la o scanare
+    /// cu adevărat lentă (disc extern mare). Un cronometru viu, care
+    /// crește vizibil la fiecare secundă, arată clar că analiza chiar
+    /// avansează, nu că s-a înghețat.
+    @State private var scanStartedAt: Date?
+    @State private var elapsedSeconds: Int = 0
+    private let scanTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private let palette: [Color] = [.orange, .cyan, .purple, .green, .pink, .yellow, .indigo, .mint, .teal, .brown]
 
@@ -25,7 +34,7 @@ struct DiskAnalyzerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("💽 Analiză Disc").font(.title2).bold()
+                Label("Analiză Disc", systemImage: "chart.pie").font(.title2).bold()
                 Text("Vezi ce ocupă spațiul, folder cu folder — apasă pe orice segment sau rând ca să intri în el.")
                     .font(.callout).foregroundStyle(.secondary)
 
@@ -34,8 +43,13 @@ struct DiskAnalyzerView: View {
                 if isScanning {
                     HStack(spacing: 10) {
                         ProgressView().controlSize(.small)
-                        Text("Scanez\(currentPath.map { " „\(($0 as NSString).lastPathComponent)”" } ?? "")… poate dura la un disc mare.")
+                        Text("Scanez\(currentPath.map { " „\(($0 as NSString).lastPathComponent)”" } ?? "")… \(elapsedSeconds)s — poate dura la un disc mare, aplicația nu s-a blocat.")
                             .font(.callout).foregroundStyle(.secondary)
+                            .contentTransition(.numericText())
+                    }
+                    .onReceive(scanTimer) { _ in
+                        guard let scanStartedAt else { return }
+                        elapsedSeconds = Int(Date().timeIntervalSince(scanStartedAt))
                     }
                 } else if !entries.isEmpty {
                     proportionalBar
@@ -124,6 +138,7 @@ struct DiskAnalyzerView: View {
     private func resetToRoots() {
         scanGeneration += 1
         isScanning = false
+        scanStartedAt = nil
         entries = []
         pathStack = []
         loadRoots()
@@ -193,6 +208,8 @@ struct DiskAnalyzerView: View {
     private func scan(_ path: String) {
         isScanning = true
         entries = []
+        scanStartedAt = Date()
+        elapsedSeconds = 0
         scanGeneration += 1
         let generation = scanGeneration
         DispatchQueue.global(qos: .userInitiated).async {
@@ -203,6 +220,7 @@ struct DiskAnalyzerView: View {
                 guard generation == scanGeneration else { return }
                 entries = result
                 isScanning = false
+                scanStartedAt = nil
             }
         }
     }

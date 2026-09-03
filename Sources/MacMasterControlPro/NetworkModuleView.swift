@@ -10,7 +10,7 @@ struct NetworkModuleView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("🌐 Rețea").font(.title2).bold()
+            Label("Rețea", systemImage: "network").font(.title2).bold()
 
             GroupBox("Plăci de rețea detectate") {
                 VStack(alignment: .leading, spacing: 8) {

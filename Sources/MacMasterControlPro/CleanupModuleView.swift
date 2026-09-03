@@ -29,7 +29,7 @@ struct CleanupModuleView: View {
         // exista continut. Fix: intreaga pagina scroleaza acum.
         ScrollView {
         VStack(alignment: .leading, spacing: 20) {
-            Text("🧹 Curățare & RAM").font(.title2).bold()
+            Label("Curățare & RAM", systemImage: "trash.circle").font(.title2).bold()
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {

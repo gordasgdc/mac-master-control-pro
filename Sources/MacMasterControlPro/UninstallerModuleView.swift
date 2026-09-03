@@ -50,7 +50,7 @@ struct UninstallerModuleView: View {
     private var appListPane: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("🗑️ Dezinstalator").font(.title2).bold()
+                Label("Dezinstalator", systemImage: "trash.slash").font(.title2).bold()
                 Spacer()
                 if !bulkSelectedIDs.isEmpty {
                     Button("Dezinstalează selectate (\(bulkSelectedIDs.count))", role: .destructive) {

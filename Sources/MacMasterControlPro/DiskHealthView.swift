@@ -12,7 +12,7 @@ struct DiskHealthView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("💽 Sănătate Discuri").font(.title2).bold()
+                Label("Sănătate Discuri", systemImage: "internaldrive").font(.title2).bold()
                 Spacer()
                 Button("Rescanează") { refresh() }
             }

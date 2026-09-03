@@ -13,11 +13,11 @@ struct RenderModeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("⚡️ Mod Randare").font(.title2).bold()
+            Label("Mod Randare", systemImage: "bolt.circle").font(.title2).bold()
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Pentru export-uri/randări lungi: pune pe pauză indexarea Spotlight și Time Machine (ambele pot concura pentru discul de proiect chiar în timpul randării), și ridică prioritatea procesului DaVinci Resolve, dacă rulează.")
+                    Text("Pentru export-uri/randări lungi din orice aplicație — DaVinci Resolve, Final Cut Pro, Premiere Pro, Media Encoder, After Effects, Logic Pro, HandBrake și altele: pune pe pauză indexarea Spotlight și Time Machine (ambele pot concura pentru discul de proiect chiar în timpul randării), și ridică prioritatea aplicațiilor de mai sus care rulează acum.")
                         .font(.caption).foregroundStyle(.secondary)
 
                     HStack(spacing: 14) {

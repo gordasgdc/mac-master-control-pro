@@ -65,7 +65,7 @@ struct RemoteBrowserSheet: View {
                 Button("🔄 Sincronizare folder…") { showSyncSheet = true }
                     .disabled(isBusy)
                 Spacer()
-                Button(role: .destructive) { confirmDelete = true } label: { Text("🗑 Șterge selecția") }
+                Button(role: .destructive) { confirmDelete = true } label: { Label("Șterge selecția", systemImage: "trash") }
                     .disabled(isBusy || selectedEntry == nil)
             }
             .font(.caption)

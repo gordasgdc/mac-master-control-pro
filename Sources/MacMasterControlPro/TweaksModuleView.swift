@@ -25,10 +25,15 @@ struct TweaksModuleView: View {
     /// presupus de noi. Rămâne pe ecran după eșec (nu se golește automat)
     /// ca userul să poată citi/copia exact ce s-a întâmplat.
     @State private var touchIDLog: [String] = []
+    /// Eroare de scriere/ștergere marker Spotlight — banda verde
+    /// "Protejat" de lângă fiecare toggle e deja indicatorul de succes;
+    /// asta apare doar la eșec (permisiuni etc.), ca userul să nu rămână
+    /// cu impresia falsă că toggle-ul a funcționat.
+    @State private var spotlightStatus: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("🛠️ Tweak-uri Sistem").font(.title2).bold()
+            Label("Tweak-uri Sistem", systemImage: "wrench.and.screwdriver").font(.title2).bold()
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
@@ -86,12 +91,27 @@ struct TweaksModuleView: View {
                         Text("Niciun disc extern conectat și niciun folder adăugat.").font(.caption).foregroundStyle(.secondary)
                     } else {
                         ForEach(service.spotlightTargets) { target in
+                            let isProtected = service.protectedPaths.contains(target.path)
                             HStack {
                                 Toggle(isOn: Binding(
-                                    get: { service.protectedPaths.contains(target.path) },
-                                    set: { checked in runGated { service.setProtected(target.path, checked) } }
+                                    get: { isProtected },
+                                    set: { checked in
+                                        runGated {
+                                            let ok = service.setProtected(target.path, checked)
+                                            spotlightStatus = ok
+                                                ? nil // starea e deja evidentă din eticheta „Protejat" de mai jos
+                                                : "✘ Nu am putut \(checked ? "proteja" : "elimina protecția pentru") „\(target.name)” — verifică permisiunile discului."
+                                        }
+                                    }
                                 )) {
                                     Label(target.name, systemImage: target.isVolume ? "externaldrive" : "folder")
+                                }
+                                if isProtected {
+                                    Label("Protejat", systemImage: "checkmark.shield.fill")
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(.green)
+                                        .padding(.horizontal, 8).padding(.vertical, 3)
+                                        .background(Color.green.opacity(0.12), in: Capsule())
                                 }
                                 Spacer()
                                 if !target.isVolume {
@@ -103,7 +123,10 @@ struct TweaksModuleView: View {
                             }
                         }
                     }
-                    Text("Protejate \(service.protectedPaths.count) din \(service.spotlightTargets.count)")
+                    if let spotlightStatus {
+                        StatusBanner(text: spotlightStatus)
+                    }
+                    Label("Protejate \(service.protectedPaths.count) din \(service.spotlightTargets.count)", systemImage: "checkmark.shield")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(6)

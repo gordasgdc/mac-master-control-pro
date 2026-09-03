@@ -14,7 +14,7 @@ struct LoginItemsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("🔌 Aplicații de fundal la pornire").font(.title2).bold()
+                Label("Aplicații de fundal la pornire", systemImage: "power.circle").font(.title2).bold()
                 Spacer()
                 Button("Rescanează") { refresh() }
             }
