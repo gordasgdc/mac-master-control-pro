@@ -60,7 +60,13 @@ public final class TweaksService: ObservableObject {
     /// există în fișier, înainte să raporteze succes.
     private static let touchIDPattern = "^[[:space:]]*auth[[:space:]]+sufficient[[:space:]]+pam_tid\\.so"
 
-    public func enableTouchIDForSudo(completion: @escaping (Bool, String) -> Void) {
+    /// [2026-09-03] `onOutput`, daca dat, primeste comanda exacta si FIECARE
+    /// linie de output/eroare de la `osascript` — cerut explicit de Cristi
+    /// dupa ce eroarea genereca ("Promptul a fost respins") a ramas
+    /// identica intre doua fix-uri diferite, fara nicio informatie reala
+    /// de diagnostic vizibila lui. Panoul „Terminal Live" (Regula 26) e
+    /// acum cablat si aici, nu doar la instalare/stergere de fisiere.
+    public func enableTouchIDForSudo(onOutput: ((String) -> Void)? = nil, completion: @escaping (Bool, String) -> Void) {
         let check = "grep -qE '\(Self.touchIDPattern)' /etc/pam.d/sudo_local"
         let script = """
         test -f /etc/pam.d/sudo_local || cp /etc/pam.d/sudo_local.template /etc/pam.d/sudo_local; \
@@ -69,13 +75,15 @@ public final class TweaksService: ObservableObject {
         \(check) && echo MMCP_TID_OK || echo MMCP_TID_FAIL
         """
         DispatchQueue.global(qos: .userInitiated).async {
-            let result = PrivilegedRunner.run(script)
+            let result = PrivilegedRunner.run(script, onOutput: { line in
+                DispatchQueue.main.async { onOutput?(line) }
+            })
             DispatchQueue.main.async {
                 let ok = result.success && result.output.contains("MMCP_TID_OK")
                 if ok {
                     completion(true, "✔ Touch ID activat pentru comenzi sudo. Repornește Terminal-ul ca să vezi promptul nou.")
                 } else if !result.success {
-                    completion(false, "✘ Promptul de administrator a fost respins — Touch ID nu a fost activat.")
+                    completion(false, "✘ Promptul de administrator a fost respins, sau comanda a eșuat — vezi detaliile exacte mai sus, în panoul negru.")
                 } else {
                     completion(false, "✘ Nu am putut confirma activarea — verifică manual: sudo cat /etc/pam.d/sudo_local")
                 }

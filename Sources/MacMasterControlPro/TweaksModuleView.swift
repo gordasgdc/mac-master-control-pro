@@ -19,6 +19,12 @@ struct TweaksModuleView: View {
     @State private var showGate = false
     @State private var selected: Set<TweakID> = []
     @State private var status = ""
+    /// [2026-09-03] Panou „Terminal Live" (Regula 26), cerut explicit de
+    /// Cristi pentru Touch ID — comanda EXACTĂ trimisă la osascript +
+    /// fiecare linie de output/eroare reală, NU doar un mesaj static
+    /// presupus de noi. Rămâne pe ecran după eșec (nu se golește automat)
+    /// ca userul să poată citi/copia exact ce s-a întâmplat.
+    @State private var touchIDLog: [String] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -104,10 +110,28 @@ struct TweaksModuleView: View {
             }
 
             GroupBox("Touch ID") {
-                Button("Activează Touch ID pentru comenzi sudo") {
-                    runGated {
-                        status = "Se activează…"
-                        service.enableTouchIDForSudo { _, message in status = message }
+                VStack(alignment: .leading, spacing: 8) {
+                    Button("Activează Touch ID pentru comenzi sudo") {
+                        runGated {
+                            status = "Se activează…"
+                            touchIDLog = []
+                            service.enableTouchIDForSudo(
+                                onOutput: { line in touchIDLog.append(line) },
+                                completion: { _, message in status = message }
+                            )
+                        }
+                    }
+                    if !touchIDLog.isEmpty {
+                        TerminalLogView(lines: touchIDLog)
+                        HStack {
+                            Spacer()
+                            Button("Copiază tot") {
+                                let pb = NSPasteboard.general
+                                pb.clearContents()
+                                pb.setString(touchIDLog.joined(separator: "\n"), forType: .string)
+                            }
+                            .font(.caption)
+                        }
                     }
                 }
                 .padding(6)

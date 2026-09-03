@@ -837,6 +837,47 @@ Port 1:1 pe Windows (`EmailNotifierService.cs`, `SmtpClient`).
 publicate ca produs final (Mac semnat+notarizat, Windows CI real +
 installer Inno Setup) - vezi CHANGELOG.md.
 
+## v2.26.2 (2026-09-03) — Terminal Live pentru Touch ID (diagnostic vizibil)
+
+Cristi a confirmat, cu screenshot: v2.26.1 (fix osascript-ca-proces-extern)
+tot eșuează IDENTIC ("Promptul de administrator a fost respins"). Fără
+diagnostic REAL vizibil, nu se putea distinge dacă: (a) fix-ul din v2.26.1
+n-a rezolvat root-cauza, (b) userul chiar respinge promptul fără să
+realizeze, sau (c) o a treia cauză complet diferită. Cerere explicită de
+la Cristi: "o fereastră tip terminal în care să rămână comenzile ce
+s-au încercat și eroarea... să nu dispară fereastra... la orice tip de
+comandă".
+
+**Găsit prin audit** (`grep -rn "TerminalLogView"`): panoul „Terminal
+Live" (Regula 26) era deja cablat în 9 din module (Cloud, Curățare,
+Dependențe, Login Items, Duplicate, Resolve Tools, Mod Randare, Remote
+Browser, Dezinstalator) — dar LIPSEA exact din `TweaksModuleView` (Touch
+ID), singurul loc unde userul raporta o problemă reală și persistentă.
+
+**Fix**: `PrivilegedRunner.run` capătă un parametru opțional `onOutput`
+(port 1:1 al celui deja existent pe Windows, `PrivilegedRunner.cs`) —
+emite comanda EXACTĂ trimisă + fiecare linie de output/eroare de la
+`osascript` + statusul final (cod de ieșire). `TweaksService.
+enableTouchIDForSudo` îl propagă mai departe; `TweaksModuleView` afișează
+rezultatul într-un `TerminalLogView` persistent (nu se golește la eșec)
++ buton „Copiază tot".
+
+**De ce e important dincolo de Touch ID**: data viitoare când acest buton
+(sau oricare altul din acest modul) eșuează, răspunsul RAW de la sistem e
+vizibil și copiabil imediat — nu mai depindem de un mesaj generic
+presupus de noi ("promptul a fost respins") care ascunde cauza reală.
+
+**TODO reale, nu ascunse**: restul acțiunilor din acest fișier
+(`TweaksService`: Finder avansat, blocare .DS_Store, Spotlight Shield)
+NU au `onOutput` — sunt scrieri `defaults`/`chflags` fără sudo, risc de
+eșec silențios mult mai mic, dar dacă un client raportează vreodată o
+problemă și la ele, portul e identic, trivial.
+
+**Verificat**: `swift build` — 0 erori. Instalat local, 2.26.2 confirmat
+pe disc. **Diagnosticul real al Touch ID rămâne deschis** — următorul
+mesaj din panoul Terminal Live, trimis de Cristi, va arăta exact ce
+eroare dă `osascript` pe acest Mac.
+
 ## v2.26.1 (2026-09-03) — Fix REAL #2 la Touch ID: root-cauza era alta
 
 v2.26.0 mutase execuția `NSAppleScript` pe main thread (fix corect pentru
