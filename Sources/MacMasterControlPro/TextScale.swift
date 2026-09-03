@@ -35,23 +35,13 @@ enum TextScalePreference: String, CaseIterable, Identifiable {
 final class TextScaleManager: ObservableObject {
     static let shared = TextScaleManager()
 
-    private static let key = "MacMasterControlPro.textScale"
+    // [2026-09-03] A 4-a incercare de scaleEffect (portata identic din GDC
+    // Plugin Manager) a REPRODUS acelasi bug de hit-testing (Setari
+    // neresponsive) - vezi MacMasterControlProApp.swift. Revenit definitiv
+    // la varianta safe: NU persistam alegerea (porneste mereu Normal),
+    // si scaleFactor ramane doar informativ - vezi nota la nivel de enum,
+    // aplicarea vizuala e dezactivata pana la o solutie non-riscanta.
+    @Published var current: TextScalePreference = .normal
 
-    // [2026-09-03] Persistenta reactivata — lockout-ul vechi (userul ramanea
-    // blocat afara din Setari daca pornea deja pe "Mare") era cauzat de
-    // implementarea GRESITA a scaleEffect-ului, nu de persistenta in sine
-    // (vezi MacMasterControlProApp.swift, ScaledContentView). Cu tehnica
-    // corecta (portata identic din GDC Plugin Manager), hit-testing-ul
-    // ramane corect la orice scala, deci nu mai exista risc de blocare.
-    @Published var current: TextScalePreference {
-        didSet {
-            guard current != oldValue else { return }
-            UserDefaults.standard.set(current.rawValue, forKey: Self.key)
-        }
-    }
-
-    private init() {
-        let saved = UserDefaults.standard.string(forKey: Self.key)
-        current = saved.flatMap(TextScalePreference.init(rawValue:)) ?? .normal
-    }
+    private init() {}
 }
