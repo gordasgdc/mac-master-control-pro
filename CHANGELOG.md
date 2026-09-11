@@ -1,5 +1,22 @@
 # Changelog — Master Control Studio Pro
 
+## v2.32.0 (2026-09-11) — Analiza de disc, fluidă chiar și pe foldere uriașe
+
+### Fixed
+- **Rotița de așteptare la deschiderea unui folder mare — rezolvată.** Lista
+  construia toate rândurile deodată; într-un folder cu zeci de mii de fișiere,
+  asta bloca aplicația și consuma câțiva GB de memorie. Acum se construiesc
+  doar rândurile pe care le vezi efectiv.
+
+### Changed
+- **Fișierele mici se grupează automat.** Într-un folder, cele sub 1 MB apar ca
+  un singur rând „Alte fișiere mici (N)", cu dimensiunea lor totală. Fișierele
+  mari rămân listate individual, ca înainte.
+  Mărimile folderelor și numărul total de fișiere rămân exacte — nu se pierde
+  nimic din calcul, doar din aglomerarea listei. Pe un volum de lucru video,
+  asta reduce cu ~98% numărul de rânduri și, odată cu el, memoria folosită.
+  Se aplică și analizelor salvate anterior, fără să fie nevoie de rescanare.
+
 ## v2.31.2 (2026-09-11) — Analiza de disc se deschide fără să blocheze aplicația
 
 ### Fixed

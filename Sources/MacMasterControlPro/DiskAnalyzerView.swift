@@ -198,15 +198,36 @@ struct DiskAnalyzerView: View {
     // MARK: - Lista
 
     private var entryList: some View {
-        VStack(spacing: 0) {
+        // [FIX 2026-09-11] `LazyVStack`, nu `VStack`.
+        //
+        // A TREIA cauză distinctă a rotiței de așteptare, găsită tot cu
+        // `sample` pe procesul blocat: stiva era integral în layout-ul SwiftUI
+        // (`StackLayout.placeChildren` / `sizeThatFits`, recursiv), nu în codul
+        // nostru. Un `VStack` își dimensionează TOȚI copiii deodată — într-un
+        // folder cu zeci de mii de fișiere înseamnă zeci de mii de rânduri
+        // măsurate simultan, la fiecare redesenare: 99,8% CPU și 4,2 GB RSS,
+        // măsurate pe procesul real.
+        //
+        // `LazyVStack` construiește doar rândurile vizibile. Agregarea
+        // fișierelor mici (`collapseSmallFiles`) reduce separat NUMĂRUL de
+        // noduri — cele două se completează: una taie costul de randare, alta
+        // costul de memorie al arborelui însuși.
+        LazyVStack(spacing: 0) {
             ForEach(Array(vm.currentChildren.enumerated()), id: \.element.id) { index, node in
                 HStack {
                     Circle().fill(palette[index % palette.count]).frame(width: 8, height: 8)
-                    Image(systemName: node.isDirectory ? "folder.fill" : "doc")
+                    Image(systemName: node.isAggregate ? "square.stack.3d.down.right"
+                                      : (node.isDirectory ? "folder.fill" : "doc"))
                         .foregroundStyle(.secondary)
                     Text(node.name).lineLimit(1)
+                        // Un nod agregat nu e un fișier real — se distinge
+                        // vizual, ca userul să nu-l caute în Finder.
+                        .foregroundStyle(node.isAggregate ? .secondary : .primary)
                     Spacer()
                     Text(node.sizeDescription).foregroundStyle(.secondary).font(.system(.callout, design: .monospaced))
+                    // Nodurile agregate n-au cale reală pe disc: nici „Arată în
+                    // Finder", nici ștergere nu au ce să facă acolo.
+                    if !node.isAggregate {
                     Button {
                         // [2026-09-04] Cerință explicită: pentru un folder,
                         // "Arată în Finder" (selectFile) doar îl evidenția
@@ -232,6 +253,7 @@ struct DiskAnalyzerView: View {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.plain)
+                    }
                 }
                 .contentShape(Rectangle())
                 .padding(.vertical, 6)

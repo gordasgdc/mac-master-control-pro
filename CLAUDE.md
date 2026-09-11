@@ -1722,3 +1722,57 @@ dar userul pierde vizibilitatea fișierelor mici în interfață. E o decizie de
 produs, nu una tehnică.
 
 Versiune: 2.31.1 → **2.31.2** (PATCH).
+
+## Etapa 2026-09-11 (4) — Rotița, a TREIA cauză: layout SwiftUI pe zeci de mii de rânduri
+
+**Trei cauze DISTINCTE, același simptom, raportat de Cristi de trei ori.**
+Fiecare fix anterior a fost real și a reparat un defect real; niciunul nu era
+cauza pe care o vedea el. Ordinea în care au ieșit la iveală:
+
+1. **(2.31.1)** flood de evenimente de progres pe MainActor — sufocare de UI;
+   main thread în `mach_msg_trap`, CPU normal.
+2. **(2.31.2)** `DiskCacheStore.load` sincron pe main thread, pe un cache de
+   2,4 GB — buclă de calcul; 99,9% CPU, RSS normal.
+3. **(2.32.0)** layout SwiftUI — 99,8% CPU **ȘI 4,2 GB RSS**.
+
+**Semnătura de resurse a fost de fiecare dată cheia diagnosticului.** `ps -o
+%cpu,rss,state` înainte de `sample` a orientat căutarea corect din prima, de
+fiecare dată. Un simptom identic pentru user („se învârte roata") a avut trei
+semnături complet diferite la nivel de proces.
+
+**Cauza a treia**: `entryList` folosea `VStack` + `ForEach` peste TOȚI copiii
+folderului curent. `VStack` își dimensionează toți copiii deodată, la fiecare
+redesenare — într-un folder cu zeci de mii de fișiere, zeci de mii de
+`sizeThatFits` recursive. `sample` a dat stiva integral în `SwiftUICore`
+(`StackLayout.placeChildren` → `sizeThatFits` → …), fără NICIUN cadru din codul
+nostru — semnul clar că problema e în cum CEREM randarea, nu în ce calculăm.
+
+**Fix 1**: `LazyVStack` — construiește doar rândurile vizibile.
+
+**Fix 2 — agregarea fișierelor mici** (aprobată explicit de Cristi, decizie de
+produs): în fiecare folder, fișierele sub 1 MB devin UN nod „Alte fișiere mici
+(N)". Măsurat pe un arbore realist de volum video (100 proiecte × 5 clipuri mari
++ 400 fișiere mici): **40.601 → 701 noduri, −98,3%**, cu `sizeBytes` și
+`totalFileCount` IDENTICE (verificat în test, nu presupus). Fișierele mari rămân
+vizibile individual.
+
+Detalii care contează:
+- se agregă doar FIȘIERE, niciodată foldere — structura rămâne navigabilă;
+- sub 2 fișiere mici nu se agregă: „Alte fișiere mici (1)" ar fi strict mai
+  puțin informativ decât numele real;
+- `aggregatedFileCount` păstrează numărul real, altfel totalul afișat ar scădea
+  brusc și ar părea că s-au pierdut fișiere;
+- nodul agregat n-are cale reală pe disc → UI-ul ascunde „Arată în Finder" și
+  ștergerea pentru el;
+- agregarea se aplică ȘI la încărcarea din cache, nu doar la scanare — userii cu
+  cache vechi (neagregat) beneficiază imediat, fără rescanare.
+
+**Lecție de proces, nu tehnică**: am raportat „rezolvat" de trei ori după ce am
+reparat câte o cauză reală, fără confirmare pe hardware-ul lui Cristi. Testele
+izolate nu reproduceau niciuna dintre cele trei — toate cereau volume reale de
+date (4 TB, cache de 2,4 GB, foldere cu zeci de mii de fișiere). Ciclul care a
+funcționat: Cristi raportează → `ps` + `sample` pe procesul VIU → cauză exactă
+în două minute. Pentru simptome de performanță, măsurarea pe mașina reală nu e
+un pas opțional de confirmare, e singura sursă de adevăr.
+
+Versiune: 2.31.2 → **2.32.0** (MINOR — agregarea schimbă ce vede userul).

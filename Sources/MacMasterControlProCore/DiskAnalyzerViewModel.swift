@@ -112,6 +112,11 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                 self.isLoadingCache = false
 
                 if let snapshot {
+                    // Cache-urile scrise ÎNAINTE de 2026-09-11 conțin arbori
+                    // NEagregați (un nod per fișier). Agregăm la încărcare, ca
+                    // userul să beneficieze imediat de memoria redusă, fără să
+                    // fie nevoit să rescaneze discul de la zero.
+                    snapshot.root.collapseSmallFiles()
                     self.tree = snapshot.root
                     self.lastScannedAt = snapshot.scannedAt
                     self.filesIndexed = snapshot.root.totalFileCount
@@ -158,6 +163,12 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                     self.isIndexing = false
                     return
                 }
+                // [2026-09-11] Agregarea fișierelor mici, ÎNAINTE de afișare și
+                // de salvarea în cache — ca arborele viu și cel salvat să fie
+                // identici (altfel userul ar vedea altceva după o redeschidere).
+                // Mărimile folderelor și numărul total de fișiere rămân exacte;
+                // vezi DiskTreeNode.collapseSmallFiles.
+                node.collapseSmallFiles()
                 self.tree = node
                 self.isIndexing = false
                 let now = Date()
