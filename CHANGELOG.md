@@ -1,5 +1,20 @@
 # Changelog — Master Control Studio Pro
 
+## v2.31.2 (2026-09-11) — Analiza de disc se deschide fără să blocheze aplicația
+
+### Fixed
+- **Rotița de așteptare la alegerea unui disc — rezolvată.** Rezultatul
+  scanării anterioare se citea în firul principal al aplicației, iar pe un disc
+  de 4 TB acel fișier ajunsese la 2,4 GB: interfața rămânea blocată zeci de
+  secunde. Acum se încarcă în fundal, cu buton de Stop.
+- Ecranul îți spune acum dacă **încarcă analiza salvată** sau **scanează
+  discul** — sunt două așteptări diferite.
+
+### Changed
+- **Rezultatele salvate ocupă de ~2,3 ori mai puțin spațiu** pe disc, fără
+  nicio pierdere: vezi exact același lucru ca înainte. Analizele salvate
+  anterior rămân valabile și se convertesc singure la următoarea scanare.
+
 ## v2.31.1 (2026-09-11) — Gata cu rotița de așteptare
 
 ### Fixed

@@ -44,6 +44,9 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     /// Discul aflat în curs de indexare — folosit pentru iconița NATIVĂ din
     /// panoul de progres (2026-09-11).
     @Published public private(set) var currentScanRootPath: String?
+    /// Distinge „încarc analiza salvată" de „scanez discul" — sunt două
+    /// așteptări diferite și userul trebuie să știe pe care o vede.
+    @Published public private(set) var isLoadingCache = false
     @Published public var bytesIndexed: Int64 = 0
     @Published public var deleteError: String?
     @Published public var roots: [DiskEntry] = []
@@ -83,15 +86,42 @@ public final class DiskAnalyzerViewModel: ObservableObject {
         pathStack = []
         deleteError = nil
 
-        if let snapshot = DiskCacheStore.load(rootPath: root.path) {
-            tree = snapshot.root
-            lastScannedAt = snapshot.scannedAt
-            filesIndexed = snapshot.root.totalFileCount
-            bytesIndexed = snapshot.root.sizeBytes
-            isIndexing = false
-            return
+        // [FIX 2026-09-11] CAUZA ROTIȚEI DE AȘTEPTARE, găsită cu `sample` pe
+        // procesul blocat: `DiskCacheStore.load` rula SINCRON, pe main thread,
+        // direct din acțiunea butonului. Comentariul de deasupra promitea „un
+        // singur fișier local mic" — în realitate, cache-ul unui volum de 4 TB
+        // ajunsese la **2,4 GB**, iar decodarea lui ca plist ținea main
+        // thread-ul ocupat la 99,9% CPU zeci de secunde. Presupunerea „mic"
+        // n-a fost niciodată verificată pe date reale.
+        //
+        // Acum: citire + decodare pe un thread de fundal, cu ecran de progres
+        // și buton de anulare între timp.
+        isIndexing = true
+        currentScanRootPath = root.path
+        filesIndexed = 0
+        bytesIndexed = 0
+        isLoadingCache = true
+
+        let path = root.path
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let snapshot = DiskCacheStore.load(rootPath: path)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                // Userul a apăsat Stop cât se încărca — nu suprascriem ce a ales.
+                guard self.isLoadingCache else { return }
+                self.isLoadingCache = false
+
+                if let snapshot {
+                    self.tree = snapshot.root
+                    self.lastScannedAt = snapshot.scannedAt
+                    self.filesIndexed = snapshot.root.totalFileCount
+                    self.bytesIndexed = snapshot.root.sizeBytes
+                    self.isIndexing = false
+                } else {
+                    self.performFullScan(rootPath: path)
+                }
+            }
         }
-        performFullScan(rootPath: root.path)
     }
 
     /// [2026-09-11] Oprește indexarea și revine la lista de discuri.
@@ -99,6 +129,7 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     /// blocat pe ecranul de progres — fără buton înapoi, fără să poată alege
     /// alt disc între timp (exact ce lipsea față de DaisyDisk).
     public func cancelIndexing() {
+        isLoadingCache = false
         DiskScanEngine.requestCancel()
         isIndexing = false
         tree = nil

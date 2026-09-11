@@ -1666,3 +1666,59 @@ Progresul raportat 0 fișiere în teste NU e un bug: `ProgressCounter` raporteaz
 o dată pe secundă, iar testele durau sub o secundă.
 
 Versiune: 2.31.0 → **2.31.1** (PATCH).
+
+## Etapa 2026-09-11 (3) — Rotița, cauza ADEVĂRATĂ: cache de 2,4 GB decodat pe main thread
+
+Cristi a raportat că rotița persistă pe 2.31.1. Etapa anterioară reparase o
+cauză reală (flood de progres pe MainActor), dar NU pe asta — două defecte
+diferite cu același simptom.
+
+**Diagnostic, pe procesul viu**: `ps` arăta 99,9% CPU în stare R — deci de data
+asta chiar o buclă de calcul, nu o sufocare de UI (spre deosebire de prima dată,
+când main thread-ul era în `mach_msg_trap`). Distincția asta a orientat căutarea
+corect din prima. `sample` a dat stiva completă:
+
+```
+DiskAnalyzerView.rootPicker (click pe disc)
+  -> DiskAnalyzerViewModel.startIndexing(root:)   [DiskAnalyzerViewModel.swift:86]
+    -> DiskCacheStore.SnapshotFile.init(from:)    [decodare plist]
+```
+
+**Cauza**: `DiskCacheStore.load` rula SINCRON, pe main thread, direct din
+acțiunea butonului. Comentariul de deasupra promitea „încarcă INSTANT cache-ul
+salvat (0 acces la disc dincolo de citirea unui singur fișier local **mic**)".
+
+**Măsurat, nu presupus**: `ls -lahS` pe folderul de cache → **2,4 GB** un singur
+fișier, 5,3 GB în total. Presupunerea „mic" din comentariu n-a fost niciodată
+verificată pe date reale, iar pe un volum de 4 TB e falsă cu trei ordine de
+mărime.
+
+**Lecție**: un comentariu care afirmă o caracteristică de PERFORMANȚĂ („mic",
+„instant", „ieftin") e o ipoteză până e măsurată. Aici ipoteza a trecut prin
+review și a rămas în cod până a produs simptomul.
+
+**Fixuri:**
+
+1. **Încărcare pe thread de fundal**, cu `ScanProgressView` și Stop. Gardă
+   `isLoadingCache`: dacă userul apasă Stop cât se încarcă, rezultatul sosit
+   ulterior NU mai suprascrie ce a ales între timp.
+2. **Compresie LZFSE** (`Compression`, nativ Apple) la salvare. Măsurat pe un
+   arbore de 10.201 noduri: 1,2 MB → 536 KB (**2,3×**), salvare 0,076s,
+   încărcare 0,095s.
+3. **Compatibilitate cu cache-urile vechi** — necomprimate. Marcaj propriu
+   `MMCPZ1` la începutul fișierului; un plist binar începe cu „bplist", deci
+   formatele nu pot fi confundate. Fișierele vechi se citesc ca atare și se
+   rescriu comprimat la următoarea scanare. **Testat explicit**, fiindcă o
+   greșeală aici ar fi însemnat că fiecare user pierde cache-ul și rescanează
+   ore întregi.
+4. `Data(contentsOf:options: .mappedIfSafe)` — fișierul e mapat, nu copiat
+   integral în RAM la citire.
+
+**RĂMÂNE DE DECIS DE CRISTI (nu am luat decizia singur)**: cauza de fond e că
+se stochează FIECARE fișier ca nod separat. Compresia reduce fișierul, dar la
+încărcare arborele tot ajunge întreg în RAM. Reducerea reală ar cere agregarea
+fișierelor mici (sub ~1 MB) într-un nod „alte fișiere" — câștig mare de memorie,
+dar userul pierde vizibilitatea fișierelor mici în interfață. E o decizie de
+produs, nu una tehnică.
+
+Versiune: 2.31.1 → **2.31.2** (PATCH).

@@ -98,7 +98,7 @@ struct DiskAnalyzerView: View {
         // inapoi. Acum: acelasi panou animat ca la Duplicate, cu Stop.
         VStack(alignment: .leading, spacing: 10) {
             ScanProgressView(
-                title: "Indexez discul…",
+                title: vm.isLoadingCache ? "Încarc analiza salvată…" : "Indexez discul…",
                 detailPath: vm.currentScanRootPath ?? "",
                 itemsLabel: "\(vm.filesIndexed) fișiere",
                 totalLabel: vm.indexedBytesDescription,
@@ -111,7 +111,9 @@ struct DiskAnalyzerView: View {
                 vm.cancelIndexing()
             }
 
-            Text("O singură trecere completă — după ce se termină, orice subfolder se deschide instant, fără rescanare.")
+            Text(vm.isLoadingCache
+                 ? "Citesc rezultatul scanării anterioare — nu se recitește discul."
+                 : "O singură trecere completă — după ce se termină, orice subfolder se deschide instant, fără rescanare.")
                 .font(.caption2).foregroundStyle(.tertiary)
         }
     }
