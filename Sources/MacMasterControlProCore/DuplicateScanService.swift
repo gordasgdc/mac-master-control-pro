@@ -58,6 +58,31 @@ public enum DuplicateScanEvent: Sendable {
     case failed(String)
 }
 
+/// Limitator de rată pentru evenimentele de progres.
+///
+/// [FIX 2026-09-11] Cauza rotiței de așteptare raportate de Cristi: în faza de
+/// hashing se emitea un eveniment la FIECARE fișier. Fiecare traversează spre
+/// ViewModel-ul `@MainActor`, atinge un `@Published` și declanșează o
+/// redesenare SwiftUI — pe zeci de mii de fișiere înseamnă mii de redesenări
+/// pe secundă, iar main thread-ul se sufocă. Scanarea chiar rula în fundal,
+/// corect; ceea ce bloca UI-ul era RAPORTAREA ei.
+///
+/// 10 actualizări pe secundă sunt peste ce percepe ochiul ca „live", la o
+/// fracțiune din cost. Evenimentele de tip `.group` și `.finished` NU se
+/// limitează niciodată — acelea poartă rezultate, nu progres.
+private struct EmitThrottle {
+    private var last: TimeInterval = 0
+    private let minimumInterval: TimeInterval = 0.1
+
+    mutating func shouldEmit(force: Bool = false) -> Bool {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard !force else { last = now; return true }
+        guard now - last >= minimumInterval else { return false }
+        last = now
+        return true
+    }
+}
+
 public actor DuplicateScanService {
     public static let shared = DuplicateScanService()
 
@@ -97,6 +122,7 @@ public actor DuplicateScanService {
         // ---- TRECEREA 1: doar contorizam dimensiunile. -------------------
         // Cheia optimizarii de memorie: aici NU retinem nicio cale. Un Int64
         // + un Int per dimensiune distincta, oricat de multe fisiere ar fi.
+        var throttle = EmitThrottle()
         var countBySize: [Int64: Int] = [:]
         var seen = 0
         var totalBytes: Int64 = 0
@@ -106,7 +132,7 @@ public actor DuplicateScanService {
                 countBySize[size, default: 0] += 1
                 seen += 1
                 totalBytes += size
-                if seen % 500 == 0 {
+                if seen % 500 == 0, throttle.shouldEmit() {
                     emit(.progress(DuplicateScanProgress(
                         phase: .enumerating, filesSeen: seen,
                         currentPath: path, bytesFound: totalBytes, fraction: nil)))
@@ -156,7 +182,7 @@ public actor DuplicateScanService {
             } handle: { path, hash in
                 processed += 1
                 if let hash { byPrefix[hash, default: []].append(path) }
-                if processed % 25 == 0 {
+                if processed % 25 == 0, throttle.shouldEmit() {
                     emit(.progress(DuplicateScanProgress(
                         phase: .prefiltering, filesSeen: processed,
                         currentPath: path, bytesFound: totalBytes,
@@ -173,10 +199,14 @@ public actor DuplicateScanService {
                     return (path, h)
                 } handle: { path, hash in
                     if let hash { byFull[hash, default: []].append(path) }
-                    emit(.progress(DuplicateScanProgress(
-                        phase: .hashing, filesSeen: processed,
-                        currentPath: path, bytesFound: totalBytes,
-                        fraction: totalCandidates > 0 ? Double(processed) / Double(totalCandidates) : nil)))
+                    // Limitat: altfel un grup cu mii de candidati inunda
+                    // MainActor-ul cu redesenari si blocheaza UI-ul.
+                    if throttle.shouldEmit() {
+                        emit(.progress(DuplicateScanProgress(
+                            phase: .hashing, filesSeen: processed,
+                            currentPath: path, bytesFound: totalBytes,
+                            fraction: totalCandidates > 0 ? Double(processed) / Double(totalCandidates) : nil)))
+                    }
                 }
 
                 for (hash, dupes) in byFull where dupes.count > 1 {

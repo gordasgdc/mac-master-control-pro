@@ -93,17 +93,27 @@ struct DiskAnalyzerView: View {
     // MARK: - Progres indexare
 
     private var indexingProgress: some View {
+        // [2026-09-11] Inainte: doar un spinner si un text, FARA niciun buton —
+        // odata pornita indexarea unui volum de 4 TB, nu exista nicio cale
+        // inapoi. Acum: acelasi panou animat ca la Duplicate, cu Stop.
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                ProgressView().controlSize(.small)
-                Text("Indexez... \(vm.filesIndexed) fișiere, \(vm.indexedBytesDescription) până acum.")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .contentTransition(.numericText())
+            ScanProgressView(
+                title: "Indexez discul…",
+                detailPath: vm.currentScanRootPath ?? "",
+                itemsLabel: "\(vm.filesIndexed) fișiere",
+                totalLabel: vm.indexedBytesDescription,
+                // Nu stim cate fisiere are discul pana nu-l parcurgem — arcul
+                // pulseaza, nu inventeaza un procent.
+                fraction: nil,
+                tint: .blue,
+                iconPath: vm.currentScanRootPath
+            ) {
+                vm.cancelIndexing()
             }
+
             Text("O singură trecere completă — după ce se termină, orice subfolder se deschide instant, fără rescanare.")
                 .font(.caption2).foregroundStyle(.tertiary)
         }
-        .animation(.default, value: vm.filesIndexed)
     }
 
     // MARK: - Breadcrumb

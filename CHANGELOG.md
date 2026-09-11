@@ -1,5 +1,22 @@
 # Changelog — Master Control Studio Pro
 
+## v2.31.1 (2026-09-11) — Gata cu rotița de așteptare
+
+### Fixed
+- **Interfața nu mai îngheață în timpul scanării de duplicate.** Scanarea rula
+  corect în fundal, dar își raporta progresul la fiecare fișier — pe zeci de
+  mii de fișiere, asta bloca interfața. Acum se actualizează de 10 ori pe
+  secundă, la fel de fluid pentru ochi, fără costul de dinainte.
+- **Poți opri analiza de disc și te poți întoarce la lista de discuri.** Până
+  acum, odată pornită indexarea unui volum mare, nu exista niciun buton înapoi
+  — rămâneai blocat pe ecranul de progres până se termina.
+- Analiza oprită la mijloc nu mai salvează un rezultat incomplet, care ar fi
+  arătat mărimi greșite la următoarea deschidere.
+
+### Changed
+- Ecranul de indexare a discului folosește acum același panou animat ca
+  scanarea de duplicate, cu buton de Stop.
+
 ## v2.31.0 (2026-09-11) — Duplicate: gata cu blocajele, de câteva ori mai rapid
 
 ### Fixed

@@ -80,7 +80,29 @@ public enum DiskScanEngine {
     /// nucleele. `onProgress` e chemat periodic PE MAIN THREAD cât
     /// indexarea avansează; `completion` o singură dată, la final, tot pe
     /// main thread.
+    /// [2026-09-11] Anulare. Pana acum o indexare pornita pe un volum de 4 TB
+    /// nu putea fi oprita deloc: userul ramanea blocat pe ecranul de progres,
+    /// fara buton inapoi si fara sa poata alege alt disc — exact ce a raportat
+    /// Cristi. Flag simplu, citit intre iteratii; nu intrerupe un `fts_read`
+    /// in curs (ar fi nesigur), dar opreste in cel mult cateva zeci de ms.
+    private static let cancelLock = NSLock()
+    nonisolated(unsafe) private static var _cancelRequested = false
+
+    public static var isCancelled: Bool {
+        cancelLock.lock(); defer { cancelLock.unlock() }
+        return _cancelRequested
+    }
+
+    public static func requestCancel() {
+        cancelLock.lock(); _cancelRequested = true; cancelLock.unlock()
+    }
+
+    private static func clearCancel() {
+        cancelLock.lock(); _cancelRequested = false; cancelLock.unlock()
+    }
+
     public static func buildTree(root: String, onProgress: @escaping (Progress) -> Void, completion: @escaping (DiskTreeNode) -> Void) {
+        clearCancel()
         DispatchQueue.global(qos: .userInitiated).async {
             let resolvedRoot = URL(fileURLWithPath: root).resolvingSymlinksInPath().path
             let rootNode = DiskTreeNode(name: (resolvedRoot as NSString).lastPathComponent, path: resolvedRoot, isDirectory: true)
@@ -97,6 +119,7 @@ public enum DiskScanEngine {
             let mergeLock = NSLock()
 
             DispatchQueue.concurrentPerform(iterations: topLevel.count) { index in
+                if isCancelled { return }
                 let entry = topLevel[index]
                 let node: DiskTreeNode
                 if entry.isDirectory {
@@ -147,7 +170,15 @@ public enum DiskScanEngine {
 
         _ = fts_read(ftsp) // prima intrare e radacina insasi - deja reprezentata de rootNode
 
+        var sinceCancelCheck = 0
         while let ent = fts_read(ftsp) {
+            // Verificare de anulare intre intrari — nu la fiecare, ca sa nu
+            // platim un lock pe fiecare fisier dintr-un milion.
+            sinceCancelCheck += 1
+            if sinceCancelCheck >= 512 {
+                sinceCancelCheck = 0
+                if isCancelled { break }
+            }
             let info = Int32(ent.pointee.fts_info)
             guard info == FTS_F || info == FTS_D else { continue }
             guard let st = ent.pointee.fts_statp else { continue }

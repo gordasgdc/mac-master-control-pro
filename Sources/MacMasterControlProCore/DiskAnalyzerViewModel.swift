@@ -41,6 +41,9 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     /// afișat rămâne navigabil normal cât timp rulează.
     @Published public var isRescanning = false
     @Published public var filesIndexed = 0
+    /// Discul aflat în curs de indexare — folosit pentru iconița NATIVĂ din
+    /// panoul de progres (2026-09-11).
+    @Published public private(set) var currentScanRootPath: String?
     @Published public var bytesIndexed: Int64 = 0
     @Published public var deleteError: String?
     @Published public var roots: [DiskEntry] = []
@@ -91,8 +94,20 @@ public final class DiskAnalyzerViewModel: ObservableObject {
         performFullScan(rootPath: root.path)
     }
 
+    /// [2026-09-11] Oprește indexarea și revine la lista de discuri.
+    /// Lipsea complet: odată pornită pe un volum de 4 TB, userul rămânea
+    /// blocat pe ecranul de progres — fără buton înapoi, fără să poată alege
+    /// alt disc între timp (exact ce lipsea față de DaisyDisk).
+    public func cancelIndexing() {
+        DiskScanEngine.requestCancel()
+        isIndexing = false
+        tree = nil
+        pathStack = []
+    }
+
     private func performFullScan(rootPath: String) {
         tree = nil
+        currentScanRootPath = rootPath
         isIndexing = true
         filesIndexed = 0
         bytesIndexed = 0
@@ -105,6 +120,13 @@ public final class DiskAnalyzerViewModel: ObservableObject {
             },
             completion: { [weak self] node in
                 guard let self else { return }
+                // Anulat: arborele e PARTIAL. Nu-l afisam si, mai ales, nu-l
+                // salvam in cache — un cache incomplet ar parea complet la
+                // urmatoarea deschidere si ar minti despre marimi.
+                guard !DiskScanEngine.isCancelled else {
+                    self.isIndexing = false
+                    return
+                }
                 self.tree = node
                 self.isIndexing = false
                 let now = Date()

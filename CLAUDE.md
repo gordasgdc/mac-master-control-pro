@@ -1618,3 +1618,51 @@ Windows: NEATINS, conform deciziei explicite. De portat doar cascada de hash
 (câștigul algoritmic), fără `fts`, fără Canvas — marcat în `CHANGELOG.md`.
 
 Versiune: 2.30.0 → **2.31.0** (MINOR, Regula 14).
+
+## Etapa 2026-09-11 (2) — Rotița de așteptare: cauza reală și navigarea lipsă
+
+Raportat de Cristi cu capturi, pe 2.31.0 INSTALATĂ (verificat, nu presupus —
+`PlistBuddy` pe bundle-ul din `/Applications` confirma 2.31.0).
+
+**Diagnostic**: `sample` pe procesul viu a arătat main thread-ul INACTIV
+(`mach_msg_trap`, în așteptare de evenimente) — deci blocarea nu era o buclă
+infinită, ci o sufocare temporară. Asta a dus direct la cauza corectă.
+
+**CAUZA ROTIȚEI, în codul adăugat de mine cu o etapă înainte**: în faza de
+hashing se emitea un eveniment de progres la FIECARE fișier. Fiecare traversează
+spre `DuplicateFinderViewModel` (`@MainActor`), atinge un `@Published` și
+declanșează o redesenare SwiftUI. Pe zeci de mii de fișiere = mii de redesenări
+pe secundă. Scanarea rula corect în fundal; ceea ce bloca UI-ul era RAPORTAREA
+ei. Fix: `EmitThrottle`, maximum 10 evenimente de progres pe secundă — peste ce
+percepe ochiul ca „live", la o fracțiune din cost. Evenimentele `.group` și
+`.finished` NU se limitează niciodată: acelea poartă rezultate, nu progres.
+
+**Lecție**: „am mutat munca pe alt thread" nu e suficient. Un job de fundal care
+raportează prea des blochează UI-ul la fel de sigur ca unul care rulează pe main
+thread — costul s-a mutat din calcul în sincronizare.
+
+**A doua problemă, reală și independentă**: în Analiză Disc, `indexingProgress`
+era doar un spinner și un text, FĂRĂ niciun buton, iar `DiskAnalyzerViewModel`
+n-avea deloc anulare. Odată pornită indexarea unui volum de 4 TB, userul rămânea
+blocat acolo — nu putea reveni la lista de discuri, nu putea alege altul.
+Breadcrumb-ul (buton înapoi + salt pe orice nivel) EXISTA deja, dar se afișa
+doar după terminarea indexării (`vm.tree != nil`), deci nu ajuta deloc în
+timpul ei.
+
+Adăugat: `DiskScanEngine.requestCancel()` (flag sub `NSLock`, citit o dată la
+512 intrări în bucla `fts` — nu la fiecare, ca să nu plătim un lock pe fiecare
+fișier dintr-un milion) + `cancelIndexing()` în ViewModel + `ScanProgressView`
+cu Stop în locul spinnerului.
+
+**Detaliu care conta**: la anulare, `completion` primește un arbore PARȚIAL.
+Fără garda adăugată, acesta ar fi fost salvat în cache și ar fi părut complet la
+următoarea deschidere — mărimi greșite, fără niciun semn că sunt greșite.
+
+**Testare — și o capcană în propriul test**: prima variantă bloca main thread-ul
+cu `semaphore.wait()`, iar `completion` se întoarce prin
+`DispatchQueue.main.async` → deadlock ÎN TEST, raportat ca „anularea nu
+funcționează". Rescris cu așteptare asincronă: oprire în 0,01-0,04s după cerere.
+Progresul raportat 0 fișiere în teste NU e un bug: `ProgressCounter` raportează
+o dată pe secundă, iar testele durau sub o secundă.
+
+Versiune: 2.31.0 → **2.31.1** (PATCH).
