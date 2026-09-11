@@ -6,16 +6,20 @@ struct DuplicateFinderView: View {
     @ObservedObject private var license = LicenseStore.shared
     @StateObject private var scanFolders = DuplicateScanFolders.shared
     @State private var showGate = false
-    @State private var groups: [DuplicateGroup] = []
-    @State private var isScanning = false
-    @State private var scanStatus = ""
-    /// Cheie: path fisier -> bifat pentru stergere. Sugestie implicita
-    /// (bifate toate MAI PUTIN cel mai vechi, "originalul") aplicata la
-    /// fiecare scanare, dar userul o poate schimba liber pe orice fisier.
-    @State private var markedForDeletion: Set<String> = []
+    /// [2026-09-11] Starea scanarii traieste in ViewModel-ul SINGLETON, nu in
+    /// `@State` pe view. La schimbarea tab-ului SwiftUI distruge view-ul si,
+    /// odata cu el, orice `@State` — rezultatele se pierdeau si scanarea
+    /// continua sa scrie intr-un view mort. Acelasi tipar ca
+    /// DiskAnalyzerViewModel.shared, care functioneaza deja corect aici.
+    @StateObject private var model = DuplicateFinderViewModel.shared
     @State private var logLines: [String] = []
 
-    private var totalReclaimable: Int64 { groups.reduce(0) { $0 + $1.reclaimableBytes } }
+    private var groups: [DuplicateGroup] { model.groups }
+    private var isScanning: Bool { model.isScanning }
+    private var scanStatus: String { model.statusText }
+    private var markedForDeletion: Set<String> { model.markedForDeletion }
+
+    private var totalReclaimable: Int64 { model.totalReclaimable }
     private var markedBytes: Int64 {
         groups.flatMap(\.files).filter { markedForDeletion.contains($0.path) }
             .reduce(0) { $0 + $1.sizeBytes }
@@ -53,14 +57,34 @@ struct DuplicateFinderView: View {
                             .controlSize(.small)
 
                         HStack {
-                            if isScanning { ProgressView().controlSize(.small) }
                             Button("Caută duplicate") { scan() }
                                 .buttonStyle(.borderedProminent)
                                 .disabled(scanFolders.folders.isEmpty || isScanning)
                                 .help("Scanează folderele alese și grupează fișierele identice ca și conținut.")
+                            // [2026-09-11] Pana acum scanarea nu putea fi
+                            // oprita deloc — odata pornita pe 1,4 TB, ramaneai
+                            // blocat pana se termina sau crapa aplicatia.
+                            if isScanning {
+                                Button("Stop") { model.cancel() }
+                                    .help("Oprește scanarea acum.")
+                            }
                         }
-                        if !scanStatus.isEmpty {
-                            StatusBanner(text: scanStatus)
+                        if isScanning, let progress = model.progress {
+                            ScanProgressView(
+                                title: progress.phase.label,
+                                detailPath: progress.currentPath,
+                                itemsLabel: "\(progress.filesSeen) fișiere",
+                                totalLabel: ByteCountFormatter.string(fromByteCount: progress.bytesFound, countStyle: .file),
+                                fraction: progress.fraction,
+                                tint: .blue,
+                                iconPath: scanFolders.folders.first
+                            ) { model.cancel() }
+                        } else if !scanStatus.isEmpty {
+                            Text(scanStatus).font(.caption).foregroundStyle(.secondary)
+                        }
+                        if let error = model.errorMessage {
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption).foregroundStyle(.red)
                         }
                     }
                     .padding(6)
@@ -78,7 +102,7 @@ struct DuplicateFinderView: View {
                     }
 
                     ForEach(groups) { group in
-                        DuplicateGroupCard(group: group, marked: $markedForDeletion)
+                        DuplicateGroupCard(group: group, marked: $model.markedForDeletion)
                     }
 
                     GroupBox {
@@ -123,39 +147,16 @@ struct DuplicateFinderView: View {
     }
 
     private func scan() {
-        let roots = scanFolders.folders
-        guard !roots.isEmpty else { return }
-        isScanning = true
-        groups = []
-        markedForDeletion = []
-        scanStatus = "Se scanează…"
-        DispatchQueue.global(qos: .userInitiated).async {
-            let result = DuplicateFinderService.scan(roots: roots) { line in
-                DispatchQueue.main.async { scanStatus = line }
-            }
-            DispatchQueue.main.async {
-                groups = result
-                isScanning = false
-                scanStatus = result.isEmpty ? "Niciun duplicat găsit." : ""
-                // Sugestie implicita: pastreaza cel mai vechi (originalul
-                // probabil), bifeaza restul spre stergere — userul poate
-                // debifa/rebifa oricare inainte de a apasa Sterge.
-                var defaults: Set<String> = []
-                for group in result {
-                    let sorted = group.files.sorted { ($0.modifiedDate ?? .distantFuture) < ($1.modifiedDate ?? .distantFuture) }
-                    defaults.formUnion(sorted.dropFirst().map(\.path))
-                }
-                markedForDeletion = defaults
-            }
-        }
+        model.start(roots: scanFolders.folders)
     }
 
     private func deleteMarked() {
         logLines = []
-        let toDelete = groups.flatMap(\.files).filter { markedForDeletion.contains($0.path) }
-        DuplicateFinderService.delete(toDelete) { logLines.append($0) }
-        markedForDeletion = []
-        scan()
+        // [2026-09-11] Nu mai rescanam tot dupa stergere: ViewModel-ul scoate
+        // direct fisierele sterse din grupuri si elimina grupurile ramase cu
+        // un singur exemplar. O rescanare completa a 1,4 TB doar ca sa afli
+        // ce tocmai ai sters tu insuti era timp aruncat.
+        model.deleteMarked { logLines.append($0) }
     }
 }
 

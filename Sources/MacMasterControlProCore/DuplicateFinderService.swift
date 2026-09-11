@@ -32,7 +32,7 @@ public final class DuplicateScanFolders: ObservableObject {
     }
 }
 
-public struct DuplicateFile: Identifiable, Hashable {
+public struct DuplicateFile: Identifiable, Hashable, Sendable {
     public let id: String // calea
     public let path: String
     public let sizeBytes: Int64
@@ -41,7 +41,8 @@ public struct DuplicateFile: Identifiable, Hashable {
     public var sizeDescription: String { ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file) }
 }
 
-public struct DuplicateGroup: Identifiable {
+// Sendable: grupurile traverseaza granita actorului spre UI (2026-09-11).
+public struct DuplicateGroup: Identifiable, Sendable {
     public let id: String // hash-ul de continut
     public let files: [DuplicateFile]
     public var sizeBytes: Int64 { files.first?.sizeBytes ?? 0 }

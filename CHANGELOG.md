@@ -1,5 +1,30 @@
 # Changelog — Master Control Studio Pro
 
+## v2.31.0 (2026-09-11) — Duplicate: gata cu blocajele, de câteva ori mai rapid
+
+### Fixed
+- **Nu se mai blochează aplicația** la căutarea pe volume mari. Înainte se
+  încărca în memorie lista completă a fișierelor înainte să înceapă compararea
+  — pe câțiva terabytes, asta era cauza închiderilor neașteptate.
+- **Scanarea nu se mai pierde când schimbi meniul.** Rulează în fundal și o
+  regăsești exact cum ai lăsat-o, cu tot cu bifele tale.
+- **Poți opri scanarea** oricând, cu butonul Stop. Înainte, odată pornită,
+  trebuia dusă până la capăt.
+
+### Changed
+- **Comparare mult mai rapidă**: două fișiere de aceeași mărime se despart
+  citind primii 64 KB, nu tot fișierul. Pe video-uri mari, diferența e de
+  ordinul minutelor.
+- **Rezultatele apar pe măsură ce sunt găsite**, nu toate la final.
+- **Ecran de scanare nou**: inele animate, cerc de progres, calea fișierului
+  curent, numărul de fișiere și totalul găsit.
+- După ștergere, lista se actualizează pe loc — nu se mai rescanează tot.
+
+### Added
+- **Instalarea componentelor lipsă cu un singur buton** (Homebrew, Rclone,
+  FFmpeg, macFUSE), fără să deschizi Terminalul. Vezi dinainte exact ce se
+  instalează, iar fiecare pas e vizibil pe parcurs.
+
 ## v2.30.0 (2026-09-04) — Analiză Disc: cache persistent + rescanare rapidă
 
 Analiza de disc nu mai reia totul de la zero la fiecare deschidere a

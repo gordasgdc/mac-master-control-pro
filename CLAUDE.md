@@ -1542,3 +1542,79 @@ Pachet complet de release (.pkg semnat+notarizat+stapled + arhive):
 ```bash
 cd ~/Developer/MacMasterControlPro && ./build_installer.sh
 ```
+
+## Etapa 2026-09-11 — Duplicate: actor asincron, hash în cascadă, UI animat
+
+Cerere de arhitectură de la Cristi (crash-uri la volume mari, scanare pierdută
+la schimbarea tabului, UI static, onboarding dependențe). **Plan prezentat și
+aprobat explicit înainte de orice cod.**
+
+**Trei dintre cele cerute existau deja — verificat în cod, nu presupus:**
+`DiskScanEngine` folosește din 2026-09-04 `fts(3)` (API-ul POSIX pe care îl
+folosește `find` intern), paralelizat pe toate nucleele, cu cache persistent și
+delta scan pe `mtime`. `DiskAnalyzerViewModel` e deja singleton, deci analiza de
+disc NU se pierdea la schimbarea tabului. Nu s-a rescris nimic acolo.
+
+**Corecție de specificație, comunicată explicit**: Spotlight/`NSMetadataQuery`
+ar fi fost o REGRESIE, nu o optimizare — nu indexează fiabil volumele externe
+(exact `/Volumes/GDC`, `/Volumes/DavinciResolve` din capturile lui Cristi), nu
+dă dimensiuni agregate pe foldere, și returnează date stale. DaisyDisk nu-l
+folosește nici el.
+
+**Problema reală era la duplicate. Patru defecte, toate în
+`DuplicateFinderService.scan`:**
+
+1. **Cauza crash-ului**: `bySize` acumula TOATE căile într-un dicționar înainte
+   de orice hashing — pe 1,44 TB, sute de mii de String-uri vii simultan.
+   Ironic, același fișier cita Regula 21 pentru hashing (corect, pe bucăți) dar
+   o încălca la enumerare. **Fix**: două treceri — prima reține doar un CONTOR
+   per dimensiune (`[Int64: Int]`), a doua doar căile candidaților reali.
+   Dimensiunile unice nu rețin nicio cale.
+2. **Hash complet pe fiecare candidat** — două fișiere video de 40 GB cu aceeași
+   mărime dar conținut diferit erau citite integral (80 GB) ca să afli că diferă
+   la primul octet. **Fix**: cascadă dimensiune → primii 64 KB → complet doar
+   pentru supraviețuitori.
+3. **Fără anulare** — niciun punct de oprire. **Fix**: `Task.checkCancellation()`
+   între fișiere, la fiecare 200 de intrări la enumerare.
+4. **Starea în `@State` pe View** — la schimbarea tabului SwiftUI distruge
+   view-ul, rezultatele dispar, munca continuă scriind în nimic. **Fix**:
+   `DuplicateFinderViewModel.shared`, exact tiparul deja dovedit de
+   `DiskAnalyzerViewModel` în acest repo — nu s-a inventat o soluție nouă
+   pentru o problemă rezolvată deja o dată aici.
+
+**Măsurat, nu estimat** (4 fișiere × 40 MB, duplicate reale + false pozitive de
+aceeași dimensiune): vechi 0,085s → nou 0,023s, **3,8×**, cu rezultat IDENTIC
+(1 grup, aceleași fișiere). Raportul crește cu dimensiunea fișierelor — pe
+video-uri reale de zeci de GB, vechiul citește tot, noul 64 KB. Anularea
+verificată separat: oprire în 0,20s din plină scanare, actorul confirmă că nu
+mai rulează.
+
+**`ioLaneCount`**: pe volum EXTERN (rotativ) se limitează la 4 fire — mai multe
+citiri simultane pe un cap fizic încetinesc, nu accelerează. Pe intern, până la
+8. Citit din `volumeIsInternalKey`, nu presupus.
+
+**`ScanProgressView`** (nou, reutilizabil de ambele module): inele radiale și
+arc de progres desenate PROCEDURAL în `Canvas` + `TimelineView`, zero asset-uri.
+Arcul se adaptează: `fraction == nil` (enumerare, unde totalul chiar nu e
+cunoscut) → arc rotativ, altfel procent real — un procent inventat în faza de
+enumerare ar fi o minciună. Respectă `accessibilityReduceMotion` (Regula 24).
+Iconița e cea NATIVĂ a volumului (`NSWorkspace.icon(forFile:)`).
+
+**TENSIUNE REZOLVATĂ cu Regula 26.** Cerința nouă („un pop-up cu un singur
+buton") contrazicea Regula 26, stabilită tot de Cristi după un incident real
+(„o instalare în masă, silențioasă, poate bloca sistemul clientului").
+Împăcarea, semnalată explicit lui Cristi: un singur buton, DAR lista exactă a
+componentelor afișată ÎNAINTE, instalare SECVENȚIALĂ (nu paralelă), fiecare
+linie vizibilă în `TerminalLogView`, iar butoanele individuale rămân. Comod ca
+un buton, transparent ca înainte — nu „în masă și silențios".
+
+`DependencyInstaller` folosește `PrivilegedRunner` (prompt NATIV de parolă,
+Regula 20), niciodată Terminal vizibil. `NONINTERACTIVE=1` la scriptul oficial
+Homebrew e obligatoriu — altfel așteaptă un ENTER pe care userul n-are unde
+să-l dea și instalarea atârnă la infinit. Homebrew se instalează primul și, dacă
+pică, restul se opresc (depind de el) în loc să înșire erori.
+
+Windows: NEATINS, conform deciziei explicite. De portat doar cascada de hash
+(câștigul algoritmic), fără `fts`, fără Canvas — marcat în `CHANGELOG.md`.
+
+Versiune: 2.30.0 → **2.31.0** (MINOR, Regula 14).
