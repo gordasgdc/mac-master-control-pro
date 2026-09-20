@@ -119,22 +119,25 @@ rm -rf "$PAYLOAD_ROOT" "$COMPONENT_PKG"
 
 cp "$FINAL_PKG" "$DIST_DIR/MacMasterControlPro.pkg"
 
-echo "==> Copying uninstaller…"
-cp "Dezinstalare_MacMasterControlPro.command" "$DIST_DIR/Dezinstalare_MacMasterControlPro.command"
-chmod +x "$DIST_DIR/Dezinstalare_MacMasterControlPro.command"
-
-echo "==> Building MacMasterControlPro-Mac.zip (pkg + uninstaller + instructiuni RO)…"
-ZIP_STAGE="$DIST_DIR/zip_stage"
-rm -rf "$ZIP_STAGE"
-mkdir -p "$ZIP_STAGE"
-cp "$DIST_DIR/MacMasterControlPro.pkg" "$ZIP_STAGE/"
-cp "installer/Instructiuni_Utilizare_RO.pdf" "$ZIP_STAGE/Instructiuni_Utilizare.pdf" 2>/dev/null || true
-cp "$DIST_DIR/Dezinstalare_MacMasterControlPro.command" "$ZIP_STAGE/"
-chmod +x "$ZIP_STAGE/Dezinstalare_MacMasterControlPro.command"
-( cd "$ZIP_STAGE" && zip -q -r -y "../MacMasterControlPro-Mac.zip" . )
-rm -rf "$ZIP_STAGE"
-
-cp "$DIST_DIR/MacMasterControlPro-Mac.zip" "$DIST_DIR/MacMasterControlPro-Mac-$VERSION.zip"
+# Regula 45/K: distributia = DMG semnat Developer ID, notarizat, stapled.
+# Fara .zip, fara .command. `.pkg`-ul ramane DOAR fallback de update pentru
+# clientii cu Self-Updater vechi (nu monteaza DMG).
+if [ -n "${APPLE_SIGN_IDENTITY_APP:-}" ]; then
+    echo "==> Building MasterControlStudioPro-$VERSION.dmg…"
+    DMG="$DIST_DIR/MasterControlStudioPro-$VERSION.dmg"
+    DMG_STAGE=$(mktemp -d)
+    cp "$FINAL_PKG" "$DMG_STAGE/MasterControlStudioPro-$VERSION.pkg"
+    cp "installer/Instructiuni_Utilizare_RO.pdf" "$DMG_STAGE/Instructiuni_Utilizare.pdf" 2>/dev/null || true
+    rm -f "$DMG"
+    hdiutil create -volname "Master Control Studio Pro $VERSION" -srcfolder "$DMG_STAGE" -fs HFS+ -format UDZO -ov "$DMG"
+    rm -rf "$DMG_STAGE"
+    ./codesigning/sign-and-notarize.sh dmg "$DMG"
+    xcrun stapler validate "$DMG"
+    spctl --assess --type open --context context:primary-signature -vv "$DMG"
+    cp "$DMG" "$DIST_DIR/MasterControlStudioPro.dmg"
+    echo "==> DMG: $DMG (+ $DIST_DIR/MasterControlStudioPro.dmg)"
+else
+    echo "AVERTISMENT: APPLE_SIGN_IDENTITY_APP nesetat - DMG nu se construieste (nesemnat = nelivrabil)."
+fi
 
 echo "==> Done: $FINAL_PKG"
-echo "==> Also: $DIST_DIR/MacMasterControlPro.pkg, $DIST_DIR/MacMasterControlPro-Mac.zip, $DIST_DIR/MacMasterControlPro-Mac-$VERSION.zip"

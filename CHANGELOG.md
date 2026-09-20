@@ -1,5 +1,10 @@
 # Changelog — Master Control Studio Pro
 
+## Distribuție (2026-09-20) — DMG notarizat
+### Changed
+- Descărcarea pentru Mac e acum un DMG semnat Developer ID, notarizat de Apple (`MasterControlStudioPro-2.32.0.dmg`, plus copia `MasterControlStudioPro.dmg`). Conține instalatorul și ghidul PDF.
+- Arhiva `.zip` și scriptul `.command` nu se mai distribuie. Instalatorul `.pkg` rămâne publicat doar pentru actualizarea automată a versiunilor mai vechi.
+
 ## v2.32.0 (2026-09-11) — Analiza de disc, fluidă chiar și pe foldere uriașe
 
 ### Fixed

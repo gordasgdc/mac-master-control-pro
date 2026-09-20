@@ -883,3 +883,9 @@ funcționat: Cristi raportează → `ps` + `sample` pe procesul VIU → cauză e
 un pas opțional de confirmare, e singura sursă de adevăr.
 
 Versiune: 2.31.2 → **2.32.0** (MINOR — agregarea schimbă ce vede userul).
+
+## Etapa 2026-09-20 — Distribuție DMG notarizat (Regula 45/K)
+- `build_installer.sh` produce `dist/MasterControlStudioPro-<v>.dmg` + `MasterControlStudioPro.dmg` (pkg notarizat + ghid PDF); `codesigning/sign-and-notarize.sh dmg` semnează, notarizează, staple. Eliminat: `.zip` (Mac-Mac-<v>.zip) și `Dezinstalare_MacMasterControlPro.command`.
+- Verificat pe v2.32.0: notarytool Accepted, `codesign --verify` valid, `spctl --type open --context context:primary-signature` accepted (Notarized Developer ID), după montare pkg-ul: semnat + `stapler validate` OK.
+- `.pkg` rămâne fallback de Self-Updater (`SelfUpdater.swift` neschimbat, descarcă încă pkg-ul).
+- **TODO/NEVERIFICAT**: dezinstalarea nu mai are `.command` — de mutat în aplicație (Regula 6 modificată de 45); DMG-ul nu a fost testat pe un Mac curat/cu SIP activ (Regula 42); GitHub Release nepublicat; site/`update.json` neatinse (link versionat, Regula 41).

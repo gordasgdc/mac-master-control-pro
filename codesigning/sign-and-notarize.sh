@@ -19,8 +19,8 @@
 #   codesigning/sign-and-notarize.sh pkg   /path/to/MyInstaller.pkg
 set -euo pipefail
 
-KIND="${1:?Usage: sign-and-notarize.sh <app|pkg> <path>}"
-TARGET="${2:?Usage: sign-and-notarize.sh <app|pkg> <path>}"
+KIND="${1:?Usage: sign-and-notarize.sh <app|pkg|dmg> <path>}"
+TARGET="${2:?Usage: sign-and-notarize.sh <app|pkg|dmg> <path>}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -z "${APPLE_SIGN_IDENTITY_APP:-}" ]; then
@@ -133,8 +133,16 @@ case "$KIND" in
         sign_pkg "$TARGET"
         notarize "$TARGET"
         ;;
+    dmg)
+        if [ -z "${APPLE_SIGN_IDENTITY_APP:-}" ]; then
+            echo "==> [codesigning] APPLE_SIGN_IDENTITY_APP nesetata - DMG ramane nesemnat." >&2
+            exit 1
+        fi
+        codesign --sign "$APPLE_SIGN_IDENTITY_APP" --timestamp "$TARGET"
+        notarize "$TARGET"
+        ;;
     *)
-        echo "Prim argument necunoscut: '$KIND' (astept 'app' sau 'pkg')" >&2
+        echo "Prim argument necunoscut: '$KIND' (astept 'app', 'pkg' sau 'dmg')" >&2
         exit 1
         ;;
 esac
