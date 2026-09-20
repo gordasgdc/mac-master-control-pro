@@ -1,5 +1,10 @@
 # Changelog — Master Control Studio Pro
 
+## v2.33.0 (2026-09-20) — Dezinstalare din aplicație
+
+### Added
+- **Setări → „Dezinstalează complet aplicația...”.** După confirmare, șterge datele, preferințele, cache-ul și jurnalele, apoi mută aplicația la Coș și se închide. Nu mai e nevoie de Terminal sau de fișiere separate.
+
 ## Distribuție (2026-09-20) — DMG notarizat
 ### Changed
 - Descărcarea pentru Mac e acum un DMG semnat Developer ID, notarizat de Apple (`MasterControlStudioPro-2.32.0.dmg`, plus copia `MasterControlStudioPro.dmg`). Conține instalatorul și ghidul PDF.

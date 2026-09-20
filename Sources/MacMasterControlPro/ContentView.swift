@@ -302,6 +302,7 @@ struct SettingsView: View {
     @ObservedObject private var textScale = TextScaleManager.shared
     @ObservedObject private var profile = UserProfileStore.shared
     @ObservedObject private var language = LanguageStore.shared
+    @State private var confirmUninstall = false
 
     var body: some View {
         Form {
@@ -326,7 +327,23 @@ struct SettingsView: View {
                 TextField(L.t("settings.name"), text: $profile.name)
                 TextField(L.t("settings.email"), text: $profile.email)
             }
+
+            Section("Dezinstalare") {
+                Button("Dezinstalează complet aplicația...", role: .destructive) {
+                    confirmUninstall = true
+                }
+            }
         }
         .padding(32)
+        .alert("Ești sigur că vrei să ștergi aplicația și toate datele/licențele locale?",
+               isPresented: $confirmUninstall) {
+            Button("Anulează", role: .cancel) {}
+            Button("Dezinstalează", role: .destructive) {
+                SelfUninstaller.removeUserData()
+                SelfUninstaller.trashAppAndQuit()
+            }
+        } message: {
+            Text("Se șterg datele, preferințele, cache-ul și jurnalele, apoi aplicația e mutată la Coș. Acțiunea nu poate fi anulată.")
+        }
     }
 }
