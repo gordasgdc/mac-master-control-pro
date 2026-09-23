@@ -893,3 +893,10 @@ Versiune: 2.31.2 → **2.32.0** (MINOR — agregarea schimbă ce vede userul).
 ## Etapa 2026-09-20 (2) — v2.33.0: dezinstalare nativă (Regula 46)
 - `SelfUninstaller.swift` (Core) + buton „Dezinstalează complet aplicația...” în `SettingsView` (ContentView.swift), cu alertă de confirmare. Bundle ID real: `com.gordasgdc.macmastercontrolpro` (nu `com.gordas.*`).
 - Compilat (`swift build -c release`) ✔; simbolul e în binar. NEVERIFICAT: rularea efectivă a ștergerii + Coș pe o instalare din /Applications (root) — de testat manual; LaunchDaemon-ul din modulul Rețea (root) NU e scos de buton.
+
+### Handoff — fișierul de stare (Regula 50, `~/Developer/CLAUDE.md`)
+
+- Fișierul de stare al acestui proiect: `PROJECT_STATE.md` (rădăcina repo-ului). La orice sesiune nouă se citește
+  ÎNTÂI el, apoi doar fragmentele strict necesare; se actualizează la milestone-uri și obligatoriu la final.
+  Dacă lipsește, se creează la prima sesiune care atinge proiectul. Repo PUBLIC: fișierul e intern, listat în `.gitignore` (doar local, Regula 29).
+- Restructurarea/ștergerea lui și orice modificare a acestui `CLAUDE.md`: doar cu diff-ul arătat și acordul lui Cristi.

@@ -6,3 +6,6 @@ dist/
 # build_installer.sh si GDCOAuthSecrets.generated.swift.
 Sources/MacMasterControlProCore/GDCOAuthSecrets.generated.swift
 GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.*
+
+# Stare de lucru internă (Regula 50), doar local
+PROJECT_STATE.md
