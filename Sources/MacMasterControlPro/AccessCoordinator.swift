@@ -55,7 +55,7 @@ final class AccessCoordinator: ObservableObject {
     }
 
     func activationRequestText() -> String { provider.activationRequestText() }
-    func submitLicense(_ text: String) -> String? { let r = provider.submitLicense(text); sync(); return r }
+    func submitLicense(_ text: String) async -> String? { let r = await provider.submitLicense(text); sync(); return r }
 }
 
 /// Panou de acces: stare, oferte (dacă ediția le are), cerere de licență, câmp pentru licență.
@@ -93,7 +93,7 @@ struct AccessPanel: View {
                 }
                 HStack {
                     TextField("Lipește licența primită", text: $license).textFieldStyle(.roundedBorder)
-                    Button("Aplică") { message = access.submitLicense(license) ?? "Licență aplicată." }.disabled(license.isEmpty)
+                    Button("Aplică") { Task { message = await access.submitLicense(license) ?? "Licență aplicată." } }.disabled(license.isEmpty)
                 }
                 if let m = message { Text(m).font(.callout).foregroundStyle(Studio.textMuted) }
                 Text(access.editionLabel).font(.caption).foregroundStyle(Studio.textMuted)

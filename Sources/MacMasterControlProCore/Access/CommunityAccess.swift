@@ -39,7 +39,7 @@ public final class CommunityAccess: AccessProviding {
     public var offers: [OfferSummary] { [] }
     public var editionLabel: String { "Ediție comunitară (cod sursă MIT)" }
     public func activationRequestText() -> String { "Cerere de licență Master Control Studio Pro. Machine ID: \(MachineID.display)" }
-    public func submitLicense(_ text: String) -> String? { "Ediția comunitară nu are activare. Licențele se aplică în ediția oficială distribuită de GDC." }
+    public func submitLicense(_ text: String) async -> String? { "Ediția comunitară nu are activare. Licențele se aplică în ediția oficială distribuită de GDC." }
     public func refresh() async {}
 
     public func tick(active: Bool) {

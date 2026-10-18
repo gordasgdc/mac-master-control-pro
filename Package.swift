@@ -24,7 +24,9 @@ if official, let corePath {
     dependencies.append(.package(path: corePath))
     targets.append(.target(
         name: "MacMasterControlProOfficial",
-        dependencies: ["MacMasterControlProCore", .product(name: "GDCCommercialCore", package: URL(fileURLWithPath: corePath).lastPathComponent)],
+        dependencies: ["MacMasterControlProCore",
+                       .product(name: "GDCCommercialCore", package: URL(fileURLWithPath: corePath).lastPathComponent),
+                       .product(name: "GDCCommercialMac", package: URL(fileURLWithPath: corePath).lastPathComponent)],
         path: "Sources/MacMasterControlProOfficial"))
     appDependencies.append("MacMasterControlProOfficial")
     appSettings.append(.define("OFFICIAL_BUILD"))

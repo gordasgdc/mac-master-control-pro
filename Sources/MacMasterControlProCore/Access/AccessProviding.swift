@@ -32,7 +32,7 @@ public protocol AccessProviding: AnyObject {
     /// Text de trimis proprietarului pentru a cere o licență (cerere de activare), fără date personale.
     func activationRequestText() -> String
     /// Aplică o licență lipită de utilizator. Întoarce mesajul de eroare sau nil la succes.
-    func submitLicense(_ text: String) -> String?
+    func submitLicense(_ text: String) async -> String?
     /// Chemat la ~1 Hz; `active` = utilizatorul folosește efectiv o funcție.
     func tick(active: Bool)
     /// Reîncarcă oferte/lease (rețea), fără a bloca interfața.
