@@ -13,6 +13,16 @@ let package = Package(
             path: "Sources/MacMasterControlProCore"
         ),
         .executableTarget(
+            name: "mcsp-bench",
+            dependencies: ["MacMasterControlProCore"],
+            path: "Sources/mcsp-bench"
+        ),
+        .testTarget(
+            name: "MacMasterControlProCoreTests",
+            dependencies: ["MacMasterControlProCore"],
+            path: "Tests/MacMasterControlProCoreTests"
+        ),
+        .executableTarget(
             name: "MacMasterControlPro",
             dependencies: ["MacMasterControlProCore"],
             path: "Sources/MacMasterControlPro"

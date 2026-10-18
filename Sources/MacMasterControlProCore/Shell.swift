@@ -30,7 +30,7 @@ public enum Shell {
     /// Fix: citim pipe-ul INCREMENTAL, pe masura ce datele sosesc
     /// (`readabilityHandler`), NU dupa ce procesul s-a terminat — parintele
     /// goleste mereu bufferul, copilul nu se mai poate bloca la scriere.
-    private static func runProcess(_ command: String, extraEnv: [String: String] = [:]) -> String {
+    private static func runProcess(_ command: String, extraEnv: [String: String] = [:], timeout: TimeInterval? = nil) -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
         process.arguments = ["-c", command]
@@ -56,6 +56,23 @@ public enum Shell {
             pipe.fileHandleForReading.readabilityHandler = nil
             return "Eroare executie: \(error.localizedDescription)"
         }
+        // Timeout optional: terminam procesul copil (SIGTERM, apoi SIGKILL) ca sa nu ramana suspendat.
+        var timedOut = false
+        if let timeout {
+            let deadline = Date().addingTimeInterval(timeout)
+            while process.isRunning {
+                if Date() >= deadline {
+                    timedOut = true
+                    process.terminate()
+                    Thread.sleep(forTimeInterval: 2)
+                    if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+                    break
+                }
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+            DiagnosticLog.write(timedOut ? .warning : .debug, tag: "shell", event: "exec.timeout-check",
+                                message: DiagnosticLog.redact(String(command.prefix(80))), result: timedOut ? "timeout" : "ok")
+        }
         process.waitUntilExit()
         // readabilityHandler poate mai avea un ultim chunk in zbor la
         // momentul waitUntilExit — golim explicit, apoi oprim handler-ul.
@@ -71,6 +88,12 @@ public enum Shell {
     @discardableResult
     public static func run(_ command: String) -> String {
         runProcess(command)
+    }
+
+    /// Ca `run`, dar cu limita de timp; la depasire procesul copil e oprit.
+    @discardableResult
+    public static func run(_ command: String, timeout: TimeInterval) -> String {
+        runProcess(command, timeout: timeout)
     }
 
     /// [2026-09-03] FIX REAL, raportat de Cristi: instalarea `macFUSE` prin

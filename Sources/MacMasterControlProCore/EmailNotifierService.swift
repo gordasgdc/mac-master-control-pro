@@ -5,10 +5,8 @@ import Foundation
 /// de telefon" - WhatsApp NU poate trimite automat fara click manual
 /// (doar deschide o conversatie pre-completata, la fel ca la licentiere),
 /// email e singura varianta cu adevarat automata catre telefon).
-/// **Stocare LOCALA, in clar** (UserDefaults) - la fel ca parola dintr-un
-/// `rclone.conf` sau alt config local din acest ecosistem; recomanda
-/// explicit in UI o "parola de aplicatie" (App Password), NU parola reala
-/// a contului, exact pentru cazul in care acest fisier ar fi vreodata citit.
+/// **Parola in Keychain** (nu in UserDefaults); UI recomanda "parola de
+/// aplicatie" (App Password), NU parola reala a contului.
 public struct EmailNotifierSettings: Codable {
     public var enabled: Bool = false
     public var smtpHost: String = "smtp.gmail.com"
@@ -21,15 +19,40 @@ public struct EmailNotifierSettings: Codable {
 public enum EmailNotifierService {
     private static let key = "MacMasterControlPro.emailNotifierSettings"
 
+    private static let passwordAccount = "smtp.appPassword"
+
+    /// Parola sta in Keychain (SecretStore); in UserDefaults se salveaza doar
+    /// restul setarilor. Valorile vechi, in clar, se migreaza la prima citire
+    /// si se sterg din UserDefaults (fara pierderea configuratiei).
     public static var settings: EmailNotifierSettings {
         get {
             guard let data = UserDefaults.standard.data(forKey: key),
-                  let decoded = try? JSONDecoder().decode(EmailNotifierSettings.self, from: data)
-            else { return EmailNotifierSettings() }
+                  var decoded = try? JSONDecoder().decode(EmailNotifierSettings.self, from: data)
+            else {
+                var s = EmailNotifierSettings()
+                s.appPassword = SecretStore.get(account: passwordAccount) ?? ""
+                return s
+            }
+            if !decoded.appPassword.isEmpty {
+                // Migrare din stocarea veche (in clar).
+                if SecretStore.set(decoded.appPassword, account: passwordAccount) {
+                    var scrubbed = decoded
+                    scrubbed.appPassword = ""
+                    if let clean = try? JSONEncoder().encode(scrubbed) { UserDefaults.standard.set(clean, forKey: key) }
+                    DiagnosticLog.write(.info, tag: "secrets", event: "smtp.migrated", result: "ok")
+                } else {
+                    DiagnosticLog.write(.error, tag: "secrets", event: "smtp.migrated", result: "keychain-failed")
+                }
+            } else {
+                decoded.appPassword = SecretStore.get(account: passwordAccount) ?? ""
+            }
             return decoded
         }
         set {
-            if let data = try? JSONEncoder().encode(newValue) {
+            SecretStore.set(newValue.appPassword, account: passwordAccount)
+            var stored = newValue
+            stored.appPassword = ""
+            if let data = try? JSONEncoder().encode(stored) {
                 UserDefaults.standard.set(data, forKey: key)
             }
         }
@@ -66,14 +89,24 @@ public enum EmailNotifierService {
             "--mail-from", s.username,
             "--mail-rcpt", s.recipient,
             "--upload-file", tmpFile,
-            "--user", "\(s.username):\(s.appPassword)",
+            "--max-time", "60",
+            "-K", "-",
         ]
+        let stdin = Pipe()
         let pipe = Pipe()
+        process.standardInput = stdin
         process.standardOutput = pipe
         process.standardError = pipe
         do {
             try process.run()
+            // Credentialele merg pe stdin (nu in argv, vizibil in `ps`).
+            let cfgUser = "\(s.username):\(s.appPassword)".replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+            stdin.fileHandleForWriting.write(Data("user = \"\(cfgUser)\"\n".utf8))
+            try? stdin.fileHandleForWriting.close()
+            let op = DiagnosticLog.begin("email", "send")
             process.waitUntilExit()
+            op.end(process.terminationStatus == 0 ? "ok" : "fail", level: process.terminationStatus == 0 ? .info : .warning,
+                   fields: ["exit": String(process.terminationStatus)])
             if process.terminationStatus == 0 { return (true, nil) }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             return (false, String(data: data, encoding: .utf8) ?? "curl a eșuat (cod \(process.terminationStatus)).")

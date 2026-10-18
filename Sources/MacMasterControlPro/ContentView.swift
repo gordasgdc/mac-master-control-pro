@@ -303,6 +303,7 @@ struct SettingsView: View {
     @ObservedObject private var profile = UserProfileStore.shared
     @ObservedObject private var language = LanguageStore.shared
     @State private var confirmUninstall = false
+    @State private var showDiagnostic = false
 
     var body: some View {
         Form {
@@ -328,6 +329,22 @@ struct SettingsView: View {
                 TextField(L.t("settings.email"), text: $profile.email)
             }
 
+            Section("Diagnostic") {
+                Text("Sesiune: \(DiagnosticLog.sessionID)").font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                HStack {
+                    Button("Deschide folderul de loguri") {
+                        try? FileManager.default.createDirectory(at: DiagnosticLog.directory, withIntermediateDirectories: true)
+                        NSWorkspace.shared.open(DiagnosticLog.directory)
+                    }
+                    Button("Copiază ID-ul sesiunii") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(DiagnosticLog.sessionID, forType: .string)
+                    }
+                    Button("Exportă diagnosticul...") { showDiagnostic = true }
+                }
+                Text("Pachetul se creează local, redactat; nu se trimite nimic automat.").font(.caption).foregroundStyle(.secondary)
+            }
+
             Section("Dezinstalare") {
                 Button("Dezinstalează complet aplicația...", role: .destructive) {
                     confirmUninstall = true
@@ -335,6 +352,7 @@ struct SettingsView: View {
             }
         }
         .padding(32)
+        .sheet(isPresented: $showDiagnostic) { DiagnosticExportSheet() }
         .alert("Ești sigur că vrei să ștergi aplicația și toate datele/licențele locale?",
                isPresented: $confirmUninstall) {
             Button("Anulează", role: .cancel) {}

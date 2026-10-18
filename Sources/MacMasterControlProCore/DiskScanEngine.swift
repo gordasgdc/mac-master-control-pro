@@ -60,6 +60,8 @@ public enum DiskScanEngine {
         private(set) var files = 0
         private(set) var bytes: Int64 = 0
         private var lastReportedAt = Date()
+        private(set) var accessErrors = 0
+        func noteAccessError() { lock.lock(); accessErrors += 1; lock.unlock() }
 
         func add(files deltaFiles: Int, bytes deltaBytes: Int64, onProgress: @escaping (Progress) -> Void) {
             lock.lock()
@@ -103,6 +105,7 @@ public enum DiskScanEngine {
 
     public static func buildTree(root: String, onProgress: @escaping (Progress) -> Void, completion: @escaping (DiskTreeNode) -> Void) {
         clearCancel()
+        let op = DiagnosticLog.begin("disk", "scan.full")
         DispatchQueue.global(qos: .userInitiated).async {
             let resolvedRoot = URL(fileURLWithPath: root).resolvingSymlinksInPath().path
             let rootNode = DiskTreeNode(name: (resolvedRoot as NSString).lastPathComponent, path: resolvedRoot, isDirectory: true)
@@ -140,6 +143,8 @@ public enum DiskScanEngine {
             }
 
             let final = Progress(filesIndexed: progressReporter.files, bytesIndexed: progressReporter.bytes)
+            op.end(isCancelled ? "cancelled" : "ok", fields: ["files": String(final.filesIndexed), "bytes": String(final.bytesIndexed),
+                                                             "accessErrors": String(progressReporter.accessErrors)])
             DispatchQueue.main.async {
                 onProgress(final)
                 completion(rootNode)
@@ -180,6 +185,11 @@ public enum DiskScanEngine {
                 if isCancelled { break }
             }
             let info = Int32(ent.pointee.fts_info)
+            if info == FTS_DNR || info == FTS_ERR || info == FTS_NS {
+                // Folder/fisier inaccesibil: numarat si logat (fara cale completa), nu ignorat tacut.
+                progressReporter.noteAccessError()
+                continue
+            }
             guard info == FTS_F || info == FTS_D else { continue }
             guard let st = ent.pointee.fts_statp else { continue }
 
@@ -245,10 +255,12 @@ public enum DiskScanEngine {
     /// mărime (extrem de rar în practică) — pentru acel caz limită rămâne
     /// disponibil butonul „Resetează cache & scanare completă".
     public static func incrementalUpdate(cachedRoot: DiskTreeNode, onProgress: @escaping (Progress) -> Void, completion: @escaping (DiskTreeNode) -> Void) {
+        let op = DiagnosticLog.begin("disk", "scan.incremental")
         DispatchQueue.global(qos: .userInitiated).async {
             let progressReporter = ProgressCounter()
             let updated = refreshDirectory(node: cachedRoot, progressReporter: progressReporter, onProgress: onProgress)
             let final = Progress(filesIndexed: progressReporter.files, bytesIndexed: progressReporter.bytes)
+            op.end("ok", fields: ["changedFiles": String(final.filesIndexed), "accessErrors": String(progressReporter.accessErrors)])
             DispatchQueue.main.async {
                 onProgress(final)
                 completion(updated)

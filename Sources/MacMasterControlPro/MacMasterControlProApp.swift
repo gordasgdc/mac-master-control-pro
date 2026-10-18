@@ -1,4 +1,5 @@
 import SwiftUI
+import MacMasterControlProCore
 import AppKit
 
 extension Notification.Name {
@@ -10,7 +11,10 @@ struct MacMasterControlProApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear { ThemeManager.shared.applyNow() }
+                .onAppear {
+                    ThemeManager.shared.applyNow()
+                    DiagnosticLog.write(.info, tag: "app", event: "launch", fields: ["os": ProcessInfo.processInfo.operatingSystemVersionString])
+                }
         }
         // BUG REAL, gasit 2026-08-31: `.windowResizability(.contentSize)`
         // intra in conflict cu `ScaledContentView` (GeometryReader + scaleEffect,
