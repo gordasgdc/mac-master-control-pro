@@ -9,3 +9,8 @@ GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.*
 
 # Stare de lucru internă (Regula 50), doar local
 PROJECT_STATE.md
+
+# Context de design intern (Regula 29), doar local
+PRODUCT.md
+DESIGN.md
+.impeccable/
