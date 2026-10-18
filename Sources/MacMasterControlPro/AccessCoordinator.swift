@@ -89,7 +89,7 @@ struct AccessPanel: View {
                     Button { NSWorkspace.shared.open(WhatsAppLink.url(text: access.activationRequestText())) } label: { Label(L.x("Cere o licență", "Request a licence", "Solicitar una licencia"), systemImage: "message") }
                         .buttonStyle(.borderedProminent).tint(Studio.accent)
                     Button(L.x("Deschide pagina produsului", "Open the product page", "Abrir la página del producto")) { NSWorkspace.shared.open(URL(string: "https://gordas.dev/mac-master-control-pro/")!) }
-                    Button(L.x("Copiază Machine ID", "Copy Machine ID", "Copiar Machine ID")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(MachineID.display, forType: .string) }
+                    Button(L.x("Copiază Machine ID", "Copy Machine ID", "Copiar Machine ID")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(DemoHooks.machineID ?? MachineID.display, forType: .string) }
                     Button(L.x("Copiază cererea", "Copy request", "Copiar solicitud")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(access.activationRequestText(), forType: .string) }
                 }
                 HStack {

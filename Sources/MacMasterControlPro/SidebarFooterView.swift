@@ -12,7 +12,7 @@ struct SidebarFooterView: View {
     @State private var isCheckingUpdate = false
     @State private var showActivation = false
 
-    private var machineID: String { MachineID.display }
+    private var machineID: String { DemoHooks.machineID ?? MachineID.display }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {

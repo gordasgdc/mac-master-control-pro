@@ -15,6 +15,7 @@
 - Curățarea mută în Coș datele personale (copii iOS, atașamente Mail) în loc să le șteargă definitiv.
 
 ### Fixed
+- Analiza de disc arată acum un mesaj clar când folderul sau volumul ales nu există, nu poate fi citit sau o ștergere eșuează (înainte revenea mut la selector).
 - Expirarea probei nu mai șterge setările, conturile sau licența; resetarea configurației este o acțiune separată, cu copie de siguranță.
 
 ## v2.33.0 (2026-09-20) — Dezinstalare din aplicație

@@ -11,6 +11,8 @@ enum DemoHooks {
     static var language: String? { env("MCSP_DEMO_LANG") }
     static var theme: String? { env("MCSP_DEMO_THEME") }
     static var page: String? { env("MCSP_DEMO_PAGE") }
+    /// Machine ID sintetic în materialele demonstrative: capturile publice nu conțin identificatorul real al calculatorului.
+    static var machineID: String? { language != nil ? "DEMO-0000-0000" : nil }
     /// Scenariu de captură pentru Analiză Disc (profil izolat): volum de scanat, cale de scanat (progres/eroare), foldere de deschis, elemente de bifat, foaia de revizuire, tabel avansat.
     static var scanVolume: String? { env("MCSP_DEMO_SCAN") }
     static var scanPath: String? { env("MCSP_DEMO_SCAN_PATH") }
