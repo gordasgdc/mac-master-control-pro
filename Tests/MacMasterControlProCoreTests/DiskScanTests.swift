@@ -173,3 +173,17 @@ final class DiskScanTests: XCTestCase {
 extension DiskTreeNode {
     func filesFingerprintSum() -> Int64 { children.values.reduce(filesFingerprint) { $0 &+ $1.filesFingerprintSum() } }
 }
+
+final class SystemIconTests: XCTestCase {
+    func testLoadsNativeIconsAsyncAndCaches() async {
+        let first = await SystemIconCache.shared.icon(forPath: "/System/Library/CoreServices/Finder.app")
+        XCTAssertGreaterThan(first.size.width, 0)
+        XCTAssertNotNil(SystemIconCache.shared.cached(path: "/System/Library/CoreServices/Finder.app"))
+        let vol = await SystemIconCache.shared.icon(forPath: "/")
+        XCTAssertGreaterThan(vol.size.width, 0)
+    }
+    func testMissingPathStillGivesGenericIconWithoutBlocking() async {
+        let img = await SystemIconCache.shared.icon(forPath: "/nu/exista/\(UUID().uuidString)")
+        XCTAssertGreaterThan(img.size.width, 0)
+    }
+}
