@@ -18,7 +18,19 @@ public final class DiskTreeNode: Identifiable, Codable {
     public let name: String
     public let path: String
     public let isDirectory: Bool
+    /// Dimensiunea LOGICA (st_size), suma pe subarbore la foldere.
     public var sizeBytes: Int64 = 0
+    /// Spatiul ALOCAT pe disc (st_blocks * 512): fisierele sparse, comprimate APFS sau
+    /// "doar in cloud" (dataless) ocupa mult mai putin decat dimensiunea logica. Clonele APFS
+    /// partajate nu pot fi distinse prin st_blocks (raportate la fel ca fisierele normale).
+    /// 0 si pentru cache-urile vechi pana la prima reconciliere verificata.
+    public var allocatedBytes: Int64 = 0
+    /// Doar fisiere: mtime in nanosecunde (0 = necunoscut).
+    public var modifiedAtNs: Int64 = 0
+    /// Doar foldere: amprenta (nume, mărime, alocat, mtime) a fisierelor DIRECTE ale folderului,
+    /// calculata la scanare, inainte de agregarea fisierelor mici. 0 = necunoscuta.
+    /// Permite scanarii verificate sa detecteze modificari in-loc, inclusiv pentru fisierele agregate.
+    public var filesFingerprint: Int64 = 0
     /// Doar pentru foldere — 0 pentru fișiere (nefolosit acolo).
     public var directoryModifiedAt: Double = 0
     public var children: [String: DiskTreeNode] = [:]
@@ -34,6 +46,39 @@ public final class DiskTreeNode: Identifiable, Codable {
         self.name = name
         self.path = path
         self.isDirectory = isDirectory
+    }
+
+    // Codable manual: cache-urile vechi nu contin campurile noi (decodeIfPresent), deci raman valide.
+    private enum CodingKeys: String, CodingKey {
+        case id, name, path, isDirectory, sizeBytes, allocatedBytes, modifiedAtNs, filesFingerprint
+        case directoryModifiedAt, children, aggregatedFileCount
+    }
+
+    public required init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        path = try c.decode(String.self, forKey: .path)
+        isDirectory = try c.decode(Bool.self, forKey: .isDirectory)
+        sizeBytes = try c.decodeIfPresent(Int64.self, forKey: .sizeBytes) ?? 0
+        allocatedBytes = try c.decodeIfPresent(Int64.self, forKey: .allocatedBytes) ?? 0
+        modifiedAtNs = try c.decodeIfPresent(Int64.self, forKey: .modifiedAtNs) ?? 0
+        filesFingerprint = try c.decodeIfPresent(Int64.self, forKey: .filesFingerprint) ?? 0
+        directoryModifiedAt = try c.decodeIfPresent(Double.self, forKey: .directoryModifiedAt) ?? 0
+        children = try c.decodeIfPresent([String: DiskTreeNode].self, forKey: .children) ?? [:]
+        aggregatedFileCount = try c.decodeIfPresent(Int.self, forKey: .aggregatedFileCount) ?? 0
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id); try c.encode(name, forKey: .name); try c.encode(path, forKey: .path)
+        try c.encode(isDirectory, forKey: .isDirectory); try c.encode(sizeBytes, forKey: .sizeBytes)
+        try c.encode(allocatedBytes, forKey: .allocatedBytes)
+        if modifiedAtNs != 0 { try c.encode(modifiedAtNs, forKey: .modifiedAtNs) }
+        if filesFingerprint != 0 { try c.encode(filesFingerprint, forKey: .filesFingerprint) }
+        try c.encode(directoryModifiedAt, forKey: .directoryModifiedAt)
+        try c.encode(children, forKey: .children)
+        try c.encode(aggregatedFileCount, forKey: .aggregatedFileCount)
     }
 
     public var sizeDescription: String { ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file) }
@@ -82,17 +127,19 @@ public extension DiskTreeNode {
     ///     deci acela rămâne vizibil ca atare (evită „Alte fișiere mici (1)",
     ///     care ar fi doar mai puțin informativ decât numele real).
     @discardableResult
-    func collapseSmallFiles(threshold: Int64 = DiskTreeNode.smallFileThreshold) -> Int {
+    func collapseSmallFiles(threshold: Int64 = DiskTreeNode.smallFileThreshold, recursive: Bool = true) -> Int {
         guard isDirectory else { return 0 }
 
         var removedNodes = 0
         var smallTotalBytes: Int64 = 0
+        var smallAllocated: Int64 = 0
         var smallCount = 0
         var keys: [String] = []
 
         for (key, child) in children where !child.isDirectory && !child.isAggregate {
             if child.sizeBytes < threshold {
                 smallTotalBytes += child.sizeBytes
+                smallAllocated += child.allocatedBytes
                 smallCount += 1
                 keys.append(key)
             }
@@ -105,13 +152,16 @@ public extension DiskTreeNode {
             let label = "Alte fișiere mici (\(smallCount))"
             let node = DiskTreeNode(name: label, path: path, isDirectory: false)
             node.sizeBytes = smallTotalBytes
+            node.allocatedBytes = smallAllocated
             node.aggregatedFileCount = smallCount
             children[label] = node
             removedNodes += smallCount - 1
         }
 
-        for child in children.values where child.isDirectory {
-            removedNodes += child.collapseSmallFiles(threshold: threshold)
+        if recursive {
+            for child in children.values where child.isDirectory {
+                removedNodes += child.collapseSmallFiles(threshold: threshold)
+            }
         }
         return removedNodes
     }

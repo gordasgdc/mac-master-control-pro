@@ -34,6 +34,9 @@ struct DiskAnalyzerView: View {
                     if let lastScannedAt = vm.lastScannedAt {
                         cacheBanner(lastScannedAt)
                     }
+                    if let notice = vm.scanNotice {
+                        Label(notice, systemImage: "exclamationmark.triangle").font(.callout).foregroundStyle(.orange)
+                    }
                     breadcrumb
                     if vm.currentChildren.isEmpty {
                         Text("Folder gol.").font(.callout).foregroundStyle(.secondary)
@@ -71,14 +74,18 @@ struct DiskAnalyzerView: View {
     private func cacheBanner(_ scannedAt: Date) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
-            Text("Afișez datele din analiza de la **\(Self.lastScanFormatter.string(from: scannedAt))**.")
-                .font(.callout).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Afișez datele din analiza de la **\(Self.lastScanFormatter.string(from: scannedAt))**.")
+                    .font(.callout).foregroundStyle(.secondary)
+                Text(freshnessText).font(.caption).foregroundStyle(.secondary)
+            }
             Spacer(minLength: 8)
             if vm.isRescanning {
                 ProgressView().controlSize(.small)
-                Text("Rescanez...").font(.caption).foregroundStyle(.secondary)
+                Text("Verific fișierele...").font(.caption).foregroundStyle(.secondary)
+                Button("Oprește") { vm.cancelRescan() }.buttonStyle(.bordered)
             } else {
-                Button("Re-scanează doar modificările") { vm.rescanChangesOnly() }
+                Button("Verifică modificările") { vm.rescanChangesOnly() }
                     .buttonStyle(.bordered)
                 Button("Resetare Cache & Scanare Completă") { confirmingReset = true }
                     .buttonStyle(.plain)
@@ -88,6 +95,14 @@ struct DiskAnalyzerView: View {
         }
         .padding(10)
         .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var freshnessText: String {
+        var parts: [String] = []
+        if let v = vm.lastVerifiedAt { parts.append("verificat fișier cu fișier: \(Self.lastScanFormatter.string(from: v))") }
+        else { parts.append("neverificat fișier cu fișier — apasă „Verifică modificările”") }
+        if vm.accessErrors > 0 { parts.append("\(vm.accessErrors) elemente inaccesibile (rezultat parțial acolo)") }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Progres indexare

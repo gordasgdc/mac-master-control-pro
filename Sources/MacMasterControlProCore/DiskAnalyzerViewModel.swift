@@ -53,6 +53,12 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     /// Data ultimei analize (completă SAU incrementală) — `nil` doar cât
     /// timp arborele curent n-a fost încă salvat/încărcat niciodată.
     @Published public var lastScannedAt: Date?
+    /// Ultima verificare la nivel de fisier (nil = cache vechi, nereconciliat).
+    @Published public var lastVerifiedAt: Date?
+    /// Elemente ce n-au putut fi citite la ultima scanare; rezultatul e partial in acele zone.
+    @Published public var accessErrors = 0
+    /// Mesaj de stare pentru utilizator (volum deconectat, anulat etc.); null daca nimic de spus.
+    @Published public var scanNotice: String?
 
     private var currentRootPath: String?
 
@@ -119,6 +125,8 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                     snapshot.root.collapseSmallFiles()
                     self.tree = snapshot.root
                     self.lastScannedAt = snapshot.scannedAt
+                    self.lastVerifiedAt = snapshot.verifiedAt
+                    self.accessErrors = snapshot.accessErrors
                     self.filesIndexed = snapshot.root.totalFileCount
                     self.bytesIndexed = snapshot.root.sizeBytes
                     self.isIndexing = false
@@ -154,27 +162,25 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                 self.filesIndexed = progress.filesIndexed
                 self.bytesIndexed = progress.bytesIndexed
             },
-            completion: { [weak self] node in
+            completion: { [weak self] node, outcome in
                 guard let self else { return }
-                // Anulat: arborele e PARTIAL. Nu-l afisam si, mai ales, nu-l
-                // salvam in cache — un cache incomplet ar parea complet la
-                // urmatoarea deschidere si ar minti despre marimi.
-                guard !DiskScanEngine.isCancelled else {
+                // Anulat sau radacina a disparut (volum deconectat): arborele e PARTIAL. Nu il afisam si,
+                // mai ales, nu il salvam in cache - ar parea complet la urmatoarea deschidere.
+                guard outcome.status == .complete else {
                     self.isIndexing = false
+                    if outcome.status == .rootUnavailable { self.scanNotice = "Volumul nu mai este disponibil. Nu am salvat nimic." }
                     return
                 }
-                // [2026-09-11] Agregarea fișierelor mici, ÎNAINTE de afișare și
-                // de salvarea în cache — ca arborele viu și cel salvat să fie
-                // identici (altfel userul ar vedea altceva după o redeschidere).
-                // Mărimile folderelor și numărul total de fișiere rămân exacte;
-                // vezi DiskTreeNode.collapseSmallFiles.
                 node.collapseSmallFiles()
                 self.tree = node
                 self.isIndexing = false
                 let now = Date()
                 self.lastScannedAt = now
+                self.lastVerifiedAt = now
+                self.accessErrors = outcome.accessErrors
                 self.filesIndexed = node.totalFileCount
-                DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: now, root: node))
+                DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: now, root: node,
+                                          accessErrors: outcome.accessErrors, verifiedAt: now))
             }
         )
     }
@@ -185,20 +191,58 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     public func rescanChangesOnly() {
         guard let tree, let rootPath = currentRootPath, !isRescanning, !isIndexing else { return }
         isRescanning = true
+        scanNotice = nil
         DiskScanEngine.incrementalUpdate(
             cachedRoot: tree,
-            onProgress: { _ in }, // progres per-fisier nu are sens aici - de regula dureaza cateva secunde
-            completion: { [weak self] node in
+            onProgress: { _ in },
+            completion: { [weak self] node, outcome in
                 guard let self else { return }
-                self.tree = node
                 self.isRescanning = false
-                let now = Date()
-                self.lastScannedAt = now
-                self.filesIndexed = node.totalFileCount
-                self.bytesIndexed = node.sizeBytes
-                DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: now, root: node))
+                switch outcome.status {
+                case .complete:
+                    self.tree = node
+                    let now = Date()
+                    self.lastScannedAt = now
+                    self.lastVerifiedAt = now
+                    self.accessErrors = outcome.accessErrors
+                    self.filesIndexed = node.totalFileCount
+                    self.bytesIndexed = node.sizeBytes
+                    self.objectWillChange.send()
+                    DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: now, root: node,
+                                              accessErrors: outcome.accessErrors, verifiedAt: now))
+                case .rootUnavailable:
+                    // Volum deconectat: pastram arborele si cache-ul neatinse.
+                    self.scanNotice = "Volumul nu mai este disponibil. Datele afisate sunt din ultima analiza salvata."
+                case .cancelled:
+                    // Arborele din memorie poate fi partial actualizat; cache-ul de pe disc e intact - reincarcam din el.
+                    self.scanNotice = "Verificare anulata. S-a pastrat ultima analiza salvata."
+                    self.reloadFromCache(rootPath: rootPath)
+                }
             }
         )
+    }
+
+    /// Opreste o verificare incrementala in curs.
+    public func cancelRescan() {
+        guard isRescanning else { return }
+        DiskScanEngine.requestCancel()
+    }
+
+    private func reloadFromCache(rootPath: String) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let snap = DiskCacheStore.load(rootPath: rootPath)
+            DispatchQueue.main.async {
+                guard let self, let snap else { return }
+                snap.root.collapseSmallFiles()
+                self.tree = snap.root
+                self.pathStack = []
+                self.lastScannedAt = snap.scannedAt
+                self.lastVerifiedAt = snap.verifiedAt
+                self.accessErrors = snap.accessErrors
+                self.filesIndexed = snap.root.totalFileCount
+                self.bytesIndexed = snap.root.sizeBytes
+            }
+        }
     }
 
     /// „Resetează cache & scanare completă" — cerut explicit doar pentru

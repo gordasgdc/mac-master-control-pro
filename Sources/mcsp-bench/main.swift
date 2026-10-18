@@ -18,8 +18,8 @@ let t0 = Date()
 var firstProgress: TimeInterval?
 var finished = false
 var tree: DiskTreeNode?
-if args.count >= 3, let ms = Int(args[2]) {
-    DiskScanEngine.buildTree(root: root, onProgress: { _ in }, completion: { t in tree = t; finished = true })
+if args.count >= 3, let ms = Int(args[2]), !args[2].hasPrefix("--") {
+    DiskScanEngine.buildTree(root: root, onProgress: { _ in }, completion: { t, _ in tree = t; finished = true })
     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(ms)) { DiskScanEngine.requestCancel() }
     let c0 = Date()
     runLoop(until: { finished })
@@ -28,7 +28,7 @@ if args.count >= 3, let ms = Int(args[2]) {
     exit(0)
 }
 DiskScanEngine.buildTree(root: root, onProgress: { _ in if firstProgress == nil { firstProgress = Date().timeIntervalSince(t0) } },
-                         completion: { t in tree = t; finished = true })
+                         completion: { t, _ in tree = t; finished = true })
 runLoop(until: { finished })
 let full = Date().timeIntervalSince(t0)
 guard let t = tree else { print("no tree"); exit(1) }
@@ -36,6 +36,7 @@ print(String(format: "full: %.2fs  firstProgress: %@  files: %d  bytes: %lld  pe
              full, firstProgress.map { String(format: "%.2fs", $0) } ?? "n/a", t.totalFileCount, t.sizeBytes, rssMB()))
 finished = false; var t2: DiskTreeNode?
 let i0 = Date()
-DiskScanEngine.incrementalUpdate(cachedRoot: t, onProgress: { _ in }, completion: { x in t2 = x; finished = true })
+let quick = CommandLine.arguments.contains("--quick")
+DiskScanEngine.incrementalUpdate(cachedRoot: t, mode: quick ? .structureOnly : .verified, onProgress: { _ in }, completion: { x, _ in t2 = x; finished = true })
 runLoop(until: { finished })
-print(String(format: "incremental(no change): %.2fs  size: %lld  peakRSS: %.0f MB", Date().timeIntervalSince(i0), t2?.sizeBytes ?? -1, rssMB()))
+print(String(format: "incremental[\(quick ? "structureOnly" : "verified")](no change): %.2fs  size: %lld  peakRSS: %.0f MB", Date().timeIntervalSince(i0), t2?.sizeBytes ?? -1, rssMB()))

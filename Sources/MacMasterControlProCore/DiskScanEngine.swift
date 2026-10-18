@@ -1,92 +1,81 @@
 import Foundation
 import Darwin
 
-/// [2026-09-04] REFACTORIZARE completă, cerută explicit de Cristi după ce
-/// scanarea a ajuns la 624.000 de fișiere și dura peste o oră — și, mai
-/// grav, relua totul de la zero la fiecare deschidere a aplicației.
-/// Aplicații reale (DaisyDisk, TreeSize/WizTree) nu parcurg tot discul la
-/// fiecare scanare — indexează o dată, salvează persistent, și la
-/// rescanare actualizează DOAR ce s-a schimbat. Trei schimbări, toate
-/// cerute explicit:
+/// Motor de analiză disc (nativ, fără shell).
 ///
-/// 1. **Native, nu shell.** Varianta veche (`/usr/bin/find -exec stat +`)
-///    shell-a un proces extern și parsa text (`"%z\t%N"`) — funcțional,
-///    dar cu un cost real de proces+pipe+parsare, ȘI un bug latent
-///    niciodată lovit din întâmplare: un nume de fișier care conține
-///    literal un TAB ar fi rupt parsarea `split(separator: "\t")`. Acum
-///    foloseşte direct `fts(3)` (POSIX, exact API-ul intern folosit de
-///    `find` însuși) — `fts_statp` dă mărimea ȘI mtime-ul DIRECT, ca
-///    struct, fără nicio conversie prin text.
-/// 2. **Paralel pe toate nucleele.** Fiecare subfolder de PRIM NIVEL al
-///    rădăcinii primește propriul `fts` independent, rulat concurent
-///    (`DispatchQueue.concurrentPerform` — GCD alege singur câte thread-uri
-///    pornește, după numărul de nuclee). Fiecare thread construiește
-///    propriul subarbore, FĂRĂ nicio stare comună mutabilă cu celelalte —
-///    unirea în arborele final e un pas simplu, secvențial, la sfârșit.
-/// 3. **Scanare incrementală.** `incrementalUpdate` compară mtime-ul
-///    fiecărui folder cu cel din cache (`DiskTreeNode.directoryModifiedAt`)
-///    — un folder neschimbat își păstrează subarborele cache-uit INTACT,
-///    fără nicio citire suplimentară de disc dincolo de acel `stat()`.
-///    Doar folderele chiar atinse (adăugare/ștergere/redenumire de
-///    fișier) sunt recitite. Reduce o rescanare de la ore la câteva
-///    secunde pe un disc unde majoritatea conținutului n-a fost atins.
+/// **Scanare completă** (`buildTree`): parcurgere paralelă pe subfolderele de prim nivel, cu
+/// `opendir`/`readdir`/`fstatat(AT_SYMLINK_NOFOLLOW)` (o singură trecere dă nume, tip, mărime
+/// logică, spațiu alocat și mtime-ul în nanosecunde). Nu se traversează legături simbolice și nu
+/// se trece pe alt volum (mount points sunt omise, ca `find -x`).
 ///
-/// **Verificat izolat înainte de integrare** (practica deja stabilită în
-/// acest repo, vezi CLAUDE.md v2.28.0): un mic executabil separat,
-/// ȘTERS după verificare, a confirmat `fts_open`/`fts_read` funcționează
-/// corect din Swift (nume/mărime/mtime extrase corect) și e semnificativ
-/// mai rapid decât varianta shell (36.028 fișiere reale, 1.13s, un singur
-/// thread — extrapolat, ~20s pentru 624.000 fișiere chiar și FĂRĂ
-/// paralelismul de mai sus).
+/// **Actualizare incrementală** (`incrementalUpdate`), două moduri:
+/// - `.verified` (implicit): relistează FIECARE folder și compară amprenta fișierelor lui directe
+///   (nume + mărime + alocat + mtime ns) cu cea din cache. Detectează adăugare, ștergere, redenumire
+///   ȘI modificarea în-loc a oricărui fișier, la orice adâncime. Costul este un `lstat` per fișier
+///   (aproximativ cât o scanare completă fără reconstruirea arborelui).
+/// - `.structureOnly`: compară doar mtime-ul folderelor. Rapid, dar NU vede o modificare în-loc
+///   (scrierea într-un fișier existent nu schimbă mtime-ul folderului). Doar pentru măsurători/diagnostic.
+///
+/// Un cache sau o scanare nu se acceptă niciodată dacă rădăcina a dispărut sau a fost înlocuită cu alt
+/// volum (`ScanOutcome.rootUnavailable`); anularea întoarce `cancelled` iar apelantul NU salvează.
 public enum DiskScanEngine {
     public struct Progress {
         public let filesIndexed: Int
         public let bytesIndexed: Int64
+        public let accessErrors: Int
     }
 
-    private struct TopLevelEntry {
+    public struct ScanOutcome {
+        public enum Status { case complete, cancelled, rootUnavailable }
+        public let status: Status
+        /// Foldere/fișiere care n-au putut fi citite (permisiuni, I/O). Rezultatul e util dar nu complet.
+        public let accessErrors: Int
+        public var isCleanAndComplete: Bool { status == .complete && accessErrors == 0 }
+    }
+
+    public enum IncrementalMode { case verified, structureOnly }
+
+    private struct Entry {
         let name: String
-        let path: String
         let isDirectory: Bool
         let size: Int64
+        let allocated: Int64
+        let mtimeNs: Int64
     }
 
-    /// Acumulator de progres thread-safe — fiecare thread de scanare
-    /// raportează în loturi (nu per-fișier, ca să nu se blocheze reciproc
-    /// mii de ori pe secundă pe același lacăt), doar rezultatul agregat
-    /// ajunge, pe main thread, la `onProgress`.
+    private struct Listing {
+        let entries: [Entry]
+        let dirMTime: Double
+        let errors: Int
+    }
+
+    /// Acumulator de progres thread-safe; raportează în loturi, nu per-fișier.
     private final class ProgressCounter {
         private let lock = NSLock()
         private(set) var files = 0
         private(set) var bytes: Int64 = 0
-        private var lastReportedAt = Date()
         private(set) var accessErrors = 0
-        func noteAccessError() { lock.lock(); accessErrors += 1; lock.unlock() }
-
+        private var lastReportedAt = Date()
+        func noteAccessError(_ n: Int = 1) { lock.lock(); accessErrors += n; lock.unlock() }
         func add(files deltaFiles: Int, bytes deltaBytes: Int64, onProgress: @escaping (Progress) -> Void) {
             lock.lock()
             files += deltaFiles
             bytes += deltaBytes
             let now = Date()
             let due = now.timeIntervalSince(lastReportedAt) >= 1
-            let snapshot = Progress(filesIndexed: files, bytesIndexed: bytes)
+            let snapshot = Progress(filesIndexed: files, bytesIndexed: bytes, accessErrors: accessErrors)
             if due { lastReportedAt = now }
             lock.unlock()
             if due { DispatchQueue.main.async { onProgress(snapshot) } }
         }
+        var snapshot: Progress {
+            lock.lock(); defer { lock.unlock() }
+            return Progress(filesIndexed: files, bytesIndexed: bytes, accessErrors: accessErrors)
+        }
     }
 
-    // MARK: - Scanare completă (prima dată, sau "Resetează cache")
+    // MARK: - Anulare
 
-    /// Construiește arborele complet pentru `root`, paralel pe toate
-    /// nucleele. `onProgress` e chemat periodic PE MAIN THREAD cât
-    /// indexarea avansează; `completion` o singură dată, la final, tot pe
-    /// main thread.
-    /// [2026-09-11] Anulare. Pana acum o indexare pornita pe un volum de 4 TB
-    /// nu putea fi oprita deloc: userul ramanea blocat pe ecranul de progres,
-    /// fara buton inapoi si fara sa poata alege alt disc — exact ce a raportat
-    /// Cristi. Flag simplu, citit intre iteratii; nu intrerupe un `fts_read`
-    /// in curs (ar fi nesigur), dar opreste in cel mult cateva zeci de ms.
     private static let cancelLock = NSLock()
     nonisolated(unsafe) private static var _cancelRequested = false
 
@@ -94,249 +83,209 @@ public enum DiskScanEngine {
         cancelLock.lock(); defer { cancelLock.unlock() }
         return _cancelRequested
     }
+    public static func requestCancel() { cancelLock.lock(); _cancelRequested = true; cancelLock.unlock() }
+    private static func clearCancel() { cancelLock.lock(); _cancelRequested = false; cancelLock.unlock() }
 
-    public static func requestCancel() {
-        cancelLock.lock(); _cancelRequested = true; cancelLock.unlock()
-    }
+    // MARK: - Scanare completă
 
-    private static func clearCancel() {
-        cancelLock.lock(); _cancelRequested = false; cancelLock.unlock()
-    }
-
-    public static func buildTree(root: String, onProgress: @escaping (Progress) -> Void, completion: @escaping (DiskTreeNode) -> Void) {
+    public static func buildTree(root: String, onProgress: @escaping (Progress) -> Void,
+                                 completion: @escaping (DiskTreeNode, ScanOutcome) -> Void) {
         clearCancel()
         let op = DiagnosticLog.begin("disk", "scan.full")
         DispatchQueue.global(qos: .userInitiated).async {
             let resolvedRoot = URL(fileURLWithPath: root).resolvingSymlinksInPath().path
             let rootNode = DiskTreeNode(name: (resolvedRoot as NSString).lastPathComponent, path: resolvedRoot, isDirectory: true)
-            rootNode.directoryModifiedAt = directoryMTime(resolvedRoot) ?? 0
-
-            let topLevel = directChildren(of: resolvedRoot)
-            guard !topLevel.isEmpty else {
-                DispatchQueue.main.async { completion(rootNode) }
+            guard let rootDev = deviceID(resolvedRoot) else {
+                op.end("rootUnavailable", level: .warning)
+                DispatchQueue.main.async { completion(rootNode, ScanOutcome(status: .rootUnavailable, accessErrors: 0)) }
                 return
             }
+            let counter = ProgressCounter()
+            populate(node: rootNode, rootDev: rootDev, counter: counter, onProgress: onProgress, parallel: true)
 
-            let progressReporter = ProgressCounter()
-            var partial = [DiskTreeNode?](repeating: nil, count: topLevel.count)
-            let mergeLock = NSLock()
-
-            DispatchQueue.concurrentPerform(iterations: topLevel.count) { index in
-                if isCancelled { return }
-                let entry = topLevel[index]
-                let node: DiskTreeNode
-                if entry.isDirectory {
-                    node = scanSubtreeNative(root: entry.path, name: entry.name, progressReporter: progressReporter, onProgress: onProgress)
-                } else {
-                    node = DiskTreeNode(name: entry.name, path: entry.path, isDirectory: false)
-                    node.sizeBytes = entry.size
-                    progressReporter.add(files: 1, bytes: entry.size, onProgress: onProgress)
-                }
-                mergeLock.lock()
-                partial[index] = node
-                mergeLock.unlock()
-            }
-
-            for case let node? in partial {
-                rootNode.children[node.name] = node
-                rootNode.sizeBytes += node.sizeBytes
-            }
-
-            let final = Progress(filesIndexed: progressReporter.files, bytesIndexed: progressReporter.bytes)
-            op.end(isCancelled ? "cancelled" : "ok", fields: ["files": String(final.filesIndexed), "bytes": String(final.bytesIndexed),
-                                                             "accessErrors": String(progressReporter.accessErrors)])
+            let rootStillThere = deviceID(resolvedRoot) == rootDev
+            let status: ScanOutcome.Status = isCancelled ? .cancelled : (rootStillThere ? .complete : .rootUnavailable)
+            let outcome = ScanOutcome(status: status, accessErrors: counter.accessErrors)
+            let final = counter.snapshot
+            op.end("\(status)", level: status == .complete ? .info : .warning,
+                   fields: ["files": String(final.filesIndexed), "bytes": String(final.bytesIndexed),
+                            "accessErrors": String(final.accessErrors)])
             DispatchQueue.main.async {
                 onProgress(final)
-                completion(rootNode)
+                completion(rootNode, outcome)
             }
         }
     }
 
-    /// Scanare `fts` nativă, completă, a UNUI subfolder — apelată o dată
-    /// per subfolder de prim nivel (paralel, vezi `buildTree`), și din
-    /// nou, punctual, de `incrementalUpdate` pentru un folder nou-apărut
-    /// care nu exista deloc în cache.
-    private static func scanSubtreeNative(root: String, name: String, progressReporter: ProgressCounter, onProgress: @escaping (Progress) -> Void) -> DiskTreeNode {
-        let rootNode = DiskTreeNode(name: name, path: root, isDirectory: true)
-        rootNode.directoryModifiedAt = directoryMTime(root) ?? 0
-
-        guard let rootCPath = strdup(root) else { return rootNode }
-        var pathArg: [UnsafeMutablePointer<CChar>?] = [rootCPath, nil]
-        defer { free(rootCPath) }
-
-        guard let ftsp = fts_open(&pathArg, FTS_PHYSICAL | FTS_XDEV | FTS_NOCHDIR, nil) else {
-            return rootNode
+    /// Listează `node.path`, construiește fișierele directe, apoi subfolderele (paralel dacă `parallel`).
+    private static func populate(node: DiskTreeNode, rootDev: dev_t, counter: ProgressCounter,
+                                 onProgress: @escaping (Progress) -> Void, parallel: Bool) {
+        if isCancelled { return }
+        guard let listing = listDirectory(node.path, rootDev: rootDev) else {
+            counter.noteAccessError()
+            return
         }
-        defer { fts_close(ftsp) }
+        counter.noteAccessError(listing.errors)
+        node.directoryModifiedAt = listing.dirMTime
+        applyFiles(of: listing, to: node, collapse: false)
+        reportFiles(listing, counter, onProgress)
 
-        let rootPrefix = root.hasSuffix("/") ? root : root + "/"
-        var pendingFiles = 0
-        var pendingBytes: Int64 = 0
-
-        _ = fts_read(ftsp) // prima intrare e radacina insasi - deja reprezentata de rootNode
-
-        var sinceCancelCheck = 0
-        while let ent = fts_read(ftsp) {
-            // Verificare de anulare intre intrari — nu la fiecare, ca sa nu
-            // platim un lock pe fiecare fisier dintr-un milion.
-            sinceCancelCheck += 1
-            if sinceCancelCheck >= 512 {
-                sinceCancelCheck = 0
-                if isCancelled { break }
-            }
-            let info = Int32(ent.pointee.fts_info)
-            if info == FTS_DNR || info == FTS_ERR || info == FTS_NS {
-                // Folder/fisier inaccesibil: numarat si logat (fara cale completa), nu ignorat tacut.
-                progressReporter.noteAccessError()
-                continue
-            }
-            guard info == FTS_F || info == FTS_D else { continue }
-            guard let st = ent.pointee.fts_statp else { continue }
-
-            // [2026-09-04] BUG REAL, gasit prin rulare (nu vizibil din citirea
-            // codului): `fts_path` e deja un `char*` (UnsafeMutablePointer<CChar>),
-            // NU un buffer inline in struct — `withUnsafePointer(to: &ent.pointee.fts_path)`
-            // lua adresa CAMPULUI-POINTER insusi, iar reinterpretarea ei ca text
-            // citea octetii propriului pointer ca ASCII, nu calea reala. Rezultat:
-            // `hasPrefix(rootPrefix)` esua mereu, tacut, si scanarea gasea 0
-            // fisiere. Fix: `fts_path` se citeste direct cu `String(cString:)`.
-            guard let ftsPathPtr = ent.pointee.fts_path else { continue }
-            let fullPath = String(cString: ftsPathPtr)
-            guard fullPath.hasPrefix(rootPrefix) else { continue }
-            let relative = fullPath.dropFirst(rootPrefix.count)
-            let components = relative.split(separator: "/")
-            guard !components.isEmpty else { continue }
-
-            let isDir = info == FTS_D
-            let size = isDir ? 0 : st.pointee.st_size
-            let mtime = Double(st.pointee.st_mtimespec.tv_sec) + Double(st.pointee.st_mtimespec.tv_nsec) / 1_000_000_000
-
-            var current = rootNode
-            if !isDir { current.sizeBytes += size }
-            var built = rootPrefix
-            for (index, component) in components.enumerated() {
-                let isLast = index == components.count - 1
-                let cname = String(component)
-                built += (index == 0 ? "" : "/") + cname
-                if let existing = current.children[cname] {
-                    if !isDir { existing.sizeBytes += size }
-                    current = existing
-                } else {
-                    let node = DiskTreeNode(name: cname, path: built, isDirectory: isLast ? isDir : true)
-                    if !isDir { node.sizeBytes = size }
-                    current.children[cname] = node
-                    current = node
-                }
-            }
-            if isDir { current.directoryModifiedAt = mtime }
-
-            if !isDir {
-                pendingFiles += 1
-                pendingBytes += size
-                if pendingFiles >= 500 {
-                    progressReporter.add(files: pendingFiles, bytes: pendingBytes, onProgress: onProgress)
-                    pendingFiles = 0
-                    pendingBytes = 0
-                }
-            }
+        let dirs = listing.entries.filter { $0.isDirectory }
+        var built = [DiskTreeNode?](repeating: nil, count: dirs.count)
+        let lock = NSLock()
+        let work: (Int) -> Void = { i in
+            let e = dirs[i]
+            let child = DiskTreeNode(name: e.name, path: node.path + (node.path.hasSuffix("/") ? "" : "/") + e.name, isDirectory: true)
+            populate(node: child, rootDev: rootDev, counter: counter, onProgress: onProgress, parallel: false)
+            lock.lock(); built[i] = child; lock.unlock()
         }
-        if pendingFiles > 0 {
-            progressReporter.add(files: pendingFiles, bytes: pendingBytes, onProgress: onProgress)
-        }
-        return rootNode
+        if parallel { DispatchQueue.concurrentPerform(iterations: dirs.count, execute: work) }
+        else { for i in 0..<dirs.count { work(i) } }
+        for case let child? in built { node.children[child.name] = child }
+        sumChildren(node)
     }
 
-    // MARK: - Scanare incrementală ("Re-scanează doar modificările")
+    // MARK: - Actualizare incrementală
 
-    /// Reutilizează arborele deja cache-uit, atingând discul DOAR pentru
-    /// folderele al căror mtime chiar s-a schimbat de la ultima scanare —
-    /// vezi comentariul de la nivelul enum-ului. Nu detectează o schimbare
-    /// de CONȚINUT a unui fișier existent care și-a păstrat exact aceeași
-    /// mărime (extrem de rar în practică) — pentru acel caz limită rămâne
-    /// disponibil butonul „Resetează cache & scanare completă".
-    public static func incrementalUpdate(cachedRoot: DiskTreeNode, onProgress: @escaping (Progress) -> Void, completion: @escaping (DiskTreeNode) -> Void) {
-        let op = DiagnosticLog.begin("disk", "scan.incremental")
+    /// Reutilizează arborele din cache. În `.verified` rezultatul este identic cu o scanare completă.
+    /// Nu salva rezultatul decât dacă `outcome.status == .complete`; la `cancelled` arborele primit poate fi
+    /// parțial actualizat (reîncarcă din cache), la `rootUnavailable` nu a fost modificat.
+    public static func incrementalUpdate(cachedRoot: DiskTreeNode, mode: IncrementalMode = .verified,
+                                         onProgress: @escaping (Progress) -> Void,
+                                         completion: @escaping (DiskTreeNode, ScanOutcome) -> Void) {
+        clearCancel()
+        let op = DiagnosticLog.begin("disk", "scan.incremental", fields: ["mode": "\(mode)"])
         DispatchQueue.global(qos: .userInitiated).async {
-            let progressReporter = ProgressCounter()
-            let updated = refreshDirectory(node: cachedRoot, progressReporter: progressReporter, onProgress: onProgress)
-            let final = Progress(filesIndexed: progressReporter.files, bytesIndexed: progressReporter.bytes)
-            op.end("ok", fields: ["changedFiles": String(final.filesIndexed), "accessErrors": String(progressReporter.accessErrors)])
+            guard let rootDev = deviceID(cachedRoot.path) else {
+                op.end("rootUnavailable", level: .warning)
+                DispatchQueue.main.async { completion(cachedRoot, ScanOutcome(status: .rootUnavailable, accessErrors: 0)) }
+                return
+            }
+            let counter = ProgressCounter()
+            refresh(node: cachedRoot, rootDev: rootDev, mode: mode, counter: counter, onProgress: onProgress, parallel: true)
+
+            let rootStillThere = deviceID(cachedRoot.path) == rootDev
+            let status: ScanOutcome.Status = isCancelled ? .cancelled : (rootStillThere ? .complete : .rootUnavailable)
+            let final = counter.snapshot
+            op.end("\(status)", level: status == .complete ? .info : .warning,
+                   fields: ["changedFiles": String(final.filesIndexed), "accessErrors": String(final.accessErrors)])
             DispatchQueue.main.async {
                 onProgress(final)
-                completion(updated)
+                completion(cachedRoot, ScanOutcome(status: status, accessErrors: final.accessErrors))
             }
         }
     }
 
-    /// Recursiv, dar ieftin: costul real e un `stat()` per folder vizitat
-    /// — un subarbore ale cărui mtime-uri n-au fost atinse tot recursează
-    /// prin el (ca să verifice și sub-subfolderele), dar NICIODATĂ nu
-    /// re-listează conținutul unui folder al cărui mtime propriu n-a
-    /// diferit. Pe 624.000 de fișiere, numărul de FOLDERE e o fracțiune
-    /// mică din total — de-aia asta rămâne "câteva secunde", nu "ore".
-    private static func refreshDirectory(node: DiskTreeNode, progressReporter: ProgressCounter, onProgress: @escaping (Progress) -> Void) -> DiskTreeNode {
-        guard node.isDirectory else { return node }
+    private static func refresh(node: DiskTreeNode, rootDev: dev_t, mode: IncrementalMode, counter: ProgressCounter,
+                                onProgress: @escaping (Progress) -> Void, parallel: Bool) {
+        if isCancelled { return }
 
-        guard let currentMTime = directoryMTime(node.path) else {
-            // Folderul a dispărut complet de pe disc între timp.
-            node.children = [:]
-            node.sizeBytes = 0
-            return node
-        }
-
-        if currentMTime == node.directoryModifiedAt {
+        if mode == .structureOnly, node.filesFingerprint != 0,
+           let m = directoryMTime(node.path), m == node.directoryModifiedAt {
             for child in node.children.values where child.isDirectory {
-                _ = refreshDirectory(node: child, progressReporter: progressReporter, onProgress: onProgress)
+                refresh(node: child, rootDev: rootDev, mode: mode, counter: counter, onProgress: onProgress, parallel: false)
             }
-            node.sizeBytes = node.children.values.reduce(0) { $0 + $1.sizeBytes }
-            return node
+            sumChildren(node)
+            return
         }
 
-        node.directoryModifiedAt = currentMTime
-        let liveEntries = directChildren(of: node.path)
-        let liveNames = Set(liveEntries.map { $0.name })
+        guard let listing = listDirectory(node.path, rootDev: rootDev) else {
+            // Inaccesibil acum: păstrăm subarborele din cache (nu îl declarăm gol) și semnalăm eroarea.
+            counter.noteAccessError()
+            return
+        }
+        counter.noteAccessError(listing.errors)
+        node.directoryModifiedAt = listing.dirMTime
 
-        for staleName in node.children.keys where !liveNames.contains(staleName) {
-            node.children.removeValue(forKey: staleName)
+        // Fișiere directe: amprentă diferită => reconstruim doar fișierele acestui folder.
+        if fingerprint(of: listing.entries) != node.filesFingerprint {
+            applyFiles(of: listing, to: node, collapse: true)
+            reportFiles(listing, counter, onProgress)
         }
 
-        var newFiles = 0
-        var newBytes: Int64 = 0
-        for entry in liveEntries {
-            if entry.isDirectory {
-                if let existingChild = node.children[entry.name] {
-                    _ = refreshDirectory(node: existingChild, progressReporter: progressReporter, onProgress: onProgress)
-                } else {
-                    let scanned = scanSubtreeNative(root: entry.path, name: entry.name, progressReporter: progressReporter, onProgress: onProgress)
-                    node.children[entry.name] = scanned
-                }
-            } else if node.children[entry.name]?.sizeBytes != entry.size {
-                let fileNode = DiskTreeNode(name: entry.name, path: entry.path, isDirectory: false)
-                fileNode.sizeBytes = entry.size
-                node.children[entry.name] = fileNode
-                newFiles += 1
-                newBytes += entry.size
+        // Subfoldere: scoatem ce a dispărut sau și-a schimbat tipul; reîmprospătăm ce există; scanăm ce e nou.
+        let liveDirs = listing.entries.filter { $0.isDirectory }
+        let liveNames = Set(liveDirs.map { $0.name })
+        for (name, child) in node.children where child.isDirectory && !liveNames.contains(name) {
+            node.children.removeValue(forKey: name)
+        }
+        var existing: [DiskTreeNode] = []
+        var fresh: [DiskTreeNode] = []
+        for e in liveDirs {
+            if let c = node.children[e.name], c.isDirectory { existing.append(c) }
+            else {
+                node.children.removeValue(forKey: e.name)
+                fresh.append(DiskTreeNode(name: e.name, path: node.path + (node.path.hasSuffix("/") ? "" : "/") + e.name, isDirectory: true))
             }
         }
-        if newFiles > 0 {
-            progressReporter.add(files: newFiles, bytes: newBytes, onProgress: onProgress)
+        let total = existing.count + fresh.count
+        let work: (Int) -> Void = { i in
+            if i < existing.count {
+                refresh(node: existing[i], rootDev: rootDev, mode: mode, counter: counter, onProgress: onProgress, parallel: false)
+            } else {
+                let n = fresh[i - existing.count]
+                populate(node: n, rootDev: rootDev, counter: counter, onProgress: onProgress, parallel: false)
+                _ = n.collapseSmallFiles()
+            }
         }
-        node.sizeBytes = node.children.values.reduce(0) { $0 + $1.sizeBytes }
-        return node
+        if parallel { DispatchQueue.concurrentPerform(iterations: total, execute: work) }
+        else { for i in 0..<total { work(i) } }
+        for n in fresh { node.children[n.name] = n }
+        sumChildren(node)
     }
 
-    // MARK: - Ștergere (neschimbată — actualizează arborele fără rescanare)
+    // MARK: - Construcție / agregare
 
-    /// Actualizează arborele DUPĂ o ștergere reușită — scade mărimea
-    /// fișierului/folderului șters din TOȚI strămoșii lui și îl elimină din
-    /// arbore, ca navigarea să rămână instantă (fără rescanare) și
-    /// mărimile afișate să rămână corecte imediat.
+    /// Înlocuiește fișierele directe ale nodului cu cele din listare; fixează amprenta.
+    private static func applyFiles(of listing: Listing, to node: DiskTreeNode, collapse: Bool) {
+        for (name, child) in node.children where !child.isDirectory { node.children.removeValue(forKey: name) }
+        let base = node.path.hasSuffix("/") ? node.path : node.path + "/"
+        for e in listing.entries where !e.isDirectory {
+            let f = DiskTreeNode(name: e.name, path: base + e.name, isDirectory: false)
+            f.sizeBytes = e.size
+            f.allocatedBytes = e.allocated
+            f.modifiedAtNs = e.mtimeNs
+            node.children[e.name] = f
+        }
+        node.filesFingerprint = fingerprint(of: listing.entries)
+        if collapse { _ = node.collapseSmallFiles(recursive: false) }
+    }
+
+    private static func reportFiles(_ listing: Listing, _ counter: ProgressCounter, _ onProgress: @escaping (Progress) -> Void) {
+        var n = 0; var bytes: Int64 = 0
+        for e in listing.entries where !e.isDirectory { n += 1; bytes += e.size }
+        if n > 0 { counter.add(files: n, bytes: bytes, onProgress: onProgress) }
+    }
+
+    private static func sumChildren(_ node: DiskTreeNode) {
+        var s: Int64 = 0, a: Int64 = 0
+        for c in node.children.values { s += c.sizeBytes; a += c.allocatedBytes }
+        node.sizeBytes = s
+        node.allocatedBytes = a
+    }
+
+    /// FNV-1a 64 peste fișierele sortate după nume (nume, mărime, alocat, mtime ns). Niciodată 0.
+    private static func fingerprint(of entries: [Entry]) -> Int64 {
+        var h: UInt64 = 0xcbf29ce484222325
+        @inline(__always) func mix(_ v: UInt64) { h = (h ^ v) &* 0x100000001b3 }
+        let files = entries.filter { !$0.isDirectory }.sorted { $0.name < $1.name }
+        for f in files {
+            for b in f.name.utf8 { mix(UInt64(b)) }
+            mix(0xFF)
+            mix(UInt64(bitPattern: f.size)); mix(UInt64(bitPattern: f.allocated)); mix(UInt64(bitPattern: f.mtimeNs))
+        }
+        mix(UInt64(files.count))
+        let v = Int64(bitPattern: h)
+        return v == 0 ? 1 : v
+    }
+
+    // MARK: - Ștergere (actualizează arborele fără rescanare)
+
     public static func remove(nodePath: String, from root: DiskTreeNode) {
         guard nodePath.hasPrefix(root.path) else { return }
         let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
         guard nodePath.hasPrefix(rootPrefix) else { return }
-        let relative = nodePath.dropFirst(rootPrefix.count)
-        let components = relative.split(separator: "/").map(String.init)
+        let components = nodePath.dropFirst(rootPrefix.count).split(separator: "/").map(String.init)
         guard !components.isEmpty else { return }
 
         var chain: [DiskTreeNode] = [root]
@@ -347,40 +296,60 @@ public enum DiskScanEngine {
             current = child
         }
         let removedSize = current.sizeBytes
+        let removedAllocated = current.allocatedBytes
         for ancestor in chain.dropLast() {
             ancestor.sizeBytes -= removedSize
+            ancestor.allocatedBytes -= removedAllocated
         }
-        if let parent = chain.dropLast().last, let lastComponent = components.last {
-            parent.children.removeValue(forKey: lastComponent)
+        if let parent = chain.dropLast().last, let last = components.last {
+            parent.children.removeValue(forKey: last)
+            // Amprenta fișierelor directe nu mai corespunde discului: la următoarea verificare folderul se recitește.
+            parent.filesFingerprint = 0
         }
     }
 
-    // MARK: - Helpers native (fără shell)
+    // MARK: - Helpers native
 
-    /// Listare de UN SINGUR nivel — folosită pentru împărțirea în task-uri
-    /// paralele (subfolderele de prim nivel ale rădăcinii) și pentru
-    /// comparația "ce mai există pe disc" din scanarea incrementală.
-    /// `FileManager` de nivel înalt e potrivit AICI (un singur nivel, nu
-    /// traversare recursivă) — traversarea adâncă rămâne pe `fts` nativ.
-    private static func directChildren(of path: String) -> [TopLevelEntry] {
-        guard let items = try? FileManager.default.contentsOfDirectory(
-            at: URL(fileURLWithPath: path),
-            includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey]
-        ) else { return [] }
-        return items.compactMap { url in
-            guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey]) else { return nil }
-            return TopLevelEntry(
-                name: url.lastPathComponent,
-                path: url.path,
-                isDirectory: values.isDirectory ?? false,
-                size: Int64(values.fileSize ?? 0)
-            )
-        }
+    private static func deviceID(_ path: String) -> dev_t? {
+        var st = stat()
+        guard stat(path, &st) == 0, (st.st_mode & S_IFMT) == S_IFDIR else { return nil }
+        return st.st_dev
     }
 
     private static func directoryMTime(_ path: String) -> Double? {
         var st = stat()
         guard stat(path, &st) == 0 else { return nil }
         return Double(st.st_mtimespec.tv_sec) + Double(st.st_mtimespec.tv_nsec) / 1_000_000_000
+    }
+
+    /// Un nivel de director. `nil` doar dacă folderul nu poate fi deschis. Omite: legături simbolice,
+    /// fișiere speciale, mount points (alt `st_dev`). Erorile pe intrări individuale se numără în `errors`.
+    private static func listDirectory(_ path: String, rootDev: dev_t) -> Listing? {
+        guard let dir = opendir(path) else { return nil }
+        defer { closedir(dir) }
+        let fd = dirfd(dir)
+        var dst = stat()
+        let dirMTime = fstat(fd, &dst) == 0
+            ? Double(dst.st_mtimespec.tv_sec) + Double(dst.st_mtimespec.tv_nsec) / 1_000_000_000 : 0
+        var entries: [Entry] = []
+        var errors = 0
+        while let ent = readdir(dir) {
+            let name = withUnsafePointer(to: &ent.pointee.d_name) {
+                $0.withMemoryRebound(to: CChar.self, capacity: Int(ent.pointee.d_namlen) + 1) { String(cString: $0) }
+            }
+            if name == "." || name == ".." { continue }
+            var st = stat()
+            guard fstatat(fd, name, &st, AT_SYMLINK_NOFOLLOW) == 0 else { errors += 1; continue }
+            let mode = st.st_mode & S_IFMT
+            if mode == S_IFDIR {
+                guard st.st_dev == rootDev else { continue }
+                entries.append(Entry(name: name, isDirectory: true, size: 0, allocated: 0, mtimeNs: 0))
+            } else if mode == S_IFREG {
+                let ns = Int64(st.st_mtimespec.tv_sec) &* 1_000_000_000 &+ Int64(st.st_mtimespec.tv_nsec)
+                entries.append(Entry(name: name, isDirectory: false, size: Int64(st.st_size),
+                                     allocated: Int64(st.st_blocks) * 512, mtimeNs: ns))
+            }
+        }
+        return Listing(entries: entries, dirMTime: dirMTime, errors: errors)
     }
 }

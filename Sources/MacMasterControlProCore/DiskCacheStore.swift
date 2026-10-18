@@ -18,11 +18,17 @@ public enum DiskCacheStore {
         public let rootPath: String
         public let scannedAt: Date
         public let root: DiskTreeNode
+        /// Foldere/fisiere ce n-au putut fi citite la ultima scanare (0 = complet).
+        public let accessErrors: Int
+        /// Data ultimei verificari la nivel de fisier (scanare completa sau incrementala verificata).
+        public let verifiedAt: Date?
 
-        public init(rootPath: String, scannedAt: Date, root: DiskTreeNode) {
+        public init(rootPath: String, scannedAt: Date, root: DiskTreeNode, accessErrors: Int = 0, verifiedAt: Date? = nil) {
             self.rootPath = rootPath
             self.scannedAt = scannedAt
             self.root = root
+            self.accessErrors = accessErrors
+            self.verifiedAt = verifiedAt
         }
     }
 
@@ -30,6 +36,14 @@ public enum DiskCacheStore {
         let rootPath: String
         let scannedAt: Date
         let root: DiskTreeNode
+        var accessErrors: Int?
+        var verifiedAt: Date?
+        var volumeUUID: String?
+    }
+
+    /// UUID-ul volumului pe care se afla `path` (None daca nu se poate determina).
+    static func volumeUUID(of path: String) -> String? {
+        try? URL(fileURLWithPath: path).resourceValues(forKeys: [.volumeUUIDStringKey]).volumeUUIDString
     }
 
     private static var cacheDirectory: URL {
@@ -66,20 +80,31 @@ public enum DiskCacheStore {
         // cu SHA-256, dar verificăm explicit — Regula 30, nu presupunem)
         // nu se folosește niciodată orb.
         guard file.rootPath == rootPath else { return nil }
-        return Snapshot(rootPath: file.rootPath, scannedAt: file.scannedAt, root: file.root)
+        // Alt volum montat la aceeasi cale (disc extern inlocuit): cache-ul ar minti, nu se foloseste.
+        if let saved = file.volumeUUID, let now = volumeUUID(of: rootPath), saved != now {
+            DiagnosticLog.write(.warning, tag: "disk", event: "cache.volume-mismatch")
+            return nil
+        }
+        return Snapshot(rootPath: file.rootPath, scannedAt: file.scannedAt, root: file.root,
+                        accessErrors: file.accessErrors ?? 0, verifiedAt: file.verifiedAt)
     }
 
     public static func save(_ snapshot: Snapshot) {
-        let file = SnapshotFile(rootPath: snapshot.rootPath, scannedAt: snapshot.scannedAt, root: snapshot.root)
+        let file = SnapshotFile(rootPath: snapshot.rootPath, scannedAt: snapshot.scannedAt, root: snapshot.root,
+                                accessErrors: snapshot.accessErrors, verifiedAt: snapshot.verifiedAt,
+                                volumeUUID: volumeUUID(of: snapshot.rootPath))
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
-        guard let plist = try? encoder.encode(file) else { return }
+        guard let plist = try? encoder.encode(file) else {
+            DiagnosticLog.write(.error, tag: "disk", event: "cache.encode-failed"); return
+        }
         // [2026-09-11] Comprimat. Cache-ul unui volum de 4 TB ajunsese la
         // 2,4 GB pe disc — masurat, nu estimat. LZFSE (nativ Apple, foarte
         // rapid la decompresie) reduce de ~3,5x pe date reale, fara nicio
         // pierdere de informatie: userul vede acelasi arbore.
         let payload = compress(plist) ?? plist
-        try? payload.write(to: fileURL(for: snapshot.rootPath), options: .atomic)
+        do { try payload.write(to: fileURL(for: snapshot.rootPath), options: .atomic) }
+        catch { DiagnosticLog.write(.error, tag: "disk", event: "cache.write-failed", message: error.localizedDescription) }
     }
 
     // MARK: - Compresie
