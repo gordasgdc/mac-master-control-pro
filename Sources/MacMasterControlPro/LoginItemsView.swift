@@ -14,28 +14,28 @@ struct LoginItemsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Label("Aplicații de fundal la pornire", systemImage: "power.circle").font(.title2).bold()
+                Label(L.x("Aplicații de fundal la pornire", "Background apps at startup", "Apps en segundo plano al iniciar"), systemImage: "power.circle").font(.title2).bold()
                 Spacer()
-                Button("Rescanează") { refresh() }
+                Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { refresh() }
             }
-            Text("Servicii de fundal instalate de alte aplicații (nu cele de sistem Apple) — multe concurează pentru CPU/RAM exact când editezi sau randezi. Dezactivarea e reversibilă oricând, din „Reactivează”.")
+            Text(L.x("Servicii de fundal instalate de alte aplicații (nu cele de sistem Apple) — multe concurează pentru CPU/RAM exact când editezi sau randezi. Dezactivarea e reversibilă oricând, din „Reactivează”.", "Background services installed by other apps (not Apple system ones) — many compete for CPU/RAM exactly when you edit or render. Disabling is reversible at any time via “Re-enable”.", "Servicios en segundo plano instalados por otras apps (no los del sistema de Apple); muchos compiten por CPU y RAM justo cuando editas o renderizas. Desactivarlos es reversible en cualquier momento con «Reactivar»."))
                 .font(.caption).foregroundStyle(.secondary)
 
             GroupBox {
                 if items.isEmpty {
-                    Text("Niciun serviciu de fundal tert-parte găsit.").foregroundStyle(.secondary).padding(20)
+                    Text(L.x("Niciun serviciu de fundal tert-parte găsit.", "No third-party background service found.", "No se encontró ningún servicio en segundo plano de terceros.")).foregroundStyle(.secondary).padding(20)
                 } else {
                     VStack(spacing: 0) {
                         ForEach(items) { item in
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(item.label).font(.system(.body, design: .monospaced))
-                                    Text(item.isUserLevel ? "Utilizator" : "Sistem (necesită admin)")
+                                    Text(item.isUserLevel ? "Utilizator" : L.x("Sistem (necesită admin)", "System (needs admin)", "Sistema (requiere administrador)"))
                                         .font(.caption2).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 let isDisabled = disabledLabels.contains(item.label)
-                                Button(isDisabled ? "Reactivează" : "Dezactivează") {
+                                Button(isDisabled ? L.x("Reactivează", "Re-enable", "Reactivar") : L.x("Dezactivează", "Disable", "Desactivar")) {
                                     runGated { toggle(item, enable: isDisabled) }
                                 }
                                 .tint(isDisabled ? .green : .red)

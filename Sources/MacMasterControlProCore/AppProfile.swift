@@ -64,10 +64,10 @@ public enum AppProfile {
 
     /// Ce s-ar șterge la o resetare (pentru confirmare). Nu atinge nimic.
     public static func resetPreview() -> [String] {
-        var l = ["Setările aplicației (temă, limbă, folderele alese, profil)"]
-        if FileManager.default.fileExists(atPath: supportDirectory.path) { l.append("Cache-uri și fișiere locale din \(supportDirectory.path)") }
-        l.append("Parola de aplicație SMTP (dacă a fost salvată)")
-        l.append("NU se șterg: licența/starea de acces, conturile rclone, jurnalele, instantaneul Modului Randare")
+        var l = [CoreL.x("Setările aplicației (temă, limbă, folderele alese, profil)", "App settings (theme, language, chosen folders, profile)", "Ajustes de la app (tema, idioma, carpetas elegidas, perfil)")]
+        if FileManager.default.fileExists(atPath: supportDirectory.path) { l.append(CoreL.x("Cache-uri și fișiere locale din \(supportDirectory.path)", "Caches and local files in \(supportDirectory.path)", "Cachés y archivos locales en \(supportDirectory.path)")) }
+        l.append(CoreL.x("Parola de aplicație SMTP (dacă a fost salvată)", "SMTP app password (if saved)", "Contraseña de aplicación SMTP (si se guardó)"))
+        l.append(CoreL.x("NU se șterg: licența/starea de acces, conturile rclone, jurnalele, instantaneul Modului Randare", "NOT deleted: the licence/access state, rclone accounts, logs, the Render Mode snapshot", "NO se borran: la licencia y el estado de acceso, las cuentas de rclone, los registros y la instantánea del modo de renderizado"))
         return l
     }
 

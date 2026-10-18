@@ -8,9 +8,9 @@ enum AppTheme: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .system: return "Sistem"
-        case .light: return "Luminos"
-        case .dark: return "Întunecat"
+        case .system: return L.x("Sistem", "System", "Sistema")
+        case .light: return L.x("Luminos", "Light", "Claro")
+        case .dark: return L.x("Întunecat", "Dark", "Oscuro")
         }
     }
 }

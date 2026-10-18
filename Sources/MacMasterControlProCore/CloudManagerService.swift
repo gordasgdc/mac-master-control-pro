@@ -52,7 +52,7 @@ public enum CloudProviderType: String, CaseIterable, Identifiable {
         case .googleDrive, .dropbox, .oneDrive, .pcloud:
             return []
         case .degoo, .mega:
-            return [CloudField(key: "user", label: "Email"), CloudField(key: "pass", label: "Parolă", isSecure: true)]
+            return [CloudField(key: "user", label: "Email"), CloudField(key: "pass", label: CoreL.x("Parolă", "Password", "Contraseña"), isSecure: true)]
         case .s3:
             return [
                 CloudField(key: "provider", label: "Provider (ex: AWS, Wasabi, Minio)"),
@@ -65,20 +65,20 @@ public enum CloudProviderType: String, CaseIterable, Identifiable {
                 CloudField(key: "url", label: "URL server (ex: https://exemplu.ro/remote.php/dav)"),
                 CloudField(key: "vendor", label: "Vendor (nextcloud/owncloud/other)"),
                 CloudField(key: "user", label: "Utilizator"),
-                CloudField(key: "pass", label: "Parolă", isSecure: true)
+                CloudField(key: "pass", label: CoreL.x("Parolă", "Password", "Contraseña"), isSecure: true)
             ]
         case .sftpNAS:
             return [
                 CloudField(key: "host", label: "IP / Host NAS"),
                 CloudField(key: "user", label: "Utilizator"),
-                CloudField(key: "pass", label: "Parolă", isSecure: true),
+                CloudField(key: "pass", label: CoreL.x("Parolă", "Password", "Contraseña"), isSecure: true),
                 CloudField(key: "port", label: "Port (implicit 22)")
             ]
         case .ftp:
             return [
                 CloudField(key: "host", label: "Host"),
                 CloudField(key: "user", label: "Utilizator"),
-                CloudField(key: "pass", label: "Parolă", isSecure: true)
+                CloudField(key: "pass", label: CoreL.x("Parolă", "Password", "Contraseña"), isSecure: true)
             ]
         }
     }
@@ -302,7 +302,7 @@ public final class CloudManagerService: ObservableObject {
         do {
             try process.run()
         } catch {
-            completion(false, "Nu s-a putut porni rclone: \(error.localizedDescription)")
+            completion(false, CoreL.x("Nu s-a putut porni rclone: \(error.localizedDescription)", "Could not start rclone: \(error.localizedDescription)", "No se pudo iniciar rclone: \(error.localizedDescription)"))
         }
     }
 
@@ -323,7 +323,7 @@ public final class CloudManagerService: ObservableObject {
             if FileManager.default.fileExists(atPath: custom, isDirectory: &isDir), isDir.boolValue {
                 baseFolder = custom
             } else {
-                log?("⚠ Folderul de mount configurat (\(custom)) nu există (disc extern deconectat?) — folosesc Desktop în loc.")
+                log?(CoreL.x("⚠ Folderul de mount configurat (\(custom)) nu există (disc extern deconectat?) — folosesc Desktop în loc.", "⚠ The configured mount folder (\(custom)) does not exist (external drive disconnected?) — using the Desktop instead.", "⚠ La carpeta de montaje configurada (\(custom)) no existe (¿disco externo desconectado?); se usa el Escritorio."))
             }
         }
         let mountPath = baseFolder + "/Cloud_" + remoteName
@@ -396,7 +396,7 @@ public final class CloudManagerService: ObservableObject {
                 let output = Shell.run("rclone copy \"\(path)\" \"\(target)\" \(perf) -P 2>&1 | tail -n 8")
                 if !output.isEmpty { DispatchQueue.main.async { log(output) } }
             }
-            DispatchQueue.main.async { log("✔ Încărcare terminată."); completion(true) }
+            DispatchQueue.main.async { log(CoreL.x("✔ Încărcare terminată.", "✔ Upload finished.", "✔ Subida terminada.")); completion(true) }
         }
     }
 
@@ -408,7 +408,7 @@ public final class CloudManagerService: ObservableObject {
             log("$ rclone copy \"\(source)\" \"\(localDestFolder)\" \(perf) --progress")
             let output = Shell.run("rclone copy \"\(source)\" \"\(localDestFolder)\" \(perf) -P 2>&1 | tail -n 8")
             if !output.isEmpty { DispatchQueue.main.async { log(output) } }
-            DispatchQueue.main.async { log("✔ Descărcare terminată în \(localDestFolder)."); completion(true) }
+            DispatchQueue.main.async { log(CoreL.x("✔ Descărcare terminată în \(localDestFolder).", "✔ Download finished in \(localDestFolder).", "✔ Descarga terminada en \(localDestFolder).")); completion(true) }
         }
     }
 
@@ -420,7 +420,7 @@ public final class CloudManagerService: ObservableObject {
         log("$ \(command)")
         let output = Shell.run("\(command) 2>&1")
         if !output.isEmpty { log(output) }
-        log("✔ Șters: \(remotePath)")
+        log(CoreL.x("✔ Șters: \(remotePath)", "✔ Deleted: \(remotePath)", "✔ Eliminado: \(remotePath)"))
     }
 
     /// Sincronizare folder local <-> remote. `mirror: true` = oglinda EXACTA
@@ -434,11 +434,11 @@ public final class CloudManagerService: ObservableObject {
         let verb = mirror ? "sync" : "copy"
         let perf = RclonePerformanceSettings.copyFlags
         DispatchQueue.global(qos: .userInitiated).async {
-            log("$ rclone \(verb) \"\(source)\" \"\(dest)\" \(perf) --progress" + (mirror ? "  (oglindă - șterge ce lipsește la sursă)" : ""))
+            log("$ rclone \(verb) \"\(source)\" \"\(dest)\" \(perf) --progress" + (mirror ? CoreL.x("  (oglindă - șterge ce lipsește la sursă)", "  (mirror - deletes what is missing at the source)", "  (espejo: borra lo que falta en el origen)") : ""))
             let output = Shell.run("rclone \(verb) \"\(source)\" \"\(dest)\" \(perf) -P 2>&1 | tail -n 12")
             DispatchQueue.main.async {
                 if !output.isEmpty { log(output) }
-                log("✔ Sincronizare terminată.")
+                log(CoreL.x("✔ Sincronizare terminată.", "✔ Sync finished.", "✔ Sincronización terminada."))
                 completion(true)
             }
         }

@@ -26,9 +26,9 @@ public struct DuplicateScanProgress: Sendable {
 
         public var label: String {
             switch self {
-            case .enumerating: return "Caut fișiere…"
-            case .prefiltering: return "Compar rapid conținutul…"
-            case .hashing: return "Verific fișierele identice…"
+            case .enumerating: return CoreL.x("Caut fișiere…", "Looking for files…", "Buscando archivos…")
+            case .prefiltering: return CoreL.x("Compar rapid conținutul…", "Quickly comparing content…", "Comparando el contenido rápidamente…")
+            case .hashing: return CoreL.x("Verific fișierele identice…", "Verifying identical files…", "Verificando archivos idénticos…")
             case .finished: return "Gata"
             }
         }

@@ -2,7 +2,7 @@ import SwiftUI
 import AppKit
 import MacMasterControlProCore
 
-/// Modul "Securitate & Confidențialitate" — verificări 🔴/🟢 pe baza
+/// Modul L.x("Securitate & Confidențialitate", "Security & Privacy", "Seguridad y privacidad") — verificări 🔴/🟢 pe baza
 /// recomandărilor din drduh/macOS-Security-and-Privacy-Guide, plus
 /// acțiuni SIGURE (fără risc de blocare a Mac-ului sau necesitatea unui
 /// recovery key manual) cu un singur click.
@@ -17,13 +17,13 @@ struct SecurityModuleView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Label("Securitate & Confidențialitate", systemImage: "checkmark.shield").font(.title2).bold()
+                Label(L.x("Securitate & Confidențialitate", "Security & Privacy", "Seguridad y privacidad"), systemImage: "checkmark.shield").font(.title2).bold()
                 Spacer()
                 if isBusy { ProgressView().controlSize(.small) }
-                Button("Rescanează") { refresh() }
+                Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { refresh() }
             }
 
-            GroupBox("Verificări sistem") {
+            GroupBox(L.x("Verificări sistem", "System checks", "Comprobaciones del sistema")) {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(checks) { check in
                         HStack {
@@ -50,21 +50,21 @@ struct SecurityModuleView: View {
                 .padding(6)
             }
 
-            GroupBox("Acțiuni rapide") {
+            GroupBox(L.x("Acțiuni rapide", "Quick actions", "Acciones rápidas")) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Button("Activează Firewall + Stealth Mode") {
+                        Button(L.x("Activează Firewall + Stealth Mode", "Enable Firewall + Stealth Mode", "Activar el cortafuegos + modo sigilo")) {
                             runGated {
                                 SecurityService.enableFirewallWithStealth()
-                                refresh(message: "Firewall activat (stealth mode + fără excepții automate pentru aplicații semnate).")
+                                refresh(message: L.x("Firewall activat (stealth mode + fără excepții automate pentru aplicații semnate).", "Firewall enabled (stealth mode + no automatic exceptions for signed apps).", "Cortafuegos activado (modo sigilo y sin excepciones automáticas para apps firmadas)."))
                             }
                         }
                     }
                     HStack {
-                        Button("Cere parolă imediat la screensaver") {
+                        Button(L.x("Cere parolă imediat la screensaver", "Require password immediately after screensaver", "Pedir contraseña inmediatamente tras el salvapantallas")) {
                             runGated {
                                 SecurityService.requirePasswordImmediatelyAtScreensaver()
-                                refresh(message: "Parola va fi cerută imediat la ieșirea din screensaver.")
+                                refresh(message: L.x("Parola va fi cerută imediat la ieșirea din screensaver.", "The password will be required immediately when leaving the screensaver.", "Se pedirá la contraseña inmediatamente al salir del salvapantallas."))
                             }
                         }
                     }
@@ -76,8 +76,8 @@ struct SecurityModuleView: View {
                 .padding(6)
             }
 
-            GroupBox("Ce NU se face automat, și de ce") {
-                Text("FileVault (cere cheie de recuperare confirmată manual), dezactivarea System Integrity Protection (necesită Recovery Mode), și configurarea DNS/VPN/Tor (alegere personală) rămân decizii luate direct din System Settings, niciodată dintr-un buton — riscul de a bloca sau expune Mac-ul fără să-ți dai seama e prea mare.")
+            GroupBox(L.x("Ce NU se face automat, și de ce", "What is NOT done automatically, and why", "Lo que NO se hace automáticamente, y por qué")) {
+                Text(L.x("FileVault (cere cheie de recuperare confirmată manual), dezactivarea System Integrity Protection (necesită Recovery Mode), și configurarea DNS/VPN/Tor (alegere personală) rămân decizii luate direct din System Settings, niciodată dintr-un buton — riscul de a bloca sau expune Mac-ul fără să-ți dai seama e prea mare.", "FileVault (needs a manually confirmed recovery key), disabling System Integrity Protection (needs Recovery Mode) and configuring DNS/VPN/Tor (a personal choice) remain decisions made directly in System Settings, never from a button — the risk of locking or exposing your Mac without noticing is too high.", "FileVault (requiere una clave de recuperación confirmada a mano), desactivar System Integrity Protection (requiere el modo de recuperación) y configurar DNS/VPN/Tor (una decisión personal) siguen siendo decisiones que se toman directamente en Ajustes del Sistema, nunca desde un botón: el riesgo de bloquear o exponer el Mac sin darte cuenta es demasiado alto."))
                     .font(.caption).foregroundStyle(.secondary)
                     .padding(6)
             }
@@ -125,7 +125,7 @@ private struct SecurityGuideSheet: View {
             HStack {
                 Text("Cum activez: \(check.title)").font(.title3).bold()
                 Spacer()
-                Button("Închide", action: onClose)
+                Button(L.x("Închide", "Close", "Cerrar"), action: onClose)
             }
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(Array(check.manualSteps.enumerated()), id: \.offset) { index, step in
@@ -136,7 +136,7 @@ private struct SecurityGuideSheet: View {
                 }
             }
             if let pane = check.settingsPane {
-                Button("Deschide System Settings") {
+                Button(L.x("Deschide System Settings", "Open System Settings", "Abrir Ajustes del Sistema")) {
                     if let url = URL(string: "x-apple.systempreferences:\(pane)") {
                         NSWorkspace.shared.open(url)
                     }

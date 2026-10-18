@@ -19,9 +19,9 @@ struct RosettaModuleView: View {
                     Circle()
                         .fill(service.rosettaInstalled ? Color.orange : Color.green)
                         .frame(width: 10, height: 10)
-                    Text(service.rosettaInstalled ? "Instalată" : "Nu este instalată")
+                    Text(service.rosettaInstalled ? L.x("Instalată", "Installed", "Instalado") : L.x("Nu este instalată", "Not installed", "No instalado"))
                     Spacer()
-                    Button("Rescanează") { service.scan(); selected = [] }
+                    Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { service.scan(); selected = [] }
                 }
                 .padding(6)
             }
@@ -29,10 +29,10 @@ struct RosettaModuleView: View {
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Aplicații Intel (x86_64) găsite: \(service.intelApps.count)").font(.headline)
+                        Text(L.x("Aplicații Intel (x86_64) găsite: \(service.intelApps.count)", "Intel (x86_64) apps found: \(service.intelApps.count)", "Apps Intel (x86_64) encontradas: \(service.intelApps.count)")).font(.headline)
                         Spacer()
                         if !service.intelApps.isEmpty {
-                            Button(selected.count == service.intelApps.count ? "Deselectează tot" : "Selectează tot") {
+                            Button(selected.count == service.intelApps.count ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                                 selected = selected.count == service.intelApps.count ? [] : Set(service.intelApps)
                             }
                             .font(.caption)
@@ -40,7 +40,7 @@ struct RosettaModuleView: View {
                     }
 
                     if service.intelApps.isEmpty {
-                        Text("Niciuna — sistemul e pregătit pentru macOS fără Rosetta.")
+                        Text(L.x("Niciuna — sistemul e pregătit pentru macOS fără Rosetta.", "None — the system is ready for macOS without Rosetta.", "Ninguna: el sistema está listo para macOS sin Rosetta."))
                             .foregroundStyle(.secondary)
                     } else {
                         List(service.intelApps) { app in
@@ -55,10 +55,10 @@ struct RosettaModuleView: View {
                         }
                         .frame(minHeight: 200)
 
-                        Text("Selectat \(selected.count) din \(service.intelApps.count) aplicații")
+                        Text(L.x("Selectat \(selected.count) din \(service.intelApps.count) aplicații", "Selected \(selected.count) of \(service.intelApps.count) apps", "Seleccionadas \(selected.count) de \(service.intelApps.count) apps"))
                             .font(.caption).foregroundStyle(.secondary)
 
-                        Button("Trimite la Coș aplicațiile selectate", role: .destructive) {
+                        Button(L.x("Trimite la Coș aplicațiile selectate", "Move selected apps to the Trash", "Mover las apps seleccionadas a la Papelera"), role: .destructive) {
                             if license.allowsFeatures { showConfirmTrash = true } else { showGate = true }
                         }
                         .disabled(selected.isEmpty)
@@ -67,13 +67,13 @@ struct RosettaModuleView: View {
                 .padding(6)
             }
 
-            GroupBox("Curățare Rosetta") {
+            GroupBox(L.x("Curățare Rosetta", "Rosetta cleanup", "Limpieza de Rosetta")) {
                 VStack(alignment: .leading, spacing: 8) {
                     if !service.intelApps.isEmpty {
-                        Label("Ai \(service.intelApps.count) aplicații care încă necesită Rosetta. Elimin-o doar după ce le înlocuiești.", systemImage: "exclamationmark.triangle.fill")
+                        Label(L.x("Ai \(service.intelApps.count) aplicații care încă necesită Rosetta. Elimin-o doar după ce le înlocuiești.", "You have \(service.intelApps.count) apps that still need Rosetta. Remove it only after replacing them.", "Tienes \(service.intelApps.count) apps que aún necesitan Rosetta. Elimínala solo después de sustituirlas."), systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange).font(.caption)
                     }
-                    Button("Elimină Rosetta 2 din sistem…", role: .destructive) {
+                    Button(L.x("Elimină Rosetta 2 din sistem…", "Remove Rosetta 2 from the system…", "Quitar Rosetta 2 del sistema…"), role: .destructive) {
                         if license.allowsFeatures { showConfirmRemove = true } else { showGate = true }
                     }
                 }
@@ -89,20 +89,20 @@ struct RosettaModuleView: View {
         .onAppear { service.scan() }
         .sheet(isPresented: $showGate) { AccessGateSheet() }
         .alert("Elimini Rosetta 2?", isPresented: $showConfirmRemove) {
-            Button("Anulează", role: .cancel) {}
-            Button("Elimină definitiv", role: .destructive) { service.removeRosetta() }
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
+            Button(L.x("Elimină definitiv", "Remove permanently", "Quitar definitivamente"), role: .destructive) { service.removeRosetta() }
         } message: {
-            Text("Operațiune nedocumentată oficial de Apple. Aplicațiile Intel rămase nu vor mai putea rula.")
+            Text(L.x("Operațiune nedocumentată oficial de Apple. Aplicațiile Intel rămase nu vor mai putea rula.", "Not officially documented by Apple. Remaining Intel apps will no longer run.", "Operación no documentada oficialmente por Apple. Las apps Intel restantes dejarán de ejecutarse."))
         }
-        .alert("Trimiți \(selected.count) aplicații la Coș?", isPresented: $showConfirmTrash) {
-            Button("Anulează", role: .cancel) {}
-            Button("Trimite la Coș", role: .destructive) {
+        .alert(L.x("Trimiți \(selected.count) aplicații la Coș?", "Move \(selected.count) apps to the Trash?", "¿Mover \(selected.count) apps a la Papelera?"), isPresented: $showConfirmTrash) {
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
+            Button(L.x("Trimite la Coș", "Move to Trash", "Mover a la Papelera"), role: .destructive) {
                 let moved = service.moveToTrash(selected)
-                status = "✔ \(moved) aplicații trimise la Coș."
+                status = L.x("✔ \(moved) aplicații trimise la Coș.", "✔ \(moved) apps moved to the Trash.", "✔ \(moved) apps movidas a la Papelera.")
                 selected = []
             }
         } message: {
-            Text("Poți restaura din Coșul de gunoi dacă te răzgândești.")
+            Text(L.x("Poți restaura din Coșul de gunoi dacă te răzgândești.", "You can restore from the Trash if you change your mind.", "Puedes restaurar desde la Papelera si cambias de opinión."))
         }
     }
 }

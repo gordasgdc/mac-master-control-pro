@@ -10,10 +10,10 @@ public enum TrashService {
 
     public static func moveToTrash(path: String) -> Outcome {
         let fm = FileManager.default
-        guard fm.fileExists(atPath: path) else { return .failed("nu mai există") }
+        guard fm.fileExists(atPath: path) else { return .failed(CoreL.x("nu mai există", "no longer exists", "ya no existe")) }
         do {
             try fm.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: nil)
-            return fm.fileExists(atPath: path) ? .failed("tot există după mutare") : .moved
+            return fm.fileExists(atPath: path) ? .failed(CoreL.x("tot există după mutare", "still exists after moving", "sigue existiendo tras moverlo")) : .moved
         } catch {
             // Fallback recuperabil prin Finder.
             let escaped = path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
@@ -25,7 +25,7 @@ public enum TrashService {
             if p.terminationStatus == 0, !fm.fileExists(atPath: path) { return .moved }
             let msg = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let reason = msg.isEmpty ? error.localizedDescription : msg
-            return .failed(reason.contains("-1743") || reason.contains("not allowed") ? "lipsește permisiunea de Automatizare pentru Finder" : reason)
+            return .failed(reason.contains("-1743") || reason.contains("not allowed") ? CoreL.x("lipsește permisiunea de Automatizare pentru Finder", "the Automation permission for Finder is missing", "falta el permiso de Automatización para el Finder") : reason)
         }
     }
 }

@@ -51,7 +51,7 @@ struct ScanProgressView: View {
 
                 Button("Stop", action: onStop)
                     .controlSize(.small)
-                    .help("Oprește scanarea acum.")
+                    .help(L.x("Oprește scanarea acum.", "Stop scanning now.", "Detener el análisis ahora."))
             }
             Spacer(minLength: 0)
         }

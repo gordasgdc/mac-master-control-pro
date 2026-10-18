@@ -138,7 +138,7 @@ struct SunburstView: View {
 
     private func percent(_ n: DiskTreeNode) -> String {
         let p = Double(n.sizeBytes) / Double(max(root.sizeBytes, 1)) * 100
-        return String(format: p < 10 ? "%.1f%% din folder" : "%.0f%% din folder", p).replacingOccurrences(of: ".", with: ",")
+        return String(format: p < 10 ? L.x("%.1f%% din folder", "%.1f%% of folder", "%.1f%% de la carpeta") : L.x("%.0f%% din folder", "%.0f%% of folder", "%.0f%% de la carpeta"), p).replacingOccurrences(of: ".", with: ",")
     }
 
     private func hit(_ loc: CGPoint, center: CGPoint, rr: (hole: CGFloat, r1: CGFloat, r2a: CGFloat, r2b: CGFloat), list: [Arc]) -> Arc? {

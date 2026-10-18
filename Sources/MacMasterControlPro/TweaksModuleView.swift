@@ -7,8 +7,8 @@ private enum TweakID: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .finderAdvanced: return "Activează vizualizare avansată Finder"
-        case .blockDSStore: return "Blochează .DS_Store pe discuri externe / USB"
+        case .finderAdvanced: return L.x("Activează vizualizare avansată Finder", "Enable advanced Finder view", "Activar la vista avanzada del Finder")
+        case .blockDSStore: return L.x("Blochează .DS_Store pe discuri externe / USB", "Block .DS_Store on external / USB drives", "Bloquear .DS_Store en discos externos / USB")
         }
     }
 }
@@ -40,7 +40,7 @@ struct TweaksModuleView: View {
                     HStack {
                         Text("Finder").font(.headline)
                         Spacer()
-                        Button(selected.count == TweakID.allCases.count ? "Deselectează tot" : "Selectează tot") {
+                        Button(selected.count == TweakID.allCases.count ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             selected = selected.count == TweakID.allCases.count ? [] : Set(TweakID.allCases)
                         }
                         .font(.caption)
@@ -55,9 +55,9 @@ struct TweaksModuleView: View {
                             Text(tweak.label)
                         }
                     }
-                    Text("Selectat \(selected.count) din \(TweakID.allCases.count)")
+                    Text(L.x("Selectat \(selected.count) din \(TweakID.allCases.count)", "Selected \(selected.count) of \(TweakID.allCases.count)", "Seleccionados \(selected.count) de \(TweakID.allCases.count)"))
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("Aplică tweak-urile selectate") {
+                    Button(L.x("Aplică tweak-urile selectate", "Apply selected tweaks", "Aplicar los ajustes seleccionados")) {
                         runGated { applySelected() }
                     }
                     .buttonStyle(.borderedProminent)
@@ -70,14 +70,14 @@ struct TweaksModuleView: View {
             GroupBox("Spotlight Shield — Discuri & Foldere") {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Bifează un disc/folder pentru a-l proteja de indexarea Spotlight (`.metadata_never_index`); debifează pentru a elimina protecția.")
+                        Text(L.x("Bifează un disc/folder pentru a-l proteja de indexarea Spotlight (`.metadata_never_index`); debifează pentru a elimina protecția.", "Tick a drive/folder to protect it from Spotlight indexing (`.metadata_never_index`); untick to remove the protection.", "Marca un disco o carpeta para protegerlo de la indexación de Spotlight (`.metadata_never_index`); desmárcalo para quitar la protección."))
                             .font(.caption).foregroundStyle(.secondary)
                         Spacer()
-                        Button("+ Adaugă foldere…") { pickFolders() }
+                        Button(L.x("+ Adaugă foldere…", "+ Add folders…", "+ Añadir carpetas…")) { pickFolders() }
                     }
                     HStack {
                         Button(service.protectedPaths.count == service.spotlightTargets.count && !service.spotlightTargets.isEmpty
-                               ? "Deselectează tot" : "Selectează tot") {
+                               ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             runGated {
                                 let all = service.protectedPaths.count == service.spotlightTargets.count
                                 service.applyProtection(selected: all ? [] : Set(service.spotlightTargets.map(\.path)))
@@ -85,10 +85,10 @@ struct TweaksModuleView: View {
                         }
                         .font(.caption)
                         Spacer()
-                        Button("Rescanează") { service.scanSpotlightTargets() }
+                        Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { service.scanSpotlightTargets() }
                     }
                     if service.spotlightTargets.isEmpty {
-                        Text("Niciun disc extern conectat și niciun folder adăugat.").font(.caption).foregroundStyle(.secondary)
+                        Text(L.x("Niciun disc extern conectat și niciun folder adăugat.", "No external drive connected and no folder added.", "Ningún disco externo conectado ni carpeta añadida.")).font(.caption).foregroundStyle(.secondary)
                     } else {
                         ForEach(service.spotlightTargets) { target in
                             let isProtected = service.protectedPaths.contains(target.path)
@@ -100,7 +100,7 @@ struct TweaksModuleView: View {
                                             let ok = service.setProtected(target.path, checked)
                                             spotlightStatus = ok
                                                 ? nil // starea e deja evidentă din eticheta „Protejat" de mai jos
-                                                : "✘ Nu am putut \(checked ? "proteja" : "elimina protecția pentru") „\(target.name)” — verifică permisiunile discului."
+                                                : L.x("✘ Nu am putut \(checked ? "proteja" : "elimina protecția pentru") „\(target.name)” — verifică permisiunile discului.", "✘ Could not \(checked ? "protect" : "remove protection for") “\(target.name)” — check the drive permissions.", "✘ No se pudo \(checked ? "proteger" : "quitar la protección de") «\(target.name)»; revisa los permisos del disco.")
                                         }
                                     }
                                 )) {
@@ -126,7 +126,7 @@ struct TweaksModuleView: View {
                     if let spotlightStatus {
                         StatusBanner(text: spotlightStatus)
                     }
-                    Label("Protejate \(service.protectedPaths.count) din \(service.spotlightTargets.count)", systemImage: "checkmark.shield")
+                    Label(L.x("Protejate \(service.protectedPaths.count) din \(service.spotlightTargets.count)", "Protected \(service.protectedPaths.count) of \(service.spotlightTargets.count)", "Protegidos \(service.protectedPaths.count) de \(service.spotlightTargets.count)"), systemImage: "checkmark.shield")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(6)
@@ -134,9 +134,9 @@ struct TweaksModuleView: View {
 
             GroupBox("Touch ID") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Button("Activează Touch ID pentru comenzi sudo") {
+                    Button(L.x("Activează Touch ID pentru comenzi sudo", "Enable Touch ID for sudo commands", "Activar Touch ID para los comandos sudo")) {
                         runGated {
-                            status = "Se activează…"
+                            status = L.x("Se activează…", "Enabling…", "Activando…")
                             touchIDLog = []
                             service.enableTouchIDForSudo(
                                 onOutput: { line in touchIDLog.append(line) },
@@ -148,7 +148,7 @@ struct TweaksModuleView: View {
                         TerminalLogView(lines: touchIDLog)
                         HStack {
                             Spacer()
-                            Button("Copiază tot") {
+                            Button(L.x("Copiază tot", "Copy all", "Copiar todo")) {
                                 let pb = NSPasteboard.general
                                 pb.clearContents()
                                 pb.setString(touchIDLog.joined(separator: "\n"), forType: .string)

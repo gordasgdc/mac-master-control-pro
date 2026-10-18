@@ -66,9 +66,9 @@ public enum EmailNotifierService {
     @discardableResult
     public static func send(subject: String, body: String) -> (ok: Bool, error: String?) {
         let s = settings
-        guard s.enabled else { return (false, "Notificarea pe email e dezactivată.") }
+        guard s.enabled else { return (false, CoreL.x("Notificarea pe email e dezactivată.", "Email notification is turned off.", "La notificación por correo está desactivada.")) }
         guard !s.username.isEmpty, !s.appPassword.isEmpty, !s.recipient.isEmpty else {
-            return (false, "Completează email, parolă de aplicație și destinatar în Setări.")
+            return (false, CoreL.x("Completează email, parolă de aplicație și destinatar în Setări.", "Fill in email, app password and recipient in Settings.", "Completa el correo, la contraseña de aplicación y el destinatario en Ajustes."))
         }
 
         let message = "From: \(s.username)\r\nTo: \(s.recipient)\r\nSubject: \(subject)\r\n\r\n\(body)\r\n"
@@ -76,7 +76,7 @@ public enum EmailNotifierService {
         do {
             try message.write(toFile: tmpFile, atomically: true, encoding: .utf8)
         } catch {
-            return (false, "Nu s-a putut scrie mesajul temporar: \(error.localizedDescription)")
+            return (false, CoreL.x("Nu s-a putut scrie mesajul temporar: \(error.localizedDescription)", "Could not write the temporary message: \(error.localizedDescription)", "No se pudo escribir el mensaje temporal: \(error.localizedDescription)"))
         }
         defer { try? FileManager.default.removeItem(atPath: tmpFile) }
 
@@ -109,9 +109,9 @@ public enum EmailNotifierService {
                    fields: ["exit": String(process.terminationStatus)])
             if process.terminationStatus == 0 { return (true, nil) }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            return (false, String(data: data, encoding: .utf8) ?? "curl a eșuat (cod \(process.terminationStatus)).")
+            return (false, String(data: data, encoding: .utf8) ?? CoreL.x("curl a eșuat (cod \(process.terminationStatus)).", "curl failed (code \(process.terminationStatus)).", "curl falló (código \(process.terminationStatus))."))
         } catch {
-            return (false, "Nu s-a putut porni curl: \(error.localizedDescription)")
+            return (false, CoreL.x("Nu s-a putut porni curl: \(error.localizedDescription)", "Could not start curl: \(error.localizedDescription)", "No se pudo iniciar curl: \(error.localizedDescription)"))
         }
     }
 }

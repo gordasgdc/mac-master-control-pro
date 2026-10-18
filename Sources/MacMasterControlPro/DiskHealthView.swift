@@ -12,11 +12,11 @@ struct DiskHealthView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Label("Sănătate Discuri", systemImage: "internaldrive").font(.title2).bold()
+                Label(L.x("Sănătate Discuri", "Disk Health", "Salud de discos"), systemImage: "internaldrive").font(.title2).bold()
                 Spacer()
-                Button("Rescanează") { refresh() }
+                Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { refresh() }
             }
-            Text("Spațiu liber, status SMART și test opțional de viteză de scriere — un disc de scratch/cache aproape plin sau pe moarte e cauza cea mai frecventă a randărilor care se blochează la mijloc.")
+            Text(L.x("Spațiu liber, status SMART și test opțional de viteză de scriere — un disc de scratch/cache aproape plin sau pe moarte e cauza cea mai frecventă a randărilor care se blochează la mijloc.", "Free space, SMART status and an optional write-speed test — a nearly full or failing scratch/cache drive is the most common cause of renders that stall midway.", "Espacio libre, estado SMART y una prueba opcional de velocidad de escritura: un disco de scratch/caché casi lleno o fallando es la causa más común de renders que se detienen a medias."))
                 .font(.caption).foregroundStyle(.secondary)
 
             ForEach(disks) { disk in
@@ -26,26 +26,26 @@ struct DiskHealthView: View {
                             Image(systemName: disk.isInternal ? "internaldrive" : "externaldrive")
                             Text(disk.name).font(.headline)
                             if disk.isLowSpace {
-                                Label("Spațiu redus", systemImage: "exclamationmark.triangle.fill")
+                                Label(L.x("Spațiu redus", "Low space", "Poco espacio"), systemImage: "exclamationmark.triangle.fill")
                                     .font(.caption).foregroundStyle(.orange)
                             }
                             if disk.isFailing {
-                                Label("SMART: posibilă defecțiune", systemImage: "xmark.octagon.fill")
+                                Label(L.x("SMART: posibilă defecțiune", "SMART: possible failure", "SMART: posible fallo"), systemImage: "xmark.octagon.fill")
                                     .font(.caption).foregroundStyle(.red)
                             }
                             Spacer()
-                            Button(testingPath == disk.mountPath ? "Se testează…" : "Testează viteza") {
+                            Button(testingPath == disk.mountPath ? L.x("Se testează…", "Testing…", "Probando…") : L.x("Testează viteza", "Test speed", "Probar velocidad")) {
                                 runSpeedTest(disk)
                             }
                             .disabled(testingPath != nil)
                             .controlSize(.small)
-                            .help("Scrie temporar 256 MB pe acest disc și măsoară cât durează — un test real de viteză, nu o valoare din specificațiile producătorului.")
+                            .help(L.x("Scrie temporar 256 MB pe acest disc și măsoară cât durează — un test real de viteză, nu o valoare din specificațiile producătorului.", "Temporarily writes 256 MB to this drive and measures how long it takes — a real speed test, not a manufacturer spec value.", "Escribe temporalmente 256 MB en este disco y mide cuánto tarda: una prueba real de velocidad, no un valor de las especificaciones del fabricante."))
                         }
 
                         ProgressView(value: 100 - disk.freePercent, total: 100)
                             .tint(disk.isLowSpace ? .orange : .accentColor)
                         HStack {
-                            Text(String(format: "%.1f GB liberi din %.1f GB (%.0f%% liber)",
+                            Text(String(format: L.x("%.1f GB liberi din %.1f GB (%.0f%% liber)", "%.1f GB free of %.1f GB (%.0f%% free)", "%.1f GB libres de %.1f GB (%.0f%% libre)"),
                                         Double(disk.availableBytes) / 1_073_741_824,
                                         Double(disk.totalBytes) / 1_073_741_824,
                                         disk.freePercent))

@@ -53,14 +53,14 @@ struct UninstallerModuleView: View {
                 Label("Dezinstalator", systemImage: "trash.slash").font(.title2).bold()
                 Spacer()
                 if !bulkSelectedIDs.isEmpty {
-                    Button("Dezinstalează selectate (\(bulkSelectedIDs.count))", role: .destructive) {
+                    Button(L.x("Dezinstalează selectate (\(bulkSelectedIDs.count))", "Uninstall selected (\(bulkSelectedIDs.count))", "Desinstalar seleccionadas (\(bulkSelectedIDs.count))"), role: .destructive) {
                         pendingBulkConfirm = true
                     }
                     .disabled(isBulkBusy)
-                    .help("Șterge complet toate aplicațiile bifate mai jos — bundle-ul + toate urmele lor (Application Support, Caches, Preferences etc.), într-un singur pas.")
+                    .help(L.x("Șterge complet toate aplicațiile bifate mai jos — bundle-ul + toate urmele lor (Application Support, Caches, Preferences etc.), într-un singur pas.", "Fully remove every app ticked below — the bundle plus all their leftovers (Application Support, Caches, Preferences, etc.) in one step.", "Elimina por completo todas las apps marcadas abajo: el paquete y todos sus restos (Application Support, Caches, Preferences, etc.) en un solo paso."))
                 }
             }
-            TextField("Caută aplicație…", text: $searchText).textFieldStyle(.roundedBorder)
+            TextField(L.x("Caută aplicație…", "Search app…", "Buscar app…"), text: $searchText).textFieldStyle(.roundedBorder)
             List(filteredApps, selection: $selectedApp) { app in
                 HStack {
                     Toggle(isOn: Binding(
@@ -70,7 +70,7 @@ struct UninstallerModuleView: View {
                         }
                     )) { EmptyView() }
                     .toggleStyle(.checkbox)
-                    .help("Bifează ca să incluzi \(app.name) la o ștergere în masă a mai multor aplicații deodată.")
+                    .help(L.x("Bifează ca să incluzi \(app.name) la o ștergere în masă a mai multor aplicații deodată.", "Tick to include \(app.name) in a bulk removal of several apps at once.", "Marca para incluir \(app.name) en una eliminación múltiple de varias apps a la vez."))
                     Image(nsImage: app.icon).resizable().frame(width: 20, height: 20)
                     Text(app.name)
                 }
@@ -80,13 +80,13 @@ struct UninstallerModuleView: View {
         }
         .frame(minWidth: 260, idealWidth: 300)
         .confirmationDialog(
-            "Ștergi definitiv \(bulkSelectedIDs.count) aplicații?",
+            L.x("Ștergi definitiv \(bulkSelectedIDs.count) aplicații?", "Permanently delete \(bulkSelectedIDs.count) apps?", "¿Eliminar definitivamente \(bulkSelectedIDs.count) apps?"),
             isPresented: $pendingBulkConfirm, titleVisibility: .visible
         ) {
-            Button("Șterge definitiv toate", role: .destructive) { runGated { performBulkDelete() } }
-            Button("Anulează", role: .cancel) {}
+            Button(L.x("Șterge definitiv toate", "Delete all permanently", "Eliminar todas definitivamente"), role: .destructive) { runGated { performBulkDelete() } }
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
         } message: {
-            Text("Fiecare aplicație bifată va fi ștearsă complet, împreună cu toate urmele ei găsite pe disc.")
+            Text(L.x("Fiecare aplicație bifată va fi ștearsă complet, împreună cu toate urmele ei găsite pe disc.", "Each ticked app will be removed completely, along with all its leftovers found on disk.", "Cada app marcada se eliminará por completo, junto con todos sus restos encontrados en el disco."))
         }
     }
 
@@ -99,11 +99,11 @@ struct UninstallerModuleView: View {
                     Image(nsImage: app.icon).resizable().frame(width: 32, height: 32)
                     Text(app.name).font(.title3).bold()
                     Spacer()
-                    Toggle("Șterge și aplicația", isOn: $deleteAppItselfToo)
+                    Toggle(L.x("Șterge și aplicația", "Also delete the app", "Eliminar también la app"), isOn: $deleteAppItselfToo)
                 }
 
                 if categories.isEmpty {
-                    Text("Nicio urmă găsită în afara aplicației înseși (deja curat).")
+                    Text(L.x("Nicio urmă găsită în afara aplicației înseși (deja curat).", "No leftovers found outside the app itself (already clean).", "No se encontraron restos fuera de la propia app (ya está limpio)."))
                         .foregroundStyle(.secondary)
                 } else {
                     ScrollView {
@@ -142,24 +142,24 @@ struct UninstallerModuleView: View {
 
                 HStack {
                     if isBusy { ProgressView().controlSize(.small) }
-                    Button("Șterge selectate", role: .destructive) { pendingConfirm = true }
+                    Button(L.x("Șterge selectate", "Delete selected", "Eliminar seleccionados"), role: .destructive) { pendingConfirm = true }
                         .disabled(isBusy || (selectedCategoryIDs.isEmpty && !deleteAppItselfToo))
-                        .help("Șterge doar categoriile bifate mai sus pentru \(app.name) — folosește asta ca să păstrezi ceva anume (ex. Preferences).")
-                    Button("Rescanează") { selectApp(app) }
-                        .help("Rulează din nou scanarea de urme pentru \(app.name) — util dacă tocmai ai șters ceva manual sau ai deschis aplicația între timp.")
+                        .help(L.x("Șterge doar categoriile bifate mai sus pentru \(app.name) — folosește asta ca să păstrezi ceva anume (ex. Preferences).", "Deletes only the categories ticked above for \(app.name) — use this to keep something specific (e.g. Preferences).", "Elimina solo las categorías marcadas arriba para \(app.name); úsalo para conservar algo concreto (p. ej. Preferences)."))
+                    Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { selectApp(app) }
+                        .help(L.x("Rulează din nou scanarea de urme pentru \(app.name) — util dacă tocmai ai șters ceva manual sau ai deschis aplicația între timp.", "Runs the leftover scan again for \(app.name) — useful if you just deleted something manually or opened the app meanwhile.", "Vuelve a buscar restos de \(app.name); útil si acabas de borrar algo a mano o has abierto la app entretanto."))
                 }
             } else {
-                Text("Alege o aplicație din listă.").foregroundStyle(.secondary)
+                Text(L.x("Alege o aplicație din listă.", "Choose an app from the list.", "Elige una app de la lista.")).foregroundStyle(.secondary)
             }
             Spacer()
         }
         .frame(minWidth: 380)
         .confirmationDialog(
-            "Ștergi definitiv \(selectedApp?.name ?? "")?",
+            L.x("Ștergi definitiv \(selectedApp?.name ?? "")?", "Permanently delete \(selectedApp?.name ?? "")?", "¿Eliminar definitivamente \(selectedApp?.name ?? "")?"),
             isPresented: $pendingConfirm, titleVisibility: .visible
         ) {
-            Button("Șterge definitiv", role: .destructive) { runGated { performDelete() } }
-            Button("Anulează", role: .cancel) {}
+            Button(L.x("Șterge definitiv", "Delete permanently", "Eliminar definitivamente"), role: .destructive) { runGated { performDelete() } }
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
         } message: {
             Text("Total: \(selectedSizeDescription)\(deleteAppItselfToo ? " + aplicația însăși" : "")")
         }
@@ -188,7 +188,7 @@ struct UninstallerModuleView: View {
     private func performDelete() {
         guard let app = selectedApp else { return }
         isBusy = true
-        logLines = ["Încep ștergerea pentru \(app.name)…"]
+        logLines = [L.x("Încep ștergerea pentru \(app.name)…", "Starting removal of \(app.name)…", "Iniciando la eliminación de \(app.name)…")]
         let toDelete = categories.filter { selectedCategoryIDs.contains($0.id) }
         DispatchQueue.global(qos: .userInitiated).async {
             UninstallerService.terminateIfRunning(app)
@@ -205,9 +205,9 @@ struct UninstallerModuleView: View {
                 if selectedApp != nil && !apps.contains(where: { $0.id == app.id }) {
                     selectedApp = nil
                     categories = []
-                    logLines.append("✓ Confirmat: \(app.name) nu mai apare în /Applications.")
+                    logLines.append(L.x("✓ Confirmat: \(app.name) nu mai apare în /Applications.", "✓ Confirmed: \(app.name) no longer appears in /Applications.", "✓ Confirmado: \(app.name) ya no aparece en /Applications."))
                 } else if let stillThere = apps.first(where: { $0.id == app.id }) {
-                    logLines.append("⚠ \(app.name) tot apare în /Applications — vezi mesajul de eroare de mai sus (probabil aplicația era deschisă).")
+                    logLines.append(L.x("⚠ \(app.name) tot apare în /Applications — vezi mesajul de eroare de mai sus (probabil aplicația era deschisă).", "⚠ \(app.name) still appears in /Applications — see the error message above (the app was probably open).", "⚠ \(app.name) sigue apareciendo en /Applications; mira el mensaje de error de arriba (probablemente la app estaba abierta)."))
                     selectApp(stillThere, keepLog: true)
                 }
                 isBusy = false
@@ -226,7 +226,7 @@ struct UninstallerModuleView: View {
         let targets = apps.filter { bulkSelectedIDs.contains($0.id) }
         guard !targets.isEmpty else { return }
         isBulkBusy = true
-        logLines = ["Încep ștergerea în masă pentru \(targets.count) aplicații…"]
+        logLines = [L.x("Încep ștergerea în masă pentru \(targets.count) aplicații…", "Starting bulk removal of \(targets.count) apps…", "Iniciando la eliminación múltiple de \(targets.count) apps…")]
         DispatchQueue.global(qos: .userInitiated).async {
             for app in targets {
                 DispatchQueue.main.async { logLines.append("— \(app.name) —") }

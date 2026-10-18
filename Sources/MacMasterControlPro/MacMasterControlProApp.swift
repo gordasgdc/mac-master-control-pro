@@ -38,15 +38,15 @@ struct MacMasterControlProApp: App {
         // liber redimensionabila), care oricum interzicea implicit acest mod.
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("Despre Master Control Studio Pro") { showAboutPanel() }
+                Button(L.x("Despre Master Control Studio Pro", "About Master Control Studio Pro", "Acerca de Master Control Studio Pro")) { showAboutPanel() }
             }
             CommandGroup(replacing: .help) {
-                Button("Ghid de Utilizare (PDF)") { GuidePDF.open() }
+                Button(L.x("Ghid de Utilizare (PDF)", "User Guide (PDF)", "Guía de uso (PDF)")) { GuidePDF.open() }
                 Divider()
-                Button("Ghid: Mod Randare (PDF)") { ModuleGuidePDF.renderMode.open() }
-                Button("Ghid: Analiză Disc (PDF)") { ModuleGuidePDF.diskAnalyzer.open() }
-                Button("Ghid: Tweak-uri Sistem (PDF)") { ModuleGuidePDF.systemTweaks.open() }
-                Button("Ghid: Backup & Securitate (PDF)") { ModuleGuidePDF.backupSecurity.open() }
+                Button(L.x("Ghid: Mod Randare (PDF)", "Guide: Render Mode (PDF)", "Guía: modo de renderizado (PDF)")) { ModuleGuidePDF.renderMode.open() }
+                Button(L.x("Ghid: Analiză Disc (PDF)", "Guide: Disk Analyzer (PDF)", "Guía: analizador de disco (PDF)")) { ModuleGuidePDF.diskAnalyzer.open() }
+                Button(L.x("Ghid: Tweak-uri Sistem (PDF)", "Guide: System Tweaks (PDF)", "Guía: ajustes del sistema (PDF)")) { ModuleGuidePDF.systemTweaks.open() }
+                Button(L.x("Ghid: Backup & Securitate (PDF)", "Guide: Backup & Security (PDF)", "Guía: copias y seguridad (PDF)")) { ModuleGuidePDF.backupSecurity.open() }
             }
             // Plasă de siguranță (2026-08-31): ⌘, e scurtătura STANDARD
             // macOS pentru Preferences — deschide Setări indiferent de
@@ -54,7 +54,7 @@ struct MacMasterControlProApp: App {
             // hit-testing de mai sus). Nu costă nimic sa existe, chiar daca
             // sidebar-ul functioneaza normal.
             CommandGroup(replacing: .appSettings) {
-                Button("Setări…") { NotificationCenter.default.post(name: .mmcpOpenSettings, object: nil) }
+                Button(L.x("Setări…", "Settings…", "Ajustes…")) { NotificationCenter.default.post(name: .mmcpOpenSettings, object: nil) }
                     .keyboardShortcut(",", modifiers: .command)
             }
         }

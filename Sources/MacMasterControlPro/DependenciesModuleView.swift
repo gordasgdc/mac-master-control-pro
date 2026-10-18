@@ -13,17 +13,17 @@ struct DependenciesModuleView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Label("Dependențe & Cerințe Sistem", systemImage: "puzzlepiece.extension").font(.title2).bold()
+                Label(L.x("Dependențe & Cerințe Sistem", "Dependencies & System Requirements", "Dependencias y requisitos del sistema"), systemImage: "puzzlepiece.extension").font(.title2).bold()
                 Spacer()
-                Button("Rescanează") { checker.checkAll() }
+                Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { checker.checkAll() }
             }
 
             if !checker.allInstalled {
-                Label("Unele dependențe lipsesc — modulele Cloud/Rețea pot fi limitate.", systemImage: "exclamationmark.triangle.fill")
+                Label(L.x("Unele dependențe lipsesc — modulele Cloud/Rețea pot fi limitate.", "Some dependencies are missing — the Cloud/Network modules may be limited.", "Faltan algunas dependencias; los módulos Cloud y Red pueden estar limitados."), systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
             }
 
-            Text("Fiecare componentă are propriul buton de instalare — roșu (neinstalat) devine verde (instalat) după ce comanda reușește. Fără instalare în masă, ca să nu blocheze sistemul.")
+            Text(L.x("Fiecare componentă are propriul buton de instalare — roșu (neinstalat) devine verde (instalat) după ce comanda reușește. Fără instalare în masă, ca să nu blocheze sistemul.", "Each component has its own install button — red (not installed) turns green (installed) once the command succeeds. No bulk install, so the system does not get blocked.", "Cada componente tiene su propio botón de instalación: rojo (no instalado) pasa a verde (instalado) cuando el comando termina bien. Sin instalación masiva, para no bloquear el sistema."))
                 .font(.caption).foregroundStyle(.secondary)
 
             // Scurtătura „un singur buton", pentru cine nu vrea să le apese pe
@@ -32,10 +32,10 @@ struct DependenciesModuleView: View {
                 Button {
                     showOnboarding = true
                 } label: {
-                    Label("Instalează dependențele necesare", systemImage: "arrow.down.circle.fill")
+                    Label(L.x("Instalează dependențele necesare", "Install required dependencies", "Instalar las dependencias necesarias"), systemImage: "arrow.down.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
-                .help("Instalează automat tot ce lipsește, fără să deschizi Terminalul.")
+                .help(L.x("Instalează automat tot ce lipsește, fără să deschizi Terminalul.", "Installs everything that is missing automatically, without opening Terminal.", "Instala automáticamente todo lo que falta, sin abrir el Terminal."))
             }
 
             GroupBox("Status pachete") {
@@ -51,14 +51,14 @@ struct DependenciesModuleView: View {
                                 .foregroundStyle(.secondary).font(.caption)
 
                             if installableIds.contains(item.id) {
-                                Button(item.isInstalled ? "Instalat ✔" : "Instalează") {
+                                Button(item.isInstalled ? "Instalat ✔" : L.x("Instalează", "Install", "Instalar")) {
                                     checker.installOne(id: item.id) {}
                                 }
                                 .buttonStyle(.borderedProminent)
                                 .tint(item.isInstalled ? .green : .red)
                                 .disabled(item.isInstalled || checker.isInstalling)
                             } else if item.id == "homebrew" && !item.isInstalled {
-                                Button("Instalează (Terminal)") { checker.installHomebrewInTerminal() }
+                                Button(L.x("Instalează (Terminal)", "Install (Terminal)", "Instalar (Terminal)")) { checker.installHomebrewInTerminal() }
                                     .buttonStyle(.borderedProminent)
                                     .tint(.red)
                             }
@@ -70,7 +70,7 @@ struct DependenciesModuleView: View {
                 .padding(6)
             }
 
-            Button(checker.isInstalling ? "Se verifică…" : "Check & Update All") {
+            Button(checker.isInstalling ? L.x("Se verifică…", "Checking…", "Comprobando…") : "Check & Update All") {
                 checker.checkAndUpdateAll {}
             }
             .disabled(checker.isInstalling)

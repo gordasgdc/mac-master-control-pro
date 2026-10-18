@@ -117,23 +117,23 @@ public final class RenderModeService: ObservableObject {
         let op = DiagnosticLog.begin("render", "activate", fields: ["commands": String(commands.count)])
         for line in RenderModeState.changeSummary(snapshot) { log("• " + line) }
         guard !commands.isEmpty else {
-            log("ℹ Nimic de schimbat: tot ce poate face Modul Randare este deja oprit.")
+            log(CoreL.x("ℹ Nimic de schimbat: tot ce poate face Modul Randare este deja oprit.", "ℹ Nothing to change: everything Render Mode can do is already off.", "ℹ Nada que cambiar: todo lo que puede hacer el modo de renderizado ya está desactivado."))
             op.end("noop"); return
         }
         // Starea veche se salvează ÎNAINTE de modificare; fără ea nu se continuă.
         do { try RenderModeState.saveSnapshot(snapshot) } catch {
-            log("✘ Nu am putut salva starea curentă, nu modific nimic: \(error.localizedDescription)")
+            log(CoreL.x("✘ Nu am putut salva starea curentă, nu modific nimic: \(error.localizedDescription)", "✘ Could not save the current state, changing nothing: \(error.localizedDescription)", "✘ No se pudo guardar el estado actual, no se modifica nada: \(error.localizedDescription)"))
             op.end("snapshot-failed", level: .error); return
         }
         log("$ " + commands.joined(separator: " && "))
         let result = PrivilegedRunner.run(commands)
         if result.success {
             isActive = true
-            log("✔ Mod Randare ACTIV. Starea anterioară e salvată; dezactivarea o restaurează exact.")
+            log(CoreL.x("✔ Mod Randare ACTIV. Starea anterioară e salvată; dezactivarea o restaurează exact.", "✔ Render Mode ON. The previous state is saved; turning it off restores it exactly.", "✔ Modo de renderizado ACTIVO. El estado anterior está guardado; al desactivarlo se restaura exactamente."))
             op.end("ok")
         } else {
-            log("✘ Eroare la activare — \(result.output)")
-            log("ℹ Starea veche rămâne salvată; apasă Dezactivează pentru a readuce ce s-a schimbat parțial.")
+            log(CoreL.x("✘ Eroare la activare — \(result.output)", "✘ Error while enabling — \(result.output)", "✘ Error al activar: \(result.output)"))
+            log(CoreL.x("ℹ Starea veche rămâne salvată; apasă Dezactivează pentru a readuce ce s-a schimbat parțial.", "ℹ The old state stays saved; press Disable to bring back whatever changed partially.", "ℹ El estado anterior sigue guardado; pulsa Desactivar para recuperar lo que cambió parcialmente."))
             isActive = true   // posibil parțial aplicat: permite restaurarea
             op.end("failed", level: .error)
         }
@@ -141,21 +141,21 @@ public final class RenderModeService: ObservableObject {
 
     public func deactivate(log: @escaping (String) -> Void) {
         guard let snapshot = RenderModeState.loadSnapshot() else {
-            log("ℹ Nu există o stare salvată de restaurat. Nu modific Time Machine sau Spotlight.")
+            log(CoreL.x("ℹ Nu există o stare salvată de restaurat. Nu modific Time Machine sau Spotlight.", "ℹ There is no saved state to restore. Time Machine and Spotlight are left untouched.", "ℹ No hay ningún estado guardado que restaurar. No se modifican Time Machine ni Spotlight."))
             isActive = false; recoveredFromPreviousSession = false; return
         }
         let commands = RenderModeState.restoreCommands(snapshot)
         let op = DiagnosticLog.begin("render", "deactivate", fields: ["commands": String(commands.count)])
-        if commands.isEmpty { RenderModeState.clearSnapshot(); isActive = false; recoveredFromPreviousSession = false; log("✔ Nimic de restaurat."); op.end("noop"); return }
+        if commands.isEmpty { RenderModeState.clearSnapshot(); isActive = false; recoveredFromPreviousSession = false; log(CoreL.x("✔ Nimic de restaurat.", "✔ Nothing to restore.", "✔ Nada que restaurar.")); op.end("noop"); return }
         log("$ " + commands.joined(separator: " && "))
         let result = PrivilegedRunner.run(commands)
         if result.success {
             RenderModeState.clearSnapshot()
             isActive = false; recoveredFromPreviousSession = false
-            log("✔ Mod Randare dezactivat: s-a restaurat exact starea de dinainte.")
+            log(CoreL.x("✔ Mod Randare dezactivat: s-a restaurat exact starea de dinainte.", "✔ Render Mode off: the exact previous state was restored.", "✔ Modo de renderizado desactivado: se restauró exactamente el estado anterior."))
             op.end("ok")
         } else {
-            log("✘ Eroare la restaurare — \(result.output). Starea salvată a fost păstrată; reîncearcă.")
+            log(CoreL.x("✘ Eroare la restaurare — \(result.output). Starea salvată a fost păstrată; reîncearcă.", "✘ Error while restoring — \(result.output). The saved state was kept; try again.", "✘ Error al restaurar: \(result.output). Se conservó el estado guardado; inténtalo de nuevo."))
             op.end("failed", level: .error)
         }
     }

@@ -27,16 +27,16 @@ struct ProcessMonitorView: View {
             HStack {
                 Label("Procese active", systemImage: "speedometer").font(.title2).bold()
                 Spacer()
-                Picker("Sortează", selection: $sortKey) {
+                Picker(L.x("Sortează", "Sort", "Ordenar"), selection: $sortKey) {
                     ForEach(ProcessSortKey.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 140)
-                Button(largestFirst ? "Cel mai mare întâi" : "Cel mai mic întâi") { largestFirst.toggle() }
+                Button(largestFirst ? L.x("Cel mai mare întâi", "Largest first", "El mayor primero") : L.x("Cel mai mic întâi", "Smallest first", "El menor primero")) { largestFirst.toggle() }
                     .controlSize(.small)
-                Button("Actualizează") { refresh() }
+                Button(L.x("Actualizează", "Refresh", "Actualizar")) { refresh() }
             }
-            Text("Top 20, actualizat automat la 3 secunde — sortabil după CPU sau RAM, crescător sau descrescător.")
+            Text(L.x("Top 20, actualizat automat la 3 secunde — sortabil după CPU sau RAM, crescător sau descrescător.", "Top 20, refreshed automatically every 3 seconds — sortable by CPU or RAM, ascending or descending.", "Top 20, actualizado cada 3 segundos; ordenable por CPU o RAM, de forma ascendente o descendente."))
                 .font(.caption).foregroundStyle(.secondary)
 
             List(sortedProcesses) { process in
@@ -50,8 +50,8 @@ struct ProcessMonitorView: View {
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .frame(width: 70, alignment: .trailing)
-                    Button("Închide") { terminate(process, force: false) }
-                        .help("Cere procesului să se închidă normal — dacă nu răspunde în o secundă, insistă automat cu o închidere forțată.")
+                    Button(L.x("Închide", "Close", "Cerrar")) { terminate(process, force: false) }
+                        .help(L.x("Cere procesului să se închidă normal — dacă nu răspunde în o secundă, insistă automat cu o închidere forțată.", "Asks the process to quit normally — if it does not respond within a second, it automatically escalates to a force quit.", "Pide al proceso que se cierre con normalidad; si no responde en un segundo, insiste automáticamente con un cierre forzado."))
                         .controlSize(.small)
                 }
             }

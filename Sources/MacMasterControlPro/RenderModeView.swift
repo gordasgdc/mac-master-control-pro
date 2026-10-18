@@ -21,7 +21,7 @@ struct RenderModeView: View {
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Pentru export-uri/randări lungi din orice aplicație — DaVinci Resolve, Final Cut Pro, Premiere Pro, Media Encoder, After Effects, Logic Pro, HandBrake și altele: pune pe pauză indexarea Spotlight și Time Machine (ambele pot concura pentru discul de proiect chiar în timpul randării), și ridică prioritatea aplicațiilor de mai sus care rulează acum.")
+                    Text(L.x("Pentru export-uri/randări lungi din orice aplicație — DaVinci Resolve, Final Cut Pro, Premiere Pro, Media Encoder, After Effects, Logic Pro, HandBrake și altele: pune pe pauză indexarea Spotlight și Time Machine (ambele pot concura pentru discul de proiect chiar în timpul randării), și ridică prioritatea aplicațiilor de mai sus care rulează acum.", "For long exports/renders from any app — DaVinci Resolve, Final Cut Pro, Premiere Pro, Media Encoder, After Effects, Logic Pro, HandBrake and others: pauses Spotlight indexing and Time Machine (both can compete for the project drive during the render) and raises the priority of the apps above that are running now.", "Para exportaciones o renders largos de cualquier app (DaVinci Resolve, Final Cut Pro, Premiere Pro, Media Encoder, After Effects, Logic Pro, HandBrake y otras): pausa la indexación de Spotlight y Time Machine (ambos pueden competir por el disco del proyecto durante el render) y sube la prioridad de las apps anteriores que se estén ejecutando."))
                         .font(.caption).foregroundStyle(.secondary)
 
                     HStack(spacing: 14) {
@@ -49,7 +49,7 @@ struct RenderModeView: View {
                     }
 
                     if service.recoveredFromPreviousSession {
-                        Label("Modul Randare era activ când aplicația s-a închis. Time Machine și Spotlight pot fi încă oprite de el. Dezactivează comutatorul pentru a restaura exact starea de dinainte.", systemImage: "arrow.counterclockwise.circle.fill")
+                        Label(L.x("Modul Randare era activ când aplicația s-a închis. Time Machine și Spotlight pot fi încă oprite de el. Dezactivează comutatorul pentru a restaura exact starea de dinainte.", "Render Mode was active when the app closed. Time Machine and Spotlight may still be paused by it. Turn the switch off to restore the exact previous state.", "El modo de renderizado estaba activo al cerrarse la app. Time Machine y Spotlight pueden seguir pausados por él. Desactiva el interruptor para restaurar exactamente el estado anterior."), systemImage: "arrow.counterclockwise.circle.fill")
                             .font(.callout).foregroundStyle(.orange)
                     }
 
@@ -62,7 +62,7 @@ struct RenderModeView: View {
                     }
 
                     if service.isActive {
-                        Label("Nu uita să dezactivezi Modul Randare după export — Time Machine și Spotlight rămân oprite cât timp comutatorul e ON.", systemImage: "exclamationmark.triangle.fill")
+                        Label(L.x("Nu uita să dezactivezi Modul Randare după export — Time Machine și Spotlight rămân oprite cât timp comutatorul e ON.", "Remember to turn Render Mode off after the export — Time Machine and Spotlight stay paused while the switch is ON.", "No olvides desactivar el modo de renderizado tras exportar: Time Machine y Spotlight siguen pausados mientras el interruptor esté en ON."), systemImage: "exclamationmark.triangle.fill")
                             .font(.caption).foregroundStyle(.orange)
                     }
                 }
@@ -88,11 +88,11 @@ struct RenderModeView: View {
     /// optimiza Modul Randare dacă l-ar porni chiar acum.
     @ViewBuilder
     private var detectedAppsSection: some View {
-        GroupBox("Aplicații detectate acum") {
+        GroupBox(L.x("Aplicații detectate acum", "Apps detected now", "Apps detectadas ahora")) {
             if service.detectedApps.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "questionmark.circle").foregroundStyle(.secondary)
-                    Text("Nicio aplicație de randare cunoscută nu rulează — Modul Randare tot ajută la orice export/copiere masivă, prin Time Machine/Spotlight.")
+                    Text(L.x("Nicio aplicație de randare cunoscută nu rulează — Modul Randare tot ajută la orice export/copiere masivă, prin Time Machine/Spotlight.", "No known render app is running — Render Mode still helps with any export or bulk copy, via Time Machine/Spotlight.", "No se está ejecutando ninguna app de render conocida; el modo de renderizado sigue ayudando en cualquier exportación o copia masiva, a través de Time Machine y Spotlight."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(6)

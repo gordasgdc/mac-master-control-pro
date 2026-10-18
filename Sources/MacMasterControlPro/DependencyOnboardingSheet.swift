@@ -30,18 +30,18 @@ struct DependencyOnboardingSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Componente necesare lipsă", systemImage: "shippingbox")
+            Label(L.x("Componente necesare lipsă", "Required components missing", "Faltan componentes necesarios"), systemImage: "shippingbox")
                 .font(.title3).bold()
 
             if let finished {
                 Label(
-                    finished ? "Totul e instalat. Poți continua." : "Unele componente nu s-au putut instala — vezi detaliile de mai jos.",
+                    finished ? L.x("Totul e instalat. Poți continua.", "Everything is installed. You can continue.", "Todo está instalado. Puedes continuar.") : L.x("Unele componente nu s-au putut instala — vezi detaliile de mai jos.", "Some components could not be installed — see the details below.", "No se pudieron instalar algunos componentes; mira los detalles abajo."),
                     systemImage: finished ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                 )
                 .foregroundStyle(finished ? .green : .orange)
             } else {
-                Text("Aplicația are nevoie de \(plan.summary) ca să funcționeze complet.")
-                Text("Se instalează automat, una după alta. Vei fi întrebat o dată parola de Mac — instalarea rulează în fundal, nu trebuie să deschizi Terminalul.")
+                Text(L.x("Aplicația are nevoie de \(plan.summary) ca să funcționeze complet.", "The app needs \(plan.summary) to work fully.", "La app necesita \(plan.summary) para funcionar por completo."))
+                Text(L.x("Se instalează automat, una după alta. Vei fi întrebat o dată parola de Mac — instalarea rulează în fundal, nu trebuie să deschizi Terminalul.", "Installed automatically, one after another. You will be asked for your Mac password once — installation runs in the background, no need to open Terminal.", "Se instalan automáticamente, una tras otra. Se te pedirá una vez la contraseña del Mac; la instalación se ejecuta en segundo plano y no hace falta abrir el Terminal."))
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -56,13 +56,13 @@ struct DependencyOnboardingSheet: View {
                 if isInstalling { ProgressView().controlSize(.small) }
                 Spacer()
                 if finished == nil {
-                    Button("Mai târziu") { isPresented = false }
+                    Button(L.x("Mai târziu", "Later", "Más tarde")) { isPresented = false }
                         .disabled(isInstalling)
-                    Button("Instalează componentele") { install() }
+                    Button(L.x("Instalează componentele", "Install components", "Instalar los componentes")) { install() }
                         .buttonStyle(.borderedProminent)
                         .disabled(isInstalling)
                 } else {
-                    Button("Închide") { isPresented = false }
+                    Button(L.x("Închide", "Close", "Cerrar")) { isPresented = false }
                         .buttonStyle(.borderedProminent)
                 }
             }

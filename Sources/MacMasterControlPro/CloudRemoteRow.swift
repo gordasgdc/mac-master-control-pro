@@ -39,19 +39,19 @@ struct CloudRemoteRow: View {
                     .frame(width: 8, height: 8)
                 if let drive = mountedDrive {
                     Text("Montat").font(.caption).foregroundStyle(.secondary)
-                    Button("Deschide") { NSWorkspace.shared.open(URL(fileURLWithPath: drive.mountPath)) }
+                    Button(L.x("Deschide", "Open", "Abrir")) { NSWorkspace.shared.open(URL(fileURLWithPath: drive.mountPath)) }
                         .buttonStyle(.plain).foregroundStyle(.blue).font(.caption)
                 } else {
-                    Text("Demontat").font(.caption).foregroundStyle(.secondary)
+                    Text(L.x("Demontat", "Unmounted", "Desmontado")).font(.caption).foregroundStyle(.secondary)
                 }
-                Button("Explorează") { showBrowser = true }
+                Button(L.x("Explorează", "Browse", "Explorar")) { showBrowser = true }
                     .buttonStyle(.plain).foregroundStyle(.blue).font(.caption)
                 Button(role: .destructive) { service.deleteRemote(remote.name) } label: { Image(systemName: "trash") }
                     .buttonStyle(.plain)
             }
             // Faza 2: statistici live, doar cat timp e montat cu RC activ.
             if let stats, mountedDrive != nil {
-                Text("↕︎ \(formattedSpeed(stats.speedBytesPerSec)) · \(formattedBytes(stats.bytesTransferred)) transferați · \(stats.activeTransfers) active")
+                Text(L.x("↕︎ \(formattedSpeed(stats.speedBytesPerSec)) · \(formattedBytes(stats.bytesTransferred)) transferați · \(stats.activeTransfers) active", "↕︎ \(formattedSpeed(stats.speedBytesPerSec)) · \(formattedBytes(stats.bytesTransferred)) transferred · \(stats.activeTransfers) active", "↕︎ \(formattedSpeed(stats.speedBytesPerSec)) · \(formattedBytes(stats.bytesTransferred)) transferidos · \(stats.activeTransfers) activas"))
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(.secondary)
             }

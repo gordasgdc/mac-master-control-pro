@@ -64,9 +64,9 @@ public enum ResolveDatabaseBackupService {
 
         public var errorDescription: String? {
             switch self {
-            case .resolveRunning: return "Închide DaVinci Resolve înainte de backup — copierea „la cald” poate corupe arhiva."
-            case .databaseMissing: return "Nu am găsit baza de date de proiecte a Resolve pe acest Mac."
-            case .zipFailed(let output): return "Arhivarea a eșuat: \(output)"
+            case .resolveRunning: return CoreL.x("Închide DaVinci Resolve înainte de backup — copierea „la cald” poate corupe arhiva.", "Quit DaVinci Resolve before backing up — a “hot” copy can corrupt the archive.", "Cierra DaVinci Resolve antes de la copia: una copia «en caliente» puede dañar el archivo.")
+            case .databaseMissing: return CoreL.x("Nu am găsit baza de date de proiecte a Resolve pe acest Mac.", "Could not find the Resolve project database on this Mac.", "No se encontró la base de datos de proyectos de Resolve en este Mac.")
+            case .zipFailed(let output): return CoreL.x("Arhivarea a eșuat: \(output)", "Archiving failed: \(output)", "Falló el archivado: \(output)")
             }
         }
     }

@@ -18,7 +18,7 @@ final class LanguageStore: ObservableObject {
     private static let key = "MacMasterControlPro.language"
 
     @Published var current: AppLanguage {
-        didSet { AppProfile.defaults.set(current.rawValue, forKey: Self.key) }
+        didSet { AppProfile.defaults.set(current.rawValue, forKey: Self.key); CoreL.code = current.rawValue }
     }
 
     private init() {
@@ -31,6 +31,7 @@ final class LanguageStore: ObservableObject {
             else if preferred.hasPrefix("en") { current = .en }
             else { current = .ro }
         }
+        CoreL.code = current.rawValue
     }
 }
 
@@ -42,13 +43,13 @@ enum L {
         "sidebar.dashboard": [.ro: "Dashboard", .en: "Dashboard", .es: "Panel"],
         "sidebar.renderMode": [.ro: "Mod Randare", .en: "Render Mode", .es: "Modo Renderizado"],
         "sidebar.loginItems": [.ro: "Pornire Sistem", .en: "Startup Apps", .es: "Apps de Inicio"],
-        "sidebar.diskHealth": [.ro: "Sănătate Discuri", .en: "Disk Health", .es: "Salud de Discos"],
+        "sidebar.diskHealth": [.ro: L.x("Sănătate Discuri", "Disk Health", "Salud de discos"), .en: "Disk Health", .es: "Salud de Discos"],
         "sidebar.diskAnalyzer": [.ro: "Analiză Disc", .en: "Disk Analyzer", .es: "Analizador de Disco"],
         "sidebar.resolveTools": [.ro: "DaVinci Resolve", .en: "DaVinci Resolve", .es: "DaVinci Resolve"],
         "sidebar.windowLayouts": [.ro: "Layout Ferestre", .en: "Window Layouts", .es: "Diseños de Ventanas"],
-        "sidebar.network": [.ro: "Rețea", .en: "Network", .es: "Red"],
+        "sidebar.network": [.ro: L.x("Rețea", "Network", "Red"), .en: "Network", .es: "Red"],
         "sidebar.cloud": [.ro: "Cloud Manager", .en: "Cloud Manager", .es: "Gestor Cloud"],
-        "sidebar.cleanup": [.ro: "Curățare & RAM", .en: "Cleanup & RAM", .es: "Limpieza y RAM"],
+        "sidebar.cleanup": [.ro: L.x("Curățare & RAM", "Cleanup & RAM", "Limpieza y RAM"), .en: "Cleanup & RAM", .es: "Limpieza y RAM"],
         "sidebar.duplicates": [.ro: "Duplicate", .en: "Duplicates", .es: "Duplicados"],
         "sidebar.uninstaller": [.ro: "Dezinstalator", .en: "Uninstaller", .es: "Desinstalador"],
         "sidebar.security": [.ro: "Securitate", .en: "Security", .es: "Seguridad"],
@@ -78,18 +79,6 @@ enum L {
         "settings.name": [.ro: "Nume", .en: "Name", .es: "Nombre"],
         "settings.email": [.ro: "Email", .en: "Email", .es: "Correo"],
 
-        "trial.title": [.ro: "Analiza este 100% completă", .en: "Analysis is 100% complete", .es: "El análisis está 100% completo"],
-        "trial.body": [
-            .ro: "Susține dezvoltarea cu o donație (17€, o singură dată) pentru a debloca aplicarea modificărilor.",
-            .en: "Support development with a one-time 17€ donation to unlock applying changes.",
-            .es: "Apoya el desarrollo con una donación única de 17€ para desbloquear la aplicación de cambios."
-        ],
-        "trial.donate": [.ro: "Donează din GDC Plugin Manager", .en: "Donate via GDC Plugin Manager", .es: "Donar desde GDC Plugin Manager"],
-        "trial.activate": [.ro: "Activează", .en: "Activate", .es: "Activar"],
-        "trial.cancel": [.ro: "Anulează", .en: "Cancel", .es: "Cancelar"],
-        "trial.key": [.ro: "Cheie de licență", .en: "License key", .es: "Clave de licencia"],
-        "trial.whatsapp": [.ro: "Contact WhatsApp", .en: "Contact WhatsApp", .es: "Contacto WhatsApp"],
-        "sidebar.trialBadge": [.ro: "Trial — Activează", .en: "Trial — Activate", .es: "Prueba — Activar"],
     ]
 
     static func t(_ key: String) -> String {

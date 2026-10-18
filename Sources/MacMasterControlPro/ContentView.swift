@@ -55,24 +55,24 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     /// sa-ti apara o descriere de ce face".
     var tooltip: String {
         switch self {
-        case .dashboard: return "Privire de ansamblu — starea generală a Mac-ului dintr-o privire."
-        case .renderMode: return "Oprește temporar Spotlight/Time Machine/alte procese de fundal cât randezi în DaVinci Resolve."
-        case .loginItems: return "Vezi și oprești aplicațiile care pornesc automat odată cu Mac-ul."
-        case .processMonitor: return "Procesele active acum, sortabile după CPU sau RAM — închide ce consumă prea mult."
-        case .diskHealth: return "Spațiu liber, status SMART și test de viteză pentru discurile montate."
-        case .diskAnalyzer: return "Vezi ce ocupă spațiul pe disc, folder cu folder, ca în DaisyDisk."
-        case .resolveTools: return "Notificare la final de randare, verificare Media Pool, sincronizare LUT-uri, backup bază de date."
-        case .windowLayouts: return "Salvează și restaurează aranjamentul ferestrelor pe ecran."
-        case .network: return "Configurare și optimizare rețea, persistentă la repornire."
-        case .cloud: return "Conectează și gestionează conturi Cloud (Drive, Dropbox, S3 și altele)."
-        case .cleanup: return "Șterge cache-uri recuperabile, fișiere mari uitate, eliberează RAM."
-        case .duplicates: return "Găsește fișiere identice ca și conținut și te lasă să alegi ce ștergi."
-        case .uninstaller: return "Dezinstalează complet una sau mai multe aplicații, cu toate urmele lor."
-        case .security: return "Verifică setările de securitate ale Mac-ului, cu ghid pas-cu-pas pentru ce lipsește."
-        case .tweaks: return "Ajustări rapide de sistem și accesibilitate."
-        case .rosetta: return "Verifică ce aplicații rulează prin Rosetta (emulare Intel) pe un Mac Apple Silicon."
-        case .dependencies: return "Componentele externe de care aplicația are nevoie — instalare cu un click."
-        case .settings: return "Temă, limbă, licență și alte preferințe ale aplicației."
+        case .dashboard: return L.x("Privire de ansamblu — starea generală a Mac-ului dintr-o privire.", "Overview — the general state of your Mac at a glance.", "Resumen: el estado general del Mac de un vistazo.")
+        case .renderMode: return L.x("Oprește temporar Spotlight/Time Machine/alte procese de fundal cât randezi în DaVinci Resolve.", "Temporarily pauses Spotlight/Time Machine/other background processes while you render in DaVinci Resolve.", "Pausa temporalmente Spotlight/Time Machine y otros procesos en segundo plano mientras renderizas en DaVinci Resolve.")
+        case .loginItems: return L.x("Vezi și oprești aplicațiile care pornesc automat odată cu Mac-ul.", "See and stop apps that start automatically with your Mac.", "Consulta y detén las apps que se inician con el Mac.")
+        case .processMonitor: return L.x("Procesele active acum, sortabile după CPU sau RAM — închide ce consumă prea mult.", "Running processes, sortable by CPU or RAM — close what uses too much.", "Procesos activos, ordenables por CPU o RAM: cierra lo que consume demasiado.")
+        case .diskHealth: return L.x("Spațiu liber, status SMART și test de viteză pentru discurile montate.", "Free space, SMART status and speed test for mounted drives.", "Espacio libre, estado SMART y prueba de velocidad de las unidades montadas.")
+        case .diskAnalyzer: return L.x("Vezi ce ocupă spațiul pe disc, folder cu folder, ca în DaisyDisk.", "See what uses disk space, folder by folder, as in DaisyDisk.", "Mira qué ocupa espacio en el disco, carpeta por carpeta, como en DaisyDisk.")
+        case .resolveTools: return L.x("Notificare la final de randare, verificare Media Pool, sincronizare LUT-uri, backup bază de date.", "Render-finished notification, Media Pool check, LUT sync, database backup.", "Aviso al terminar el render, revisión del Media Pool, sincronización de LUT y copia de la base de datos.")
+        case .windowLayouts: return L.x("Salvează și restaurează aranjamentul ferestrelor pe ecran.", "Save and restore your window arrangement.", "Guarda y restaura la disposición de las ventanas.")
+        case .network: return L.x("Configurare și optimizare rețea, persistentă la repornire.", "Network setup and tuning that persists across restarts.", "Configuración y optimización de red que persiste tras reiniciar.")
+        case .cloud: return L.x("Conectează și gestionează conturi Cloud (Drive, Dropbox, S3 și altele).", "Connect and manage cloud accounts (Drive, Dropbox, S3 and more).", "Conecta y gestiona cuentas en la nube (Drive, Dropbox, S3 y más).")
+        case .cleanup: return L.x("Șterge cache-uri recuperabile, fișiere mari uitate, eliberează RAM.", "Clear recoverable caches and forgotten large files, free RAM.", "Elimina cachés recuperables y archivos grandes olvidados, libera RAM.")
+        case .duplicates: return L.x("Găsește fișiere identice ca și conținut și te lasă să alegi ce ștergi.", "Find files with identical content and choose what to remove.", "Encuentra archivos con contenido idéntico y elige qué eliminar.")
+        case .uninstaller: return L.x("Dezinstalează complet una sau mai multe aplicații, cu toate urmele lor.", "Fully uninstall one or more apps, leftovers included.", "Desinstala por completo una o varias apps, con todos sus restos.")
+        case .security: return L.x("Verifică setările de securitate ale Mac-ului, cu ghid pas-cu-pas pentru ce lipsește.", "Check your Mac’s security settings, with step-by-step guidance for what is missing.", "Revisa los ajustes de seguridad del Mac, con una guía paso a paso de lo que falta.")
+        case .tweaks: return L.x("Ajustări rapide de sistem și accesibilitate.", "Quick system and accessibility tweaks.", "Ajustes rápidos del sistema y de accesibilidad.")
+        case .rosetta: return L.x("Verifică ce aplicații rulează prin Rosetta (emulare Intel) pe un Mac Apple Silicon.", "Check which apps run through Rosetta (Intel emulation) on an Apple silicon Mac.", "Comprueba qué apps se ejecutan con Rosetta (emulación Intel) en un Mac con Apple silicon.")
+        case .dependencies: return L.x("Componentele externe de care aplicația are nevoie — instalare cu un click.", "External components the app needs — one-click install.", "Componentes externos que necesita la app: instalación con un clic.")
+        case .settings: return L.x("Temă, limbă, licență și alte preferințe ale aplicației.", "Theme, language, licence and other app preferences.", "Tema, idioma, licencia y otras preferencias de la app.")
         }
     }
 
@@ -224,10 +224,10 @@ struct ContentView: View {
             dependencyChecker.checkAll()
             UpdateChecker.checkSilentlyOnLaunch { version, pkgURL in
                 let alert = NSAlert()
-                alert.messageText = "Este disponibilă o versiune nouă"
-                alert.informativeText = "Master Control Studio Pro \(version) este disponibil (tu ai \(UpdateChecker.currentVersion))."
-                alert.addButton(withTitle: "Actualizează acum")
-                alert.addButton(withTitle: "Mai târziu")
+                alert.messageText = L.x("Este disponibilă o versiune nouă", "A new version is available", "Hay una versión nueva disponible")
+                alert.informativeText = L.x("Master Control Studio Pro \(version) este disponibil (tu ai \(UpdateChecker.currentVersion)).", "Master Control Studio Pro \(version) is available (you have \(UpdateChecker.currentVersion)).", "Master Control Studio Pro \(version) está disponible (tienes \(UpdateChecker.currentVersion)).")
+                alert.addButton(withTitle: L.x("Actualizează acum", "Update now", "Actualizar ahora"))
+                alert.addButton(withTitle: L.x("Mai târziu", "Later", "Más tarde"))
                 let response = alert.runModal()
                 UpdateChecker.markDismissed(version)
                 if response == .alertFirstButtonReturn {
@@ -278,7 +278,7 @@ struct SettingsView: View {
             Section("Diagnostic") {
                 Text(String(format: L.x("Sesiune: %@","Session: %@","Sesión: %@"), DiagnosticLog.sessionID)).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 HStack {
-                    Button(L.x("Deschide folderul de loguri", "Open logs folder", "Abrir carpeta de registros")) {
+                    Button(L.x("Deschide folderul de loguri", L.x("Open logs folder", L.x("Open logs folder", "Open logs folder", "Abrir la carpeta de registros"), "Abrir la carpeta de registros"), "Abrir carpeta de registros")) {
                         try? FileManager.default.createDirectory(at: DiagnosticLog.directory, withIntermediateDirectories: true)
                         NSWorkspace.shared.open(DiagnosticLog.directory)
                     }
@@ -299,7 +299,7 @@ struct SettingsView: View {
             }
 
             Section("Dezinstalare") {
-                Button("Dezinstalează complet aplicația...", role: .destructive) {
+                Button(L.x("Dezinstalează complet aplicația...", "Uninstall the app completely…", "Desinstalar la app por completo…"), role: .destructive) {
                     confirmUninstall = true
                 }
             }
@@ -309,19 +309,19 @@ struct SettingsView: View {
         .alert(L.x("Resetezi configurația aplicației?", "Reset the app configuration?", "¿Restablecer la configuración de la app?"), isPresented: $confirmReset) {
             Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
             Button(L.x("Fă copie și resetează", "Back up and reset", "Copiar y restablecer"), role: .destructive) {
-                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = String(format: L.x("Copie de siguranță: %@","Backup: %@","Copia de seguridad: %@"), b.path) }
+                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = String(format: L.x("Copie de siguranță: %@","Backup: %@",L.x("Copia de seguridad: %@", "Safety copy: %@", L.x("Copia de seguridad: %@", "Safety copy: %@", "Copia de seguridad: %@"))), b.path) }
                 catch { resetMessage = String(format: L.x("Resetarea a eșuat: %@","Reset failed: %@","Falló el restablecimiento: %@"), error.localizedDescription) }
             }
         } message: { Text(AppProfile.resetPreview().joined(separator: "\n")) }
-        .alert("Ești sigur că vrei să ștergi aplicația și toate datele/licențele locale?",
+        .alert(L.x("Ești sigur că vrei să ștergi aplicația și toate datele/licențele locale?", "Are you sure you want to delete the app and all local data/licences?", "¿Seguro que quieres eliminar la app y todos los datos y licencias locales?"),
                isPresented: $confirmUninstall) {
             Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
-            Button("Dezinstalează", role: .destructive) {
+            Button(L.x("Dezinstalează", "Uninstall", "Desinstalar"), role: .destructive) {
                 SelfUninstaller.removeUserData()
                 SelfUninstaller.trashAppAndQuit()
             }
         } message: {
-            Text("Se șterg datele, preferințele, cache-ul și jurnalele, apoi aplicația e mutată la Coș. Acțiunea nu poate fi anulată.")
+            Text(L.x("Se șterg datele, preferințele, cache-ul și jurnalele, apoi aplicația e mutată la Coș. Acțiunea nu poate fi anulată.", "Data, preferences, caches and logs are deleted, then the app is moved to the Trash. This cannot be undone.", "Se borran los datos, las preferencias, la caché y los registros, y la app pasa a la Papelera. No se puede deshacer."))
         }
     }
 }

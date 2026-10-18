@@ -94,18 +94,18 @@ public enum DiskHealthService {
         let testFile = (writeDir as NSString).appendingPathComponent(".mmc_speedtest_\(UUID().uuidString).bin")
         let sizeBytes = 256 * 1024 * 1024
         guard let data = randomData(count: sizeBytes) else {
-            return .failure(SpeedTestError("Nu s-au putut genera date de test."))
+            return .failure(SpeedTestError(CoreL.x("Nu s-au putut genera date de test.", "Could not generate test data.", "No se pudieron generar datos de prueba.")))
         }
         let start = Date()
         do {
             try data.write(to: URL(fileURLWithPath: testFile))
         } catch {
-            return .failure(SpeedTestError("Scrierea a eșuat: \(error.localizedDescription)"))
+            return .failure(SpeedTestError(CoreL.x("Scrierea a eșuat: \(error.localizedDescription)", "Write failed: \(error.localizedDescription)", "Falló la escritura: \(error.localizedDescription)")))
         }
         let elapsed = Date().timeIntervalSince(start)
         try? FileManager.default.removeItem(atPath: testFile)
         guard elapsed > 0 else {
-            return .failure(SpeedTestError("Măsurătoarea a fost prea rapidă ca să fie exactă — încearcă din nou."))
+            return .failure(SpeedTestError(CoreL.x("Măsurătoarea a fost prea rapidă ca să fie exactă — încearcă din nou.", "The measurement was too fast to be accurate — try again.", "La medición fue demasiado rápida para ser exacta; inténtalo de nuevo.")))
         }
         return .success((Double(sizeBytes) / 1_048_576) / elapsed)
     }

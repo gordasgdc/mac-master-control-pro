@@ -66,13 +66,13 @@ public enum RenderModeState {
     public static func changeSummary(_ s: RenderModeSnapshot) -> [String] {
         var l: [String] = []
         switch s.timeMachineAutoBackup {
-        case true?: l.append("Time Machine: copiile automate se opresc (se repornesc la dezactivare).")
-        case false?: l.append("Time Machine: deja oprit, rămâne neschimbat.")
-        case nil: l.append("Time Machine: stare necunoscută, nu se modifică.")
+        case true?: l.append(CoreL.x("Time Machine: copiile automate se opresc (se repornesc la dezactivare).", "Time Machine: automatic backups stop (they resume when you turn it off).", "Time Machine: las copias automáticas se detienen (se reanudan al desactivar)."))
+        case false?: l.append(CoreL.x("Time Machine: deja oprit, rămâne neschimbat.", "Time Machine: already off, left unchanged.", "Time Machine: ya estaba desactivado, no se modifica."))
+        case nil: l.append(CoreL.x("Time Machine: stare necunoscută, nu se modifică.", "Time Machine: unknown state, not modified.", "Time Machine: estado desconocido, no se modifica."))
         }
         let on = s.spotlight.filter { $0.value }.keys.sorted()
-        l.append(on.isEmpty ? "Spotlight: nicio indexare activă de oprit." : "Spotlight: indexarea se oprește pe \(on.count) volum(e): \(on.joined(separator: ", ")).")
-        l.append(s.nice.isEmpty ? "Prioritate: nicio aplicație de randare cunoscută nu rulează." : "Prioritate: \(s.nice.count) proces(e) trec la prioritate mare; valorile vechi se restaurează.")
+        l.append(on.isEmpty ? CoreL.x("Spotlight: nicio indexare activă de oprit.", "Spotlight: no active indexing to stop.", "Spotlight: no hay indexación activa que detener.") : "Spotlight: indexarea se oprește pe \(on.count) volum(e): \(on.joined(separator: ", ")).")
+        l.append(s.nice.isEmpty ? CoreL.x("Prioritate: nicio aplicație de randare cunoscută nu rulează.", "Priority: no known render app is running.", "Prioridad: no se está ejecutando ninguna app de render conocida.") : "Prioritate: \(s.nice.count) proces(e) trec la prioritate mare; valorile vechi se restaurează.")
         return l
     }
 

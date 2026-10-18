@@ -14,8 +14,8 @@ enum SelfUpdater {
 
         var errorDescription: String? {
             switch self {
-            case .downloadFailed(let detail): return "Descărcarea a eșuat: \(detail)"
-            case .installScriptFailed(let detail): return "Nu am putut porni instalarea: \(detail)"
+            case .downloadFailed(let detail): return L.x("Descărcarea a eșuat: \(detail)", "Download failed: \(detail)", "Falló la descarga: \(detail)")
+            case .installScriptFailed(let detail): return L.x("Nu am putut porni instalarea: \(detail)", "Could not start the installation: \(detail)", "No se pudo iniciar la instalación: \(detail)")
             }
         }
     }
@@ -31,10 +31,10 @@ enum SelfUpdater {
             try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
             let pkgPath = tempDir.appendingPathComponent("MacMasterControlPro-\(version).pkg")
 
-            progress.setStatus("Se descarcă…")
+            progress.setStatus(L.x("Se descarcă…", "Downloading…", "Descargando…"))
             try await download(from: pkgURL, to: pkgPath)
 
-            progress.setStatus("Se instalează…")
+            progress.setStatus(L.x("Se instalează…", "Installing…", "Instalando…"))
             try runInstaller(pkgPath: pkgPath, tempDir: tempDir)
 
             progress.close()
@@ -105,9 +105,9 @@ enum SelfUpdater {
     private static func presentFailure(_ error: Error, fallbackURL: URL) {
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Actualizarea a eșuat"
-        alert.informativeText = "\(error.localizedDescription)\n\nPoți încerca manual de pe pagina de releases."
-        alert.addButton(withTitle: "Deschide pagina")
+        alert.messageText = L.x("Actualizarea a eșuat", "The update failed", "Falló la actualización")
+        alert.informativeText = L.x("\(error.localizedDescription)\n\nPoți încerca manual de pe pagina de releases.", "\(error.localizedDescription)\n\nYou can try manually from the releases page.", "\(error.localizedDescription)\n\nPuedes intentarlo a mano desde la página de versiones.")
+        alert.addButton(withTitle: L.x("Deschide pagina", "Open page", "Abrir la página"))
         alert.addButton(withTitle: "OK")
         if alert.runModal() == .alertFirstButtonReturn {
             NSWorkspace.shared.open(fallbackURL)
@@ -124,7 +124,7 @@ final class UpdateProgressWindow {
     init(version: String) {
         let contentRect = NSRect(x: 0, y: 0, width: 360, height: 110)
         window = NSWindow(contentRect: contentRect, styleMask: [.titled], backing: .buffered, defer: false)
-        window.title = "Actualizare disponibilă"
+        window.title = L.x("Actualizare disponibilă", "Update available", "Actualización disponible")
         window.isReleasedWhenClosed = false
         window.center()
 

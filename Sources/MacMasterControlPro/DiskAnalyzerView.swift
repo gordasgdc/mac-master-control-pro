@@ -179,7 +179,7 @@ struct DiskAnalyzerView: View {
                         Text(Studio.gb(f.sizeBytes)).font(.title3).foregroundStyle(Studio.textMuted)
                     }
                     Spacer()
-                    if f.isDirectory, f !== vm.currentNode, !f.isAggregate { Button { drill(f) } label: { Label("Deschide", systemImage: "chevron.right") }.buttonStyle(.bordered) }
+                    if f.isDirectory, f !== vm.currentNode, !f.isAggregate { Button { drill(f) } label: { Label(L.x("Deschide", "Open", "Abrir"), systemImage: "chevron.right") }.buttonStyle(.bordered) }
                 }
                 Divider()
             }

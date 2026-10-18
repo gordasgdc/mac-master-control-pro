@@ -34,8 +34,8 @@ public final class CleanupService: ObservableObject {
         // Categorii tip CleanMyMac (2026-08-31), fara scanare de "malware"
         // falsa/agresiva — doar locatii reale, verificabile, care se umplu
         // in timp fara ca userul sa observe.
-        ("Coșul de gunoi (Trash)", NSHomeDirectory() + "/.Trash"),
-        ("Atașamente Mail descărcate", NSHomeDirectory() + "/Library/Containers/com.apple.mail/Data/Library/Mail Downloads"),
+        (CoreL.x("Coșul de gunoi (Trash)", "Trash", "Papelera"), NSHomeDirectory() + "/.Trash"),
+        (CoreL.x("Atașamente Mail descărcate", "Downloaded Mail attachments", "Adjuntos de Mail descargados"), NSHomeDirectory() + "/Library/Containers/com.apple.mail/Data/Library/Mail Downloads"),
         ("Backup-uri iOS (MobileSync)", NSHomeDirectory() + "/Library/Application Support/MobileSync/Backup"),
     ]
 
@@ -67,13 +67,13 @@ public final class CleanupService: ObservableObject {
     /// al fix-ului identic de pe Windows).
     public func deleteSelected(_ selected: Set<CleanableItem>, log: ((String) -> Void)? = nil) {
         for item in selected {
-            log?("Ștergere: \(item.name)…")
+            log?(CoreL.x("Ștergere: \(item.name)…", "Deleting: \(item.name)…", "Eliminando: \(item.name)…"))
             // shopt -s dotglob: `*` implicit NU prinde fisierele ascunse
             // (.DS_Store etc.) - fara el, cache-uri ascunse ar ramane
             // neatinse desi userul a bifat exact acel folder.
             let output = Shell.run("setopt dotglob 2>/dev/null; rm -rfv \"\(item.path)\"/* 2>&1 | tail -n 5")
             if !output.isEmpty { log?(output) }
-            log?("  ✔ \(item.name): comandă terminată.")
+            log?(CoreL.x("  ✔ \(item.name): comandă terminată.", "  ✔ \(item.name): command finished.", "  ✔ \(item.name): comando terminado."))
         }
         scanReclaimable()
     }

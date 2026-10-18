@@ -112,14 +112,14 @@ public enum UninstallerService {
             ("launchdaemons-system", "LaunchDaemons (sistem)", "/Library/LaunchDaemons"),
             ("appsupport-system", "Application Support (sistem)", "/Library/Application Support"),
             ("prefs-system", "Preferences (sistem)", "/Library/Preferences"),
-            ("prefpanes", "Panouri de Preferințe (System Settings)", "/Library/PreferencePanes"),
+            ("prefpanes", CoreL.x("Panouri de Preferințe (System Settings)", "Preference panes (System Settings)", "Paneles de preferencias (Ajustes del Sistema)"), "/Library/PreferencePanes"),
             ("internetplugins", "Internet Plug-Ins", "/Library/Internet Plug-Ins"),
             ("quicklook", "Extensii QuickLook", "/Library/QuickLook"),
             ("widgets", "Widget-uri", "/Library/Widgets"),
             ("spotlight-importers", "Importatoare Spotlight", "/Library/Spotlight"),
             ("audio-components", "Plugin-uri Audio (Components)", "/Library/Audio/Plug-Ins/Components"),
             ("audio-vst", "Plugin-uri Audio (VST)", "/Library/Audio/Plug-Ins/VST"),
-            ("contextualmenu", "Elemente de meniu contextual", "/Library/Contextual Menu Items"),
+            ("contextualmenu", CoreL.x("Elemente de meniu contextual", "Context-menu items", "Elementos del menú contextual"), "/Library/Contextual Menu Items"),
         ]
         for (id, title, path) in systemLocations {
             if let c = category(id, title, candidates(in: URL(fileURLWithPath: path)), privileged: true) { categories.append(c) }
@@ -172,7 +172,7 @@ public enum UninstallerService {
         let duplicatePath = otherRoot + "/" + app.path.lastPathComponent
         let hasDuplicate = fm.fileExists(atPath: duplicatePath)
         let diagnosticSuffix = hasDuplicate
-            ? " [ATENȚIE: există și \(duplicatePath) — un al doilea exemplar, neatins de această ștergere]"
+            ? CoreL.x(" [ATENȚIE: există și \(duplicatePath) — un al doilea exemplar, neatins de această ștergere]", " [WARNING: \(duplicatePath) also exists — a second copy, untouched by this deletion]", " [ATENCIÓN: también existe \(duplicatePath), una segunda copia no afectada por esta eliminación]")
             : " [proprietar: \(owner)]"
 
         // [2026-09-03] FIX REAL nr. 2, confirmat direct din log-ul lui
@@ -188,9 +188,9 @@ public enum UninstallerService {
         // AUTOMAT pe calea privilegiata la orice esec — nu ne mai oprim la
         // primul refuz.
         if let error = PrivilegedFileOps.delete(app.path.path) {
-            return "EROARE la ștergerea \(app.path.path): \(error)\(diagnosticSuffix)"
+            return CoreL.x("EROARE la ștergerea \(app.path.path): \(error)\(diagnosticSuffix)", "ERROR deleting \(app.path.path): \(error)\(diagnosticSuffix)", "ERROR al eliminar \(app.path.path): \(error)\(diagnosticSuffix)")
         }
-        return "Șters: \(app.path.path)\(diagnosticSuffix)"
+        return CoreL.x("Șters: \(app.path.path)\(diagnosticSuffix)", "Deleted: \(app.path.path)\(diagnosticSuffix)", "Eliminado: \(app.path.path)\(diagnosticSuffix)")
     }
 
     /// Inchide aplicatia daca ruleaza — altfel `trashItem`/`rm -rf` pot
@@ -239,18 +239,18 @@ public enum UninstallerService {
                     do {
                         try fm.trashItem(at: path, resultingItemURL: nil)
                         log(fm.fileExists(atPath: path.path)
-                            ? "EROARE: \(path.path) tot există după ștergere."
-                            : "Mutat la Coșul de gunoi: \(path.path)")
+                            ? CoreL.x("EROARE: \(path.path) tot există după ștergere.", "ERROR: \(path.path) still exists after deletion.", "ERROR: \(path.path) sigue existiendo tras eliminarlo.")
+                            : CoreL.x("Mutat la Coșul de gunoi: \(path.path)", "Moved to the Trash: \(path.path)", "Movido a la Papelera: \(path.path)"))
                     } catch {
-                        log("EROARE, nu s-a putut șterge \(path.path): \(error.localizedDescription)")
+                        log(CoreL.x("EROARE, nu s-a putut șterge \(path.path): \(error.localizedDescription)", "ERROR, could not delete \(path.path): \(error.localizedDescription)", "ERROR, no se pudo eliminar \(path.path): \(error.localizedDescription)"))
                     }
                 }
             }
         }
         if !privilegedCommands.isEmpty {
-            log("Solicit parola de admin pentru \(privilegedCommands.count) fișiere de sistem…")
+            log(CoreL.x("Solicit parola de admin pentru \(privilegedCommands.count) fișiere de sistem…", "Requesting the admin password for \(privilegedCommands.count) system files…", "Solicitando la contraseña de administrador para \(privilegedCommands.count) archivos del sistema…"))
             let result = PrivilegedRunner.run(privilegedCommands)
-            log(result.success ? "Fișiere de sistem șterse." : "EROARE: \(result.output)")
+            log(result.success ? CoreL.x("Fișiere de sistem șterse.", "System files deleted.", "Archivos del sistema eliminados.") : "EROARE: \(result.output)")
         }
     }
 }

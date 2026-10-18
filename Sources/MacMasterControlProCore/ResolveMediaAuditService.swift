@@ -90,7 +90,7 @@ public enum ResolveMediaAuditService {
               let data = output.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
-            return .failure(.scriptFailed("Nu s-a putut citi răspunsul de la Resolve."))
+            return .failure(.scriptFailed(CoreL.x("Nu s-a putut citi răspunsul de la Resolve.", "Could not read the response from Resolve.", "No se pudo leer la respuesta de Resolve.")))
         }
         if let error = json["error"] as? String {
             switch error {
@@ -102,7 +102,7 @@ public enum ResolveMediaAuditService {
         guard let projectName = json["project"] as? String,
               let clipsRaw = json["clips"] as? [[String: String]]
         else {
-            return .failure(.scriptFailed("Format neașteptat."))
+            return .failure(.scriptFailed(CoreL.x("Format neașteptat.", "Unexpected format.", "Formato inesperado.")))
         }
 
         var pathCounts: [String: Int] = [:]
@@ -157,7 +157,7 @@ public enum ResolveMediaAuditService {
               let data = output.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
-            return .failure(.scriptFailed("Nu s-a putut citi răspunsul de la Resolve."))
+            return .failure(.scriptFailed(CoreL.x("Nu s-a putut citi răspunsul de la Resolve.", "Could not read the response from Resolve.", "No se pudo leer la respuesta de Resolve.")))
         }
         if let error = json["error"] as? String { return .failure(.scriptFailed(error)) }
         return .success((json["deleted"] as? Int) ?? 0)

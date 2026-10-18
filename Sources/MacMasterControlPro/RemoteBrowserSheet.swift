@@ -27,12 +27,12 @@ struct RemoteBrowserSheet: View {
             HStack {
                 Text("Explorare — \(remoteName)").font(.title3).bold()
                 Spacer()
-                Button("Închide") { dismiss() }
+                Button(L.x("Închide", "Close", "Cerrar")) { dismiss() }
             }
 
             HStack {
                 if !path.isEmpty {
-                    Button("⬅︎ Înapoi") { goUp() }
+                    Button(L.x("⬅︎ Înapoi", "⬅︎ Back", "⬅︎ Atrás")) { goUp() }
                 }
                 Text(breadcrumb).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
                 Spacer()
@@ -58,14 +58,14 @@ struct RemoteBrowserSheet: View {
 
             // Faza 4: actiuni reale de management de fisiere.
             HStack {
-                Button("⬆︎ Încarcă fișiere aici…") { pickAndUpload() }
+                Button(L.x("⬆︎ Încarcă fișiere aici…", "⬆︎ Upload files here…", "⬆︎ Subir archivos aquí…")) { pickAndUpload() }
                     .disabled(isBusy)
-                Button("⬇︎ Descarcă selecția") { downloadSelected() }
+                Button(L.x("⬇︎ Descarcă selecția", "⬇︎ Download selection", "⬇︎ Descargar la selección")) { downloadSelected() }
                     .disabled(isBusy || selectedEntry == nil)
-                Button("🔄 Sincronizare folder…") { showSyncSheet = true }
+                Button(L.x("🔄 Sincronizare folder…", "🔄 Sync folder…", "🔄 Sincronizar carpeta…")) { showSyncSheet = true }
                     .disabled(isBusy)
                 Spacer()
-                Button(role: .destructive) { confirmDelete = true } label: { Label("Șterge selecția", systemImage: "trash") }
+                Button(role: .destructive) { confirmDelete = true } label: { Label(L.x("Șterge selecția", "Delete selection", "Eliminar la selección"), systemImage: "trash") }
                     .disabled(isBusy || selectedEntry == nil)
             }
             .font(.caption)
@@ -85,11 +85,11 @@ struct RemoteBrowserSheet: View {
         .frame(minWidth: 560, idealWidth: 780, maxWidth: .infinity,
                minHeight: 420, idealHeight: 560, maxHeight: .infinity)
         .onAppear { reload() }
-        .alert("Ștergi „\(selectedEntry?.name ?? "")”?", isPresented: $confirmDelete) {
-            Button("Anulează", role: .cancel) {}
-            Button("Șterge definitiv", role: .destructive) { deleteSelected() }
+        .alert(L.x("Ștergi „\(selectedEntry?.name ?? "")”?", "Delete “\(selectedEntry?.name ?? "")”?", "¿Eliminar «\(selectedEntry?.name ?? "")»?"), isPresented: $confirmDelete) {
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
+            Button(L.x("Șterge definitiv", "Delete permanently", "Eliminar definitivamente"), role: .destructive) { deleteSelected() }
         } message: {
-            Text("Această acțiune e ireversibilă — fișierul/folderul se șterge direct de pe \(remoteName).")
+            Text(L.x("Această acțiune e ireversibilă — fișierul/folderul se șterge direct de pe \(remoteName).", "This action is irreversible — the file/folder is deleted directly from \(remoteName).", "Esta acción es irreversible: el archivo o la carpeta se elimina directamente de \(remoteName)."))
         }
         .sheet(isPresented: $showSyncSheet) {
             SyncFolderSheet(service: service, remoteName: remoteName, remotePath: path) { logLines.append($0) }
@@ -141,7 +141,7 @@ struct RemoteBrowserSheet: View {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        panel.prompt = "Descarcă aici"
+        panel.prompt = L.x("Descarcă aici", "Download here", "Descargar aquí")
         guard panel.runModal() == .OK, let destURL = panel.url else { return }
         isBusy = true
         logLines = []
@@ -187,32 +187,32 @@ private struct SyncFolderSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Sincronizare folder").font(.title3).bold()
+            Text(L.x("Sincronizare folder", "Folder sync", "Sincronización de carpeta")).font(.title3).bold()
 
             HStack {
-                Text(localFolder.isEmpty ? "Niciun folder local ales" : localFolder)
+                Text(localFolder.isEmpty ? L.x("Niciun folder local ales", "No local folder chosen", "No se ha elegido ninguna carpeta local") : localFolder)
                     .font(.caption).foregroundStyle(localFolder.isEmpty ? .secondary : .primary)
                 Spacer()
-                Button("Alege folder local…") { pickFolder() }
+                Button(L.x("Alege folder local…", "Choose local folder…", "Elegir carpeta local…")) { pickFolder() }
             }
 
-            Picker("Direcție", selection: $direction) {
-                Text("Local → Cloud (încarcă)").tag(SyncDirection.upload)
-                Text("Cloud → Local (descarcă)").tag(SyncDirection.download)
+            Picker(L.x("Direcție", "Direction", "Dirección"), selection: $direction) {
+                Text(L.x("Local → Cloud (încarcă)", "Local → Cloud (upload)", "Local → Nube (subir)")).tag(SyncDirection.upload)
+                Text(L.x("Cloud → Local (descarcă)", "Cloud → Local (download)", "Nube → Local (descargar)")).tag(SyncDirection.download)
             }
             .pickerStyle(.radioGroup)
 
-            Toggle("Oglindă exactă (șterge la destinație ce lipsește la sursă)", isOn: $mirror)
+            Toggle(L.x("Oglindă exactă (șterge la destinație ce lipsește la sursă)", "Exact mirror (deletes at the destination what is missing at the source)", "Espejo exacto (borra en el destino lo que falta en el origen)"), isOn: $mirror)
                 .toggleStyle(.checkbox)
             if mirror {
-                Label("Atenție: poate șterge fișiere ireversibil la destinație.", systemImage: "exclamationmark.triangle.fill")
+                Label(L.x("Atenție: poate șterge fișiere ireversibil la destinație.", "Warning: may irreversibly delete files at the destination.", "Atención: puede borrar archivos de forma irreversible en el destino."), systemImage: "exclamationmark.triangle.fill")
                     .font(.caption).foregroundStyle(.orange)
             }
 
             HStack {
-                Button("Anulează") { dismiss() }
+                Button(L.x("Anulează", "Cancel", "Cancelar")) { dismiss() }
                 Spacer()
-                Button(isRunning ? "Se sincronizează…" : "Pornește sincronizarea") { run() }
+                Button(isRunning ? L.x("Se sincronizează…", "Syncing…", "Sincronizando…") : L.x("Pornește sincronizarea", "Start sync", "Iniciar sincronización")) { run() }
                     .buttonStyle(.borderedProminent)
                     .disabled(localFolder.isEmpty || isRunning)
             }

@@ -35,9 +35,9 @@ public enum PrivilegedFileOps {
 
         let result = PrivilegedRunner.run("rm -rf \"\(path)\"")
         if !result.success {
-            return "acces refuzat, chiar și cu parolă de administrator: \(result.output)"
+            return CoreL.x("acces refuzat, chiar și cu parolă de administrator: \(result.output)", "access denied, even with the administrator password: \(result.output)", "acceso denegado, incluso con la contraseña de administrador: \(result.output)")
         }
         Thread.sleep(forTimeInterval: 0.3)
-        return fm.fileExists(atPath: path) ? "tot există după ștergerea privilegiată" : nil
+        return fm.fileExists(atPath: path) ? CoreL.x("tot există după ștergerea privilegiată", "still exists after the privileged deletion", "sigue existiendo tras la eliminación con privilegios") : nil
     }
 }

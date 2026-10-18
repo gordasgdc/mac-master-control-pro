@@ -29,18 +29,18 @@ struct CleanupModuleView: View {
         // exista continut. Fix: intreaga pagina scroleaza acum.
         ScrollView {
         VStack(alignment: .leading, spacing: 20) {
-            Label("Curățare & RAM", systemImage: "trash.circle").font(.title2).bold()
+            Label(L.x("Curățare & RAM", "Cleanup & RAM", "Limpieza y RAM"), systemImage: "trash.circle").font(.title2).bold()
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Cache-uri recuperabile").font(.headline)
                         Spacer()
-                        Button(selectedItems.count == service.items.count ? "Deselectează tot" : "Selectează tot") {
+                        Button(selectedItems.count == service.items.count ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             selectedItems = selectedItems.count == service.items.count ? [] : Set(service.items)
                         }
                         .font(.caption)
-                        Button("Rescanează") { service.scanReclaimable() }
+                        Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { service.scanReclaimable() }
                     }
 
                     ForEach(service.items) { item in
@@ -61,10 +61,10 @@ struct CleanupModuleView: View {
                     }
 
                     Divider()
-                    Text(String(format: "Selectat %.2f GB din %.2f GB", Double(selectedBytes) / 1_073_741_824, Double(totalBytes) / 1_073_741_824))
+                    Text(String(format: L.x("Selectat %.2f GB din %.2f GB", "Selected %.2f GB of %.2f GB", "Seleccionados %.2f GB de %.2f GB"), Double(selectedBytes) / 1_073_741_824, Double(totalBytes) / 1_073_741_824))
                         .font(.caption).foregroundStyle(.secondary)
 
-                    Button("Șterge cache-urile selectate") {
+                    Button(L.x("Șterge cache-urile selectate", "Delete selected caches", "Eliminar las cachés seleccionadas")) {
                         runGated {
                             logLines = []
                             service.deleteSelected(selectedItems) { logLines.append($0) }
@@ -83,14 +83,14 @@ struct CleanupModuleView: View {
                     HStack {
                         Text("Time Machine — Snapshots locale").font(.headline)
                         Spacer()
-                        Button(selectedSnapshots.count == service.snapshotDates.count && !service.snapshotDates.isEmpty ? "Deselectează tot" : "Selectează tot") {
+                        Button(selectedSnapshots.count == service.snapshotDates.count && !service.snapshotDates.isEmpty ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             selectedSnapshots = selectedSnapshots.count == service.snapshotDates.count ? [] : Set(service.snapshotDates)
                         }
                         .font(.caption)
-                        Button("Rescanează") { service.scanSnapshots() }
+                        Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { service.scanSnapshots() }
                     }
                     if service.snapshotDates.isEmpty {
-                        Text("Niciun snapshot local găsit.").font(.caption).foregroundStyle(.secondary)
+                        Text(L.x("Niciun snapshot local găsit.", "No local snapshot found.", "No se encontró ninguna instantánea local.")).font(.caption).foregroundStyle(.secondary)
                     } else {
                         ForEach(service.snapshotDates, id: \.self) { date in
                             Toggle(isOn: Binding(
@@ -103,10 +103,10 @@ struct CleanupModuleView: View {
                             }
                         }
                     }
-                    Text("Selectat \(selectedSnapshots.count) din \(service.snapshotDates.count) snapshots")
+                    Text(L.x("Selectat \(selectedSnapshots.count) din \(service.snapshotDates.count) snapshots", "Selected \(selectedSnapshots.count) of \(service.snapshotDates.count) snapshots", "Seleccionadas \(selectedSnapshots.count) de \(service.snapshotDates.count) instantáneas"))
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("Șterge snapshot-urile selectate") {
-                        runGated { service.deleteSelectedSnapshots(selectedSnapshots); selectedSnapshots = []; status = "✔ Snapshots șterse." }
+                    Button(L.x("Șterge snapshot-urile selectate", "Delete selected snapshots", "Eliminar las instantáneas seleccionadas")) {
+                        runGated { service.deleteSelectedSnapshots(selectedSnapshots); selectedSnapshots = []; status = L.x("✔ Snapshots șterse.", "✔ Snapshots deleted.", "✔ Instantáneas eliminadas.") }
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(selectedSnapshots.isEmpty)
@@ -117,13 +117,13 @@ struct CleanupModuleView: View {
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Fișiere mari").font(.headline)
+                        Text(L.x("Fișiere mari", "Large files", "Archivos grandes")).font(.headline)
                         Spacer()
                         if isScanningBigFiles { ProgressView().controlSize(.small) }
-                        Button("Scanează (> 200 MB)") { scanBigFiles() }
+                        Button(L.x("Scanează (> 200 MB)", "Scan (> 200 MB)", "Analizar (> 200 MB)")) { scanBigFiles() }
                             .disabled(scanFolders.activeRoots.isEmpty)
                     }
-                    Text("Foldere de scanat — alege ce vrei, adaugă orice folder propriu:")
+                    Text(L.x("Foldere de scanat — alege ce vrei, adaugă orice folder propriu:", "Folders to scan — pick what you want, add any folder of your own:", "Carpetas que analizar: elige las que quieras y añade cualquiera propia:"))
                         .font(.caption).foregroundStyle(.secondary)
                     ForEach(BigFileFinderService.defaultRoots, id: \.self) { path in
                         Toggle(isOn: Binding(
@@ -151,15 +151,15 @@ struct CleanupModuleView: View {
                             .foregroundStyle(.secondary)
                         }
                     }
-                    Button("+ Adaugă folder…") { addCustomFolder() }
+                    Button(L.x("+ Adaugă folder…", "+ Add folder…", "+ Añadir carpeta…")) { addCustomFolder() }
                         .controlSize(.small)
                     if scanFolders.activeRoots.isEmpty {
-                        Text("Bifează cel puțin un folder mai sus ca să poți scana.")
+                        Text(L.x("Bifează cel puțin un folder mai sus ca să poți scana.", "Tick at least one folder above to be able to scan.", "Marca al menos una carpeta arriba para poder analizar."))
                             .font(.caption).foregroundStyle(.orange)
                     }
                     Divider()
                     if bigFiles.isEmpty && !isScanningBigFiles {
-                        Text("Apasă „Scanează” — arată cele mai mari 100 de fișiere din folderele unde se acumulează uitate.")
+                        Text(L.x("Apasă „Scanează” — arată cele mai mari 100 de fișiere din folderele unde se acumulează uitate.", "Press “Scan” — it shows the 100 largest files in the folders where forgotten ones pile up.", "Pulsa «Analizar»: muestra los 100 archivos más grandes de las carpetas donde se acumulan los olvidados."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     ForEach(bigFiles) { file in
@@ -177,7 +177,7 @@ struct CleanupModuleView: View {
                         }
                     }
                     if !bigFiles.isEmpty {
-                        Button("Șterge fișierele selectate", role: .destructive) {
+                        Button(L.x("Șterge fișierele selectate", "Delete selected files", "Eliminar los archivos seleccionados"), role: .destructive) {
                             runGated {
                                 let toDelete = bigFiles.filter { selectedBigFiles.contains($0) }
                                 BigFileFinderService.delete(toDelete) { logLines.append($0) }
@@ -233,7 +233,7 @@ struct CleanupModuleView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.prompt = "Adaugă"
+        panel.prompt = L.x("Adaugă", "Add", "Añadir")
         if panel.runModal() == .OK, let url = panel.url {
             scanFolders.addCustomFolder(url.path)
         }

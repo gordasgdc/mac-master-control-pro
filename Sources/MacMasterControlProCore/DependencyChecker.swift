@@ -47,7 +47,7 @@ public final class DependencyChecker: ObservableObject {
             let version = Shell.run("\"\(brew)\" --version 2>/dev/null").split(separator: "\n").first.map(String.init) ?? "instalat"
             results.append(DependencyItem(id: "homebrew", name: "Homebrew", isInstalled: true, version: version, installHint: "brew.sh"))
         } else {
-            results.append(DependencyItem(id: "homebrew", name: "Homebrew", isInstalled: false, version: nil, installHint: "Necesar pentru Rclone și macFUSE."))
+            results.append(DependencyItem(id: "homebrew", name: "Homebrew", isInstalled: false, version: nil, installHint: CoreL.x("Necesar pentru Rclone și macFUSE.", "Required for rclone and macFUSE.", "Necesario para rclone y macFUSE.")))
         }
 
         // Rclone
@@ -55,7 +55,7 @@ public final class DependencyChecker: ObservableObject {
             let v = Shell.run("rclone version 2>/dev/null | head -n1")
             results.append(DependencyItem(id: "rclone", name: "Rclone", isInstalled: true, version: v, installHint: ""))
         } else {
-            results.append(DependencyItem(id: "rclone", name: "Rclone", isInstalled: false, version: nil, installHint: "Necesar pentru Cloud Manager."))
+            results.append(DependencyItem(id: "rclone", name: "Rclone", isInstalled: false, version: nil, installHint: CoreL.x("Necesar pentru Cloud Manager.", "Required for Cloud Manager.", "Necesario para Cloud Manager.")))
         }
 
         // macFUSE
@@ -65,7 +65,7 @@ public final class DependencyChecker: ObservableObject {
         // o extensie de sistem. macOS poate arăta separat o notificare
         // "Software from 'Benjamin Fleischer' can run in the background" -
         // e dezvoltatorul oficial al macFUSE, nu un semnal de alarmă.
-        results.append(DependencyItem(id: "macfuse", name: "macFUSE", isInstalled: macfuseInstalled, version: macfuseInstalled ? "instalat" : nil, installHint: "Necesar pentru montare Cloud ca disc virtual. Instalarea cere parola de administrator (extensie de sistem) — o notificare macOS despre \"Benjamin Fleischer\" e normală, e dezvoltatorul oficial al macFUSE."))
+        results.append(DependencyItem(id: "macfuse", name: "macFUSE", isInstalled: macfuseInstalled, version: macfuseInstalled ? "instalat" : nil, installHint: CoreL.x("Necesar pentru montare Cloud ca disc virtual. Instalarea cere parola de administrator (extensie de sistem) — o notificare macOS despre \"Benjamin Fleischer\" e normală, e dezvoltatorul oficial al macFUSE.", "Required to mount cloud storage as a virtual drive. Installation asks for the administrator password (system extension) — a macOS notification about \"Benjamin Fleischer\" is normal, he is the official macFUSE developer.", "Necesario para montar la nube como disco virtual. La instalación pide la contraseña de administrador (extensión del sistema); es normal una notificación de macOS sobre \"Benjamin Fleischer\", el desarrollador oficial de macFUSE.")))
 
         // FFmpeg — opțional, util pentru codecuri de export pe care DaVinci
         // Resolve (mai ales varianta Free) nu le acoperă nativ.
@@ -73,13 +73,13 @@ public final class DependencyChecker: ObservableObject {
             let v = Shell.run("ffmpeg -version 2>/dev/null | head -n1")
             results.append(DependencyItem(id: "ffmpeg", name: "FFmpeg", isInstalled: true, version: v, installHint: "", isOptional: true))
         } else {
-            results.append(DependencyItem(id: "ffmpeg", name: "FFmpeg", isInstalled: false, version: nil, installHint: "Opțional — codecuri suplimentare pentru export video.", isOptional: true))
+            results.append(DependencyItem(id: "ffmpeg", name: "FFmpeg", isInstalled: false, version: nil, installHint: CoreL.x("Opțional — codecuri suplimentare pentru export video.", "Optional — extra codecs for video export.", "Opcional: códecs adicionales para exportar vídeo."), isOptional: true))
         }
 
         // Utilitare de sistem (parte din macOS, verificare simpla de prezenta)
         for tool in ["sysctl", "tmutil", "networksetup", "lipo"] {
             let found = !Shell.run("command -v \(tool)").isEmpty
-            results.append(DependencyItem(id: tool, name: tool, isInstalled: found, version: nil, installHint: "Utilitar de sistem macOS."))
+            results.append(DependencyItem(id: tool, name: tool, isInstalled: found, version: nil, installHint: CoreL.x("Utilitar de sistem macOS.", "macOS system utility.", "Utilidad del sistema macOS.")))
         }
 
         items = results
@@ -149,7 +149,7 @@ public final class DependencyChecker: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.logLines.append(contentsOf: output.split(separator: "\n").map(String.init))
-                self.logLines.append("✔ \(brewPackage): comandă terminată.")
+                self.logLines.append(CoreL.x("✔ \(brewPackage): comandă terminată.", "✔ \(brewPackage): command finished.", "✔ \(brewPackage): comando terminado."))
                 self.isInstalling = false
                 self.checkAll()
                 completion()

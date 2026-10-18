@@ -83,11 +83,11 @@ public final class TweaksService: ObservableObject {
             DispatchQueue.main.async {
                 let ok = result.success && result.output.contains("MMCP_TID_OK")
                 if ok {
-                    completion(true, "✔ Touch ID activat pentru comenzi sudo. Repornește Terminal-ul ca să vezi promptul nou.")
+                    completion(true, CoreL.x("✔ Touch ID activat pentru comenzi sudo. Repornește Terminal-ul ca să vezi promptul nou.", "✔ Touch ID enabled for sudo commands. Restart Terminal to see the new prompt.", "✔ Touch ID activado para los comandos sudo. Reinicia el Terminal para ver el nuevo aviso."))
                 } else if !result.success {
-                    completion(false, "✘ Promptul de administrator a fost respins, sau comanda a eșuat — vezi detaliile exacte mai sus, în panoul negru.")
+                    completion(false, CoreL.x("✘ Promptul de administrator a fost respins, sau comanda a eșuat — vezi detaliile exacte mai sus, în panoul negru.", "✘ The administrator prompt was declined, or the command failed — see the exact details above in the black panel.", "✘ Se rechazó la petición de administrador o el comando falló; mira los detalles exactos arriba, en el panel negro."))
                 } else {
-                    completion(false, "✘ Nu am putut confirma activarea — verifică manual: sudo cat /etc/pam.d/sudo_local")
+                    completion(false, CoreL.x("✘ Nu am putut confirma activarea — verifică manual: sudo cat /etc/pam.d/sudo_local", "✘ Could not confirm activation — check manually: sudo cat /etc/pam.d/sudo_local", "✘ No se pudo confirmar la activación; compruébalo a mano: sudo cat /etc/pam.d/sudo_local"))
                 }
             }
         }

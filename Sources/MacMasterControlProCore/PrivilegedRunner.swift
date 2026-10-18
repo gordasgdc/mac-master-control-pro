@@ -83,7 +83,7 @@ public enum PrivilegedRunner {
             try process.run()
         } catch {
             pipe.fileHandleForReading.readabilityHandler = nil
-            return Result(output: "Nu s-a putut porni osascript: \(error.localizedDescription)", success: false)
+            return Result(output: CoreL.x("Nu s-a putut porni osascript: \(error.localizedDescription)", "Could not start osascript: \(error.localizedDescription)", "No se pudo iniciar osascript: \(error.localizedDescription)"), success: false)
         }
         process.waitUntilExit()
         let remaining = pipe.fileHandleForReading.readDataToEndOfFile()
@@ -103,7 +103,7 @@ public enum PrivilegedRunner {
             for line in text.split(separator: "\n") { onOutput?(String(line)) }
         }
         let exitCode = process.terminationStatus
-        onOutput?(exitCode == 0 ? "✔ osascript a ieșit cu codul 0" : "✘ osascript a ieșit cu codul \(exitCode)")
+        onOutput?(exitCode == 0 ? CoreL.x("✔ osascript a ieșit cu codul 0", "✔ osascript exited with code 0", "✔ osascript terminó con código 0") : CoreL.x("✘ osascript a ieșit cu codul \(exitCode)", "✘ osascript exited with code \(exitCode)", "✘ osascript terminó con código \(exitCode)"))
         return Result(output: text, success: exitCode == 0)
     }
 

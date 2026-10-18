@@ -51,10 +51,10 @@ public enum SecurityService {
             id: "filevault", title: "FileVault (criptare disc)", isGood: on,
             detail: on ? "Activ" : "Dezactivat",
             manualSteps: on ? [] : [
-                "Apasă „Deschide System Settings” mai jos — se deschide direct panoul corect.",
-                "Apasă butonul „Turn On…” din dreptul FileVault.",
-                "Mac-ul îți arată o cheie de recuperare (un cod lung) — NOTEAZ-O undeva sigur (ex. un manager de parole) sau alege să o salvezi în contul Apple. Fără ea, dacă uiți parola de Mac, datele devin irecuperabile.",
-                "Confirmă și repornește Mac-ul când ți se cere — criptarea continuă în fundal, poți folosi Mac-ul normal cât timp se face.",
+                CoreL.x("Apasă „Deschide System Settings” mai jos — se deschide direct panoul corect.", "Press “Open System Settings” below — it opens the right pane directly.", "Pulsa «Abrir Ajustes del Sistema» abajo: abre directamente el panel correcto."),
+                CoreL.x("Apasă butonul „Turn On…” din dreptul FileVault.", "Press the “Turn On…” button next to FileVault.", "Pulsa el botón «Turn On…» junto a FileVault."),
+                CoreL.x("Mac-ul îți arată o cheie de recuperare (un cod lung) — NOTEAZ-O undeva sigur (ex. un manager de parole) sau alege să o salvezi în contul Apple. Fără ea, dacă uiți parola de Mac, datele devin irecuperabile.", "Your Mac shows a recovery key (a long code) — WRITE IT DOWN somewhere safe (e.g. a password manager) or choose to save it to your Apple account. Without it, if you forget your Mac password, the data becomes unrecoverable.", "El Mac muestra una clave de recuperación (un código largo): ANÓTALA en un lugar seguro (p. ej. un gestor de contraseñas) o elige guardarla en tu cuenta de Apple. Sin ella, si olvidas la contraseña del Mac, los datos serán irrecuperables."),
+                CoreL.x("Confirmă și repornește Mac-ul când ți se cere — criptarea continuă în fundal, poți folosi Mac-ul normal cât timp se face.", "Confirm and restart your Mac when asked — encryption continues in the background, and you can use your Mac normally meanwhile.", "Confirma y reinicia el Mac cuando se te pida: el cifrado continúa en segundo plano y puedes usar el Mac con normalidad mientras tanto."),
             ],
             settingsPane: "com.apple.preference.security?Privacy_FDE"
         )
@@ -67,11 +67,11 @@ public enum SecurityService {
             id: "sip", title: "System Integrity Protection", isGood: on,
             detail: on ? "Activ" : "Dezactivat",
             manualSteps: on ? [] : [
-                "Nu se poate reactiva din System Settings — necesită Recovery Mode.",
-                "Repornește Mac-ul ținând apăsat butonul de pornire (Apple Silicon) până apare „Loading startup options”, apoi alege Options → Continue.",
-                "Din meniul de sus, deschide Terminal (Utilities → Terminal).",
+                CoreL.x("Nu se poate reactiva din System Settings — necesită Recovery Mode.", "It cannot be re-enabled from System Settings — it needs Recovery Mode.", "No se puede reactivar desde Ajustes del Sistema: requiere el modo de recuperación."),
+                CoreL.x("Repornește Mac-ul ținând apăsat butonul de pornire (Apple Silicon) până apare „Loading startup options”, apoi alege Options → Continue.", "Restart your Mac holding the power button (Apple silicon) until “Loading startup options” appears, then choose Options → Continue.", "Reinicia el Mac manteniendo pulsado el botón de encendido (Apple silicon) hasta que aparezca «Loading startup options»; luego elige Options → Continue."),
+                CoreL.x("Din meniul de sus, deschide Terminal (Utilities → Terminal).", "From the top menu, open Terminal (Utilities → Terminal).", "En el menú superior, abre Terminal (Utilities → Terminal)."),
                 "Scrie exact: csrutil enable — apoi Enter.",
-                "Repornește normal (meniul Apple → Restart).",
+                CoreL.x("Repornește normal (meniul Apple → Restart).", "Restart normally (Apple menu → Restart).", "Reinicia con normalidad (menú Apple → Restart)."),
             ],
             settingsPane: nil
         )
@@ -84,8 +84,8 @@ public enum SecurityService {
             id: "gatekeeper", title: "Gatekeeper", isGood: on,
             detail: on ? "Activ" : "Dezactivat",
             manualSteps: on ? [] : [
-                "Apasă „Deschide System Settings” mai jos.",
-                "La secțiunea „Allow applications from”, alege „App Store and identified developers”.",
+                CoreL.x("Apasă „Deschide System Settings” mai jos.", "Press “Open System Settings” below.", "Pulsa «Abrir Ajustes del Sistema» abajo."),
+                CoreL.x("La secțiunea „Allow applications from”, alege „App Store and identified developers”.", "In the “Allow applications from” section, choose “App Store and identified developers”.", "En la sección «Allow applications from», elige «App Store and identified developers»."),
             ],
             settingsPane: "com.apple.preference.security?General"
         )
@@ -99,8 +99,8 @@ public enum SecurityService {
             id: "firewall", title: "Firewall", isGood: on,
             detail: on ? "Activ" : "Dezactivat — sau folosește butonul „Activează Firewall + Stealth Mode” din Acțiuni rapide, mai jos, pentru activare automată dintr-un click",
             manualSteps: on ? [] : [
-                "Cel mai simplu: butonul „Activează Firewall + Stealth Mode” din secțiunea Acțiuni rapide de mai jos — un singur click, un singur prompt de parolă.",
-                "Manual: „Deschide System Settings” → activează switch-ul Firewall.",
+                CoreL.x("Cel mai simplu: butonul „Activează Firewall + Stealth Mode” din secțiunea Acțiuni rapide de mai jos — un singur click, un singur prompt de parolă.", "Simplest: the “Enable Firewall + Stealth Mode” button in the Quick actions section below — one click, one password prompt.", "Lo más sencillo: el botón «Activar el cortafuegos + modo sigilo» de la sección Acciones rápidas de abajo; un clic y una sola petición de contraseña."),
+                CoreL.x("Manual: „Deschide System Settings” → activează switch-ul Firewall.", "Manual: “Open System Settings” → turn on the Firewall switch.", "Manual: «Abrir Ajustes del Sistema» → activa el interruptor del cortafuegos."),
             ],
             settingsPane: "com.apple.preference.security?Firewall"
         )
@@ -110,11 +110,11 @@ public enum SecurityService {
         let output = Shell.run("system_profiler SPInstallHistoryDataType 2>/dev/null | grep -A2 XProtect | grep 'Install Date' | tail -1")
         let hasRecent = !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return SecurityCheck(
-            id: "xprotect", title: "XProtect (semnături malware)", isGood: hasRecent,
-            detail: hasRecent ? output.trimmingCharacters(in: .whitespacesAndNewlines) : "Nu s-a putut determina ultima actualizare",
+            id: "xprotect", title: CoreL.x("XProtect (semnături malware)", "XProtect (malware signatures)", "XProtect (firmas de malware)"), isGood: hasRecent,
+            detail: hasRecent ? output.trimmingCharacters(in: .whitespacesAndNewlines) : CoreL.x("Nu s-a putut determina ultima actualizare", "Could not determine the last update", "No se pudo determinar la última actualización"),
             manualSteps: hasRecent ? [] : [
-                "XProtect se actualizează automat de macOS, în fundal — nu ai nimic de apăsat.",
-                "Dacă vrei să forțezi o verificare: Apple menu → System Settings → General → Software Update → apasă „i” lângă „Automatic Updates” și asigură-te că toate switch-urile sunt activate.",
+                CoreL.x("XProtect se actualizează automat de macOS, în fundal — nu ai nimic de apăsat.", "XProtect is updated automatically by macOS in the background — there is nothing to press.", "macOS actualiza XProtect automáticamente en segundo plano; no tienes que pulsar nada."),
+                CoreL.x("Dacă vrei să forțezi o verificare: Apple menu → System Settings → General → Software Update → apasă „i” lângă „Automatic Updates” și asigură-te că toate switch-urile sunt activate.", "To force a check: Apple menu → System Settings → General → Software Update → press “i” next to “Automatic Updates” and make sure all switches are on.", "Para forzar una comprobación: menú Apple → System Settings → General → Software Update → pulsa «i» junto a «Automatic Updates» y asegúrate de que todos los interruptores estén activados."),
             ],
             settingsPane: "com.apple.preference.softwareupdate"
         )
@@ -124,11 +124,11 @@ public enum SecurityService {
         let output = Shell.run("defaults read com.apple.screensaver askForPassword 2>/dev/null")
         let on = output.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
         return SecurityCheck(
-            id: "screensaver", title: "Parolă imediată la screensaver", isGood: on,
+            id: "screensaver", title: CoreL.x("Parolă imediată la screensaver", "Immediate password after screensaver", "Contraseña inmediata tras el salvapantallas"), isGood: on,
             detail: on ? "Activ" : "Dezactivat — sau folosește butonul „Cere parolă imediat la screensaver” din Acțiuni rapide, mai jos, pentru activare automată dintr-un click",
             manualSteps: on ? [] : [
-                "Cel mai simplu: butonul „Cere parolă imediat la screensaver” din secțiunea Acțiuni rapide de mai jos — un singur click.",
-                "Manual: „Deschide System Settings” → Lock Screen → „Require password after screen saver begins or display is turned off” → alege „Immediately”.",
+                CoreL.x("Cel mai simplu: butonul „Cere parolă imediat la screensaver” din secțiunea Acțiuni rapide de mai jos — un singur click.", "Simplest: the “Require password immediately after screensaver” button in the Quick actions section below — one click.", "Lo más sencillo: el botón «Pedir contraseña inmediatamente tras el salvapantallas» de la sección Acciones rápidas de abajo; un solo clic."),
+                CoreL.x("Manual: „Deschide System Settings” → Lock Screen → „Require password after screen saver begins or display is turned off” → alege „Immediately”.", "Manual: “Open System Settings” → Lock Screen → “Require password after screen saver begins or display is turned off” → choose “Immediately”.", "Manual: «Abrir Ajustes del Sistema» → Lock Screen → «Require password after screen saver begins or display is turned off» → elige «Immediately»."),
             ],
             settingsPane: "com.apple.preference.security?General"
         )

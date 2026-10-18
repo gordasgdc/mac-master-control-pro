@@ -22,19 +22,19 @@ struct CloudManagerView: View {
             HStack {
                 Label("Cloud Manager (Multi-Provider)", systemImage: "cloud").font(.title2).bold()
                 Spacer()
-                Button("+ Adaugă cont") { showAddSheet = true }
-                Button("Rescanează") { service.refreshRemotes() }
+                Button(L.x("+ Adaugă cont", "+ Add account", "+ Añadir cuenta")) { showAddSheet = true }
+                Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { service.refreshRemotes() }
             }
 
-            GroupBox("Locație montare") {
+            GroupBox(L.x("Locație montare", "Mount location", "Ubicación de montaje")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Implicit, conturile se montează pe Desktop. Poți alege în schimb un disc extern (Thunderbolt/USB-C), ca să nu ocupi spațiu pe SSD-ul intern.")
+                    Text(L.x("Implicit, conturile se montează pe Desktop. Poți alege în schimb un disc extern (Thunderbolt/USB-C), ca să nu ocupi spațiu pe SSD-ul intern.", "By default, accounts mount on the Desktop. You can pick an external drive (Thunderbolt/USB-C) instead, so you don’t use space on the internal SSD.", "De forma predeterminada, las cuentas se montan en el Escritorio. Puedes elegir un disco externo (Thunderbolt/USB-C) para no ocupar espacio en el SSD interno."))
                         .font(.caption).foregroundStyle(.secondary)
-                    Text(mountFolder?.isEmpty == false ? "Folder curent: \(mountFolder!)" : "Implicit: ~/Desktop")
+                    Text(mountFolder?.isEmpty == false ? L.x("Folder curent: \(mountFolder!)", "Current folder: \(mountFolder!)", "Carpeta actual: \(mountFolder!)") : "Implicit: ~/Desktop")
                         .font(.caption).foregroundStyle(mountFolder?.isEmpty == false ? .green : .secondary)
                     HStack {
-                        Button("Alege folder…") { pickMountFolder() }
-                        Button("Resetează (Desktop)") {
+                        Button(L.x("Alege folder…", "Choose folder…", "Elegir carpeta…")) { pickMountFolder() }
+                        Button(L.x("Resetează (Desktop)", "Reset (Desktop)", "Restablecer (Escritorio)")) {
                             CloudMountSettings.customMountFolder = nil
                             mountFolder = nil
                         }
@@ -43,13 +43,13 @@ struct CloudManagerView: View {
                 .padding(6)
             }
 
-            GroupBox("Performanță rclone (Încărcare / Descărcare / Sincronizare)") {
+            GroupBox(L.x("Performanță rclone (Încărcare / Descărcare / Sincronizare)", "rclone performance (Upload / Download / Sync)", "Rendimiento de rclone (subida / descarga / sincronización)")) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Se aplică la Încărcare, Descărcare și Sincronizare — nu la montare. Valori mai mari pot ajuta la multe fișiere mici SAU la fișiere mari, dar pot suprasolicita conexiunea/providerul; scade dacă apar erori de tip rate-limit.")
+                    Text(L.x("Se aplică la Încărcare, Descărcare și Sincronizare — nu la montare. Valori mai mari pot ajuta la multe fișiere mici SAU la fișiere mari, dar pot suprasolicita conexiunea/providerul; scade dacă apar erori de tip rate-limit.", "Applies to Upload, Download and Sync — not to mounting. Higher values can help with many small files OR large files, but may overload the connection/provider; lower them if you get rate-limit errors.", "Se aplica a subida, descarga y sincronización, no al montaje. Valores más altos pueden ayudar con muchos archivos pequeños O con archivos grandes, pero pueden saturar la conexión o el proveedor; bájalos si aparecen errores de límite de tasa."))
                         .font(.caption).foregroundStyle(.secondary)
                     Stepper("Transferuri paralele: \(rcloneTransfers)", value: $rcloneTransfers, in: RclonePerformanceSettings.transfersRange)
                         .onChange(of: rcloneTransfers) { _, newValue in RclonePerformanceSettings.transfers = newValue }
-                    Stepper("Verificări paralele (checkers): \(rcloneCheckers)", value: $rcloneCheckers, in: RclonePerformanceSettings.checkersRange)
+                    Stepper(L.x("Verificări paralele (checkers): \(rcloneCheckers)", "Parallel checks (checkers): \(rcloneCheckers)", "Comprobaciones en paralelo (checkers): \(rcloneCheckers)"), value: $rcloneCheckers, in: RclonePerformanceSettings.checkersRange)
                         .onChange(of: rcloneCheckers) { _, newValue in RclonePerformanceSettings.checkers = newValue }
                     Picker("Fragment upload (chunk size)", selection: $rcloneChunkMB) {
                         ForEach(RclonePerformanceSettings.chunkChoicesMB, id: \.self) { mb in
@@ -58,15 +58,15 @@ struct CloudManagerView: View {
                     }
                     .frame(width: 260)
                     .onChange(of: rcloneChunkMB) { _, newValue in RclonePerformanceSettings.driveChunkMB = newValue }
-                    Toggle("Listare rapidă (--fast-list)", isOn: $rcloneFastList)
+                    Toggle(L.x("Listare rapidă (--fast-list)", "Fast listing (--fast-list)", "Listado rápido (--fast-list)"), isOn: $rcloneFastList)
                         .onChange(of: rcloneFastList) { _, newValue in RclonePerformanceSettings.fastList = newValue }
                 }
                 .padding(6)
             }
 
-            GroupBox("Chunker (spargere fișiere mari)") {
+            GroupBox(L.x("Chunker (spargere fișiere mari)", "Chunker (split large files)", "Chunker (dividir archivos grandes)")) {
                 HStack {
-                    Toggle("Activ la montare", isOn: $useChunker)
+                    Toggle(L.x("Activ la montare", "Active when mounting", "Activo al montar"), isOn: $useChunker)
                     TextField("Dimensiune", text: $chunkSize).frame(width: 80)
                     Text("recomandat 15–18G").foregroundStyle(.secondary).font(.caption)
                 }
@@ -75,16 +75,16 @@ struct CloudManagerView: View {
 
             GroupBox("Conturi configurate") {
                 if service.remotes.isEmpty {
-                    Text("Niciun cont adăugat încă.").foregroundStyle(.secondary).padding(6)
+                    Text(L.x("Niciun cont adăugat încă.", "No account added yet.", "Aún no se ha añadido ninguna cuenta.")).foregroundStyle(.secondary).padding(6)
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Button(selected.count == service.remotes.count ? "Deselectează tot" : "Selectează tot") {
+                            Button(selected.count == service.remotes.count ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                                 selected = selected.count == service.remotes.count ? [] : Set(service.remotes.map(\.name))
                             }
                             .font(.caption)
                             Spacer()
-                            Text("Selectate \(selected.count) din \(service.remotes.count)").font(.caption).foregroundStyle(.secondary)
+                            Text(L.x("Selectate \(selected.count) din \(service.remotes.count)", "Selected \(selected.count) of \(service.remotes.count)", "Seleccionadas \(selected.count) de \(service.remotes.count)")).font(.caption).foregroundStyle(.secondary)
                         }
                         List(service.remotes) { remote in
                             CloudRemoteRow(service: service, remote: remote, selected: $selected)
@@ -92,7 +92,7 @@ struct CloudManagerView: View {
                         .frame(minHeight: 220)
 
                         HStack {
-                            Button("Montează selecția") {
+                            Button(L.x("Montează selecția", "Mount selection", "Montar la selección")) {
                                 runGated {
                                     logLines = []
                                     for name in selected where !service.mounted.contains(where: { $0.remoteName == name }) {
@@ -103,7 +103,7 @@ struct CloudManagerView: View {
                             .buttonStyle(.borderedProminent)
                             .disabled(selected.isEmpty)
 
-                            Button("Demontează selecția") {
+                            Button(L.x("Demontează selecția", "Unmount selection", "Desmontar la selección")) {
                                 logLines = []
                                 for name in selected { service.unmount(remoteName: name) { logLines.append($0) } }
                             }
@@ -128,7 +128,7 @@ struct CloudManagerView: View {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
-        panel.prompt = "Alege"
+        panel.prompt = L.x("Alege", "Choose", "Elegir")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         CloudMountSettings.customMountFolder = url.path
         mountFolder = url.path
@@ -151,7 +151,7 @@ struct AddCloudRemoteSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Adaugă cont Cloud").font(.title3).bold()
+            Text(L.x("Adaugă cont Cloud", "Add cloud account", "Añadir cuenta en la nube")).font(.title3).bold()
 
             TextField("Nume cont (ex: drive_personal)", text: $name)
                 .textFieldStyle(.roundedBorder)
@@ -161,12 +161,12 @@ struct AddCloudRemoteSheet: View {
             }
 
             if type.isOAuth {
-                Text("Se va deschide browser-ul pentru autorizare — flux standard Rclone, o singură dată per cont.")
+                Text(L.x("Se va deschide browser-ul pentru autorizare — flux standard Rclone, o singură dată per cont.", "Your browser will open for authorisation — standard rclone flow, once per account.", "Se abrirá el navegador para autorizar: flujo estándar de rclone, una vez por cuenta."))
                     .font(.caption).foregroundStyle(.secondary)
                 if type == .googleDrive {
-                    Toggle("Folosește client Google rapid (GDC)", isOn: $useGDCClient)
+                    Toggle(L.x("Folosește client Google rapid (GDC)", "Use the fast Google client (GDC)", "Usar el cliente rápido de Google (GDC)"), isOn: $useGDCClient)
                         .onChange(of: useGDCClient) { _, newValue in GDCOAuthClients.useGDCClientForNewRemotes = newValue }
-                    Text("Activează DOAR pentru un cont pe care l-ai adăugat deja ca „test user” în Google Cloud Console — altfel contul rămâne blocat la conectare (mesaj „Access blocked”, fără opțiune de a continua). Vezi GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.md.")
+                    Text(L.x("Activează DOAR pentru un cont pe care l-ai adăugat deja ca „test user” în Google Cloud Console — altfel contul rămâne blocat la conectare (mesaj „Access blocked”, fără opțiune de a continua). Vezi GHID_INTERN_ONBOARDING_GOOGLE_DRIVE.md.", "Enable ONLY for an account you have already added as a “test user” in Google Cloud Console — otherwise sign-in stays blocked (“Access blocked”, with no option to continue).", "Actívalo SOLO para una cuenta que ya hayas añadido como «usuario de prueba» en Google Cloud Console; si no, el inicio de sesión queda bloqueado («Access blocked», sin opción de continuar)."))
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             } else {
@@ -183,9 +183,9 @@ struct AddCloudRemoteSheet: View {
             if let status { StatusBanner(text: status) }
 
             HStack {
-                Button("Anulează") { dismiss() }
+                Button(L.x("Anulează", "Cancel", "Cancelar")) { dismiss() }
                 Spacer()
-                Button(isCreating ? "Se creează…" : "Adaugă") { create() }
+                Button(isCreating ? L.x("Se creează…", "Creating…", "Creando…") : L.x("Adaugă", "Add", "Añadir")) { create() }
                     .buttonStyle(.borderedProminent)
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || isCreating)
             }
@@ -200,13 +200,13 @@ struct AddCloudRemoteSheet: View {
 
     private func create() {
         isCreating = true
-        status = type.isOAuth ? "Verifică browser-ul pentru autorizare…" : nil
+        status = type.isOAuth ? L.x("Verifică browser-ul pentru autorizare…", "Check your browser to authorise…", "Revisa el navegador para autorizar…") : nil
         service.createRemote(name: name, type: type, values: values) { success, message in
             isCreating = false
             if success {
                 dismiss()
             } else {
-                status = message.isEmpty ? "Eroare la creare." : message
+                status = message.isEmpty ? L.x("Eroare la creare.", "Creation failed.", "Error al crear.") : message
             }
         }
     }

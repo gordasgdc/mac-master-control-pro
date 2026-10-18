@@ -80,23 +80,23 @@ enum UpdateChecker {
         let alert = NSAlert()
         switch result {
         case .upToDate:
-            alert.messageText = "Ești la zi"
+            alert.messageText = L.x("Ești la zi", "You are up to date", "Estás al día")
             alert.informativeText = "Rulezi deja ultima versiune (\(currentVersion))."
             alert.addButton(withTitle: "OK")
             alert.runModal()
         case .newVersion(let version, let pkgURL):
-            alert.messageText = "Este disponibilă o versiune nouă"
-            alert.informativeText = "Master Control Studio Pro \(version) este disponibil (tu ai \(currentVersion)). Apasă „Actualizează acum” pentru a descărca și instala automat."
-            alert.addButton(withTitle: "Actualizează acum")
-            alert.addButton(withTitle: "Mai târziu")
+            alert.messageText = L.x("Este disponibilă o versiune nouă", "A new version is available", "Hay una versión nueva disponible")
+            alert.informativeText = L.x("Master Control Studio Pro \(version) este disponibil (tu ai \(currentVersion)). Apasă „Actualizează acum” pentru a descărca și instala automat.", "Master Control Studio Pro \(version) is available (you have \(currentVersion)). Press “Update now” to download and install automatically.", "Master Control Studio Pro \(version) está disponible (tienes \(currentVersion)). Pulsa «Actualizar ahora» para descargar e instalar automáticamente.")
+            alert.addButton(withTitle: L.x("Actualizează acum", "Update now", "Actualizar ahora"))
+            alert.addButton(withTitle: L.x("Mai târziu", "Later", "Más tarde"))
             let response = alert.runModal()
             markDismissed(version)
             if response == .alertFirstButtonReturn {
                 Task { await SelfUpdater.downloadAndInstall(pkgURL: pkgURL, version: version) }
             }
         case .error:
-            alert.messageText = "Verificarea a eșuat"
-            alert.informativeText = "Nu am putut verifica dacă există o versiune nouă. Verifică-ți conexiunea la internet și încearcă din nou."
+            alert.messageText = L.x("Verificarea a eșuat", "The check failed", "Falló la comprobación")
+            alert.informativeText = L.x("Nu am putut verifica dacă există o versiune nouă. Verifică-ți conexiunea la internet și încearcă din nou.", "We could not check whether a new version exists. Check your internet connection and try again.", "No se pudo comprobar si hay una versión nueva. Revisa tu conexión a internet e inténtalo de nuevo.")
             alert.addButton(withTitle: "OK")
             alert.runModal()
         }

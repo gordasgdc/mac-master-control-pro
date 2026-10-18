@@ -29,14 +29,14 @@ struct DuplicateFinderView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Label("Duplicate", systemImage: "doc.on.doc").font(.title2).bold()
-                Text("Comparație REALĂ pe conținut (hash SHA256), nu doar nume/dată — două fișiere apar ca duplicate doar dacă sunt identice byte-cu-byte.")
+                Text(L.x("Comparație REALĂ pe conținut (hash SHA256), nu doar nume/dată — două fișiere apar ca duplicate doar dacă sunt identice byte-cu-byte.", "REAL content comparison (SHA-256 hash), not just name/date — two files show up as duplicates only if they are byte-for-byte identical.", "Comparación REAL del contenido (hash SHA-256), no solo del nombre o la fecha: dos archivos aparecen como duplicados solo si son idénticos byte a byte."))
                     .font(.caption).foregroundStyle(.secondary)
 
                 GroupBox {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Foldere de căutat").font(.headline)
+                        Text(L.x("Foldere de căutat", "Folders to search", "Carpetas donde buscar")).font(.headline)
                         if scanFolders.folders.isEmpty {
-                            Text("Niciun folder ales — adaugă cel puțin unul.")
+                            Text(L.x("Niciun folder ales — adaugă cel puțin unul.", "No folder chosen — add at least one.", "No se ha elegido ninguna carpeta; añade al menos una."))
                                 .font(.caption).foregroundStyle(.orange)
                         }
                         ForEach(scanFolders.folders, id: \.self) { path in
@@ -53,27 +53,27 @@ struct DuplicateFinderView: View {
                                 .foregroundStyle(.secondary)
                             }
                         }
-                        Button("+ Adaugă folder…") { addFolder() }
+                        Button(L.x("+ Adaugă folder…", "+ Add folder…", "+ Añadir carpeta…")) { addFolder() }
                             .controlSize(.small)
 
                         HStack {
-                            Button("Caută duplicate") { scan() }
+                            Button(L.x("Caută duplicate", "Find duplicates", "Buscar duplicados")) { scan() }
                                 .buttonStyle(.borderedProminent)
                                 .disabled(scanFolders.folders.isEmpty || isScanning)
-                                .help("Scanează folderele alese și grupează fișierele identice ca și conținut.")
+                                .help(L.x("Scanează folderele alese și grupează fișierele identice ca și conținut.", "Scans the chosen folders and groups files with identical content.", "Analiza las carpetas elegidas y agrupa los archivos con contenido idéntico."))
                             // [2026-09-11] Pana acum scanarea nu putea fi
                             // oprita deloc — odata pornita pe 1,4 TB, ramaneai
                             // blocat pana se termina sau crapa aplicatia.
                             if isScanning {
                                 Button("Stop") { model.cancel() }
-                                    .help("Oprește scanarea acum.")
+                                    .help(L.x("Oprește scanarea acum.", "Stop scanning now.", "Detener el análisis ahora."))
                             }
                         }
                         if isScanning, let progress = model.progress {
                             ScanProgressView(
                                 title: progress.phase.label,
                                 detailPath: progress.currentPath,
-                                itemsLabel: "\(progress.filesSeen) fișiere",
+                                itemsLabel: L.x("\(progress.filesSeen) fișiere", "\(progress.filesSeen) files", "\(progress.filesSeen) archivos"),
                                 totalLabel: ByteCountFormatter.string(fromByteCount: progress.bytesFound, countStyle: .file),
                                 fraction: progress.fraction,
                                 tint: .blue,
@@ -93,9 +93,9 @@ struct DuplicateFinderView: View {
                 if !groups.isEmpty {
                     GroupBox {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(groups.count) grupuri de duplicate găsite.")
+                            Text(L.x("\(groups.count) grupuri de duplicate găsite.", "\(groups.count) duplicate groups found.", "\(groups.count) grupos de duplicados encontrados."))
                                 .font(.subheadline)
-                            Text("Potențial recuperabil: \(ByteCountFormatter.string(fromByteCount: totalReclaimable, countStyle: .file))")
+                            Text(L.x("Potențial recuperabil: \(ByteCountFormatter.string(fromByteCount: totalReclaimable, countStyle: .file))", "Potentially recoverable: \(ByteCountFormatter.string(fromByteCount: totalReclaimable, countStyle: .file))", "Potencialmente recuperable: \(ByteCountFormatter.string(fromByteCount: totalReclaimable, countStyle: .file))"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         .padding(6)
@@ -107,10 +107,10 @@ struct DuplicateFinderView: View {
 
                     GroupBox {
                         HStack {
-                            Text("Bifate spre ștergere: \(ByteCountFormatter.string(fromByteCount: markedBytes, countStyle: .file))")
+                            Text(L.x("Bifate spre ștergere: \(ByteCountFormatter.string(fromByteCount: markedBytes, countStyle: .file))", "Ticked for deletion: \(ByteCountFormatter.string(fromByteCount: markedBytes, countStyle: .file))", "Marcados para eliminar: \(ByteCountFormatter.string(fromByteCount: markedBytes, countStyle: .file))"))
                                 .font(.caption).foregroundStyle(.secondary)
                             Spacer()
-                            Button("Șterge fișierele bifate (\(markedForDeletion.count))", role: .destructive) {
+                            Button(L.x("Șterge fișierele bifate (\(markedForDeletion.count))", "Delete ticked files (\(markedForDeletion.count))", "Eliminar los archivos marcados (\(markedForDeletion.count))"), role: .destructive) {
                                 runGated { deleteMarked() }
                             }
                             .disabled(markedForDeletion.isEmpty)
@@ -118,7 +118,7 @@ struct DuplicateFinderView: View {
                         .padding(6)
                     }
                 } else if !isScanning {
-                    Text("Apasă „Caută duplicate” — comparăm conținutul fișierelor din folderele alese mai sus.")
+                    Text(L.x("Apasă „Caută duplicate” — comparăm conținutul fișierelor din folderele alese mai sus.", "Press “Find duplicates” — we compare the content of the files in the folders chosen above.", "Pulsa «Buscar duplicados»: comparamos el contenido de los archivos de las carpetas elegidas arriba."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
@@ -140,7 +140,7 @@ struct DuplicateFinderView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.prompt = "Adaugă"
+        panel.prompt = L.x("Adaugă", "Add", "Añadir")
         if panel.runModal() == .OK, let url = panel.url {
             scanFolders.addFolder(url.path)
         }
@@ -192,7 +192,7 @@ private struct DuplicateGroupCard: View {
                             Image(systemName: "folder")
                         }
                         .buttonStyle(.plain)
-                        .help("Deschide în Finder — verifică fișierul înainte de a-l șterge.")
+                        .help(L.x("Deschide în Finder — verifică fișierul înainte de a-l șterge.", "Open in Finder — check the file before deleting it.", "Abrir en el Finder: revisa el archivo antes de eliminarlo."))
                     }
                 }
             }

@@ -10,17 +10,17 @@ struct NetworkModuleView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Label("Rețea", systemImage: "network").font(.title2).bold()
+            Label(L.x("Rețea", "Network", "Red"), systemImage: "network").font(.title2).bold()
 
-            GroupBox("Plăci de rețea detectate") {
+            GroupBox(L.x("Plăci de rețea detectate", "Network adapters detected", "Adaptadores de red detectados")) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Button(selected.count == service.adapters.count && !service.adapters.isEmpty ? "Deselectează tot" : "Selectează tot") {
+                        Button(selected.count == service.adapters.count && !service.adapters.isEmpty ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             selected = selected.count == service.adapters.count ? [] : Set(service.adapters.map(\.name))
                         }
                         .font(.caption)
                         Spacer()
-                        Button("Rescanează") { service.scanAdapters() }
+                        Button(L.x("Rescanează", "Rescan", "Volver a analizar")) { service.scanAdapters() }
                     }
                     ForEach(service.adapters) { adapter in
                         Toggle(isOn: Binding(
@@ -32,7 +32,7 @@ struct NetworkModuleView: View {
                             Text(adapter.name)
                         }
                     }
-                    Text("Selectate \(selected.count) din \(service.adapters.count) plăci de rețea")
+                    Text(L.x("Selectate \(selected.count) din \(service.adapters.count) plăci de rețea", "Selected \(selected.count) of \(service.adapters.count) network adapters", "Seleccionados \(selected.count) de \(service.adapters.count) adaptadores de red"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(6)
@@ -40,9 +40,9 @@ struct NetworkModuleView: View {
 
             GroupBox("Tuning Gigabit & TCP Kernel") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Forțează 1 Gbps Full-Duplex, DNS Cloudflare/Google, buffere TCP 1MB pe plăcile bifate.")
+                    Text(L.x("Forțează 1 Gbps Full-Duplex, DNS Cloudflare/Google, buffere TCP 1MB pe plăcile bifate.", "Forces 1 Gbps full duplex, Cloudflare/Google DNS and 1 MB TCP buffers on the ticked adapters.", "Fuerza 1 Gbps full dúplex, DNS de Cloudflare/Google y búferes TCP de 1 MB en los adaptadores marcados."))
                         .foregroundStyle(.secondary)
-                    Button("Aplică Tuning pe selecție (acum, o dată)") { runGated { service.applyTuning(selectedAdapters: selected) } }
+                    Button(L.x("Aplică Tuning pe selecție (acum, o dată)", "Apply tuning to the selection (now, once)", "Aplicar el ajuste a la selección (ahora, una vez)")) { runGated { service.applyTuning(selectedAdapters: selected) } }
                         .disabled(selected.isEmpty)
 
                     Divider()
@@ -52,20 +52,20 @@ struct NetworkModuleView: View {
                             .fill(service.persistentTuningActive ? Color.green : Color.red)
                             .frame(width: 8, height: 8)
                         Text(service.persistentTuningActive
-                             ? "Tuning persistent ACTIV — se reaplică automat la fiecare pornire"
-                             : "Tuning persistent INACTIV — dispare la restart")
+                             ? L.x("Tuning persistent ACTIV — se reaplică automat la fiecare pornire", "Persistent tuning ON — reapplied automatically at every startup", "Ajuste persistente ACTIVO: se vuelve a aplicar en cada inicio")
+                             : L.x("Tuning persistent INACTIV — dispare la restart", "Persistent tuning OFF — disappears on restart", "Ajuste persistente INACTIVO: desaparece al reiniciar"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     HStack {
-                        Button("Activează la pornire (persistent)") {
+                        Button(L.x("Activează la pornire (persistent)", "Enable at startup (persistent)", "Activar al iniciar (persistente)")) {
                             runGated { service.installPersistentTuning(selectedAdapters: selected) }
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(selected.isEmpty)
 
                         if service.persistentTuningActive {
-                            Button("Dezactivează", role: .destructive) { runGated { service.removePersistentTuning() } }
+                            Button(L.x("Dezactivează", "Disable", "Desactivar"), role: .destructive) { runGated { service.removePersistentTuning() } }
                         }
                     }
                 }
@@ -74,9 +74,9 @@ struct NetworkModuleView: View {
 
             GroupBox("Motor Cloud (Rclone / macFUSE)") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Configurarea conturilor Cloud s-a mutat în modulul „Cloud Manager” din bara laterală.")
+                    Text(L.x("Configurarea conturilor Cloud s-a mutat în modulul „Cloud Manager” din bara laterală.", "Cloud account setup has moved to the “Cloud Manager” module in the sidebar.", "La configuración de cuentas en la nube se ha movido al módulo «Cloud Manager» de la barra lateral."))
                         .foregroundStyle(.secondary)
-                    Button("Instalează Rclone + macFUSE") { service.installRcloneStack() }
+                    Button(L.x("Instalează Rclone + macFUSE", "Install rclone + macFUSE", "Instalar rclone + macFUSE")) { service.installRcloneStack() }
                 }
                 .padding(6)
             }

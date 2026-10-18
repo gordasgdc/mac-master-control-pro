@@ -56,7 +56,7 @@ public final class RenderNotificationService: ObservableObject {
     }
 
     private func fireNotification(jobName: String, status: String) {
-        let title = status == "Complete" ? "✔ Randare terminată" : "✘ Randare \(status.lowercased())"
+        let title = status == "Complete" ? CoreL.x("✔ Randare terminată", "✔ Render finished", "✔ Render terminado") : "✘ Randare \(status.lowercased())"
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = jobName
@@ -136,17 +136,17 @@ enum ResolveRenderJobQuery {
         do {
             try process.run()
         } catch {
-            return .failure(SimpleError(message: "Nu s-a putut porni python3"))
+            return .failure(SimpleError(message: CoreL.x("Nu s-a putut porni python3", "Could not start python3", "No se pudo iniciar python3")))
         }
         let deadline = Date().addingTimeInterval(10)
         while process.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.2) }
         if process.isRunning { process.terminate(); return .failure(SimpleError(message: "Timeout")) }
-        guard process.terminationStatus == 0 else { return .failure(SimpleError(message: "Cod ieșire \(process.terminationStatus)")) }
+        guard process.terminationStatus == 0 else { return .failure(SimpleError(message: CoreL.x("Cod ieșire \(process.terminationStatus)", "Exit code \(process.terminationStatus)", "Código de salida \(process.terminationStatus)"))) }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         guard let text = String(data: data, encoding: .utf8),
               let jsonData = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
-        else { return .failure(SimpleError(message: "Răspuns invalid")) }
+        else { return .failure(SimpleError(message: CoreL.x("Răspuns invalid", "Invalid response", "Respuesta no válida"))) }
         if let error = json["error"] as? String { return .failure(SimpleError(message: error)) }
         let jobsRaw = json["jobs"] as? [[String: String]] ?? []
         return .success(jobsRaw.compactMap { dict in
