@@ -211,7 +211,7 @@ struct DiskAnalyzerView: View {
                 if vm.accessErrors > 0 {
                     Button { showUnscanned.toggle() } label: { Label(String(format: L.x("%d neanalizate","%d not analysed","%d sin analizar"), vm.accessErrors), systemImage: "exclamationmark.circle") }
                         .buttonStyle(.plain).font(.caption).foregroundStyle(.orange)
-                        .popover(isPresented: $showUnscanned) { unscannedDetails }
+                        .popover(isPresented: $showUnscanned, arrowEdge: .bottom) { unscannedDetails }
                 }
                 Menu {
                     Button(L.x("Verifică modificările", "Check for changes", "Comprobar cambios")) { vm.rescanChangesOnly() }
@@ -299,7 +299,7 @@ struct DiskAnalyzerView: View {
     private func detail(_ n: DiskTreeNode, flags: Set<SpaceFlag>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Group {
-                labeled("Cale", n.isAggregate ? L.x("(grup de fișiere mici din folderul curent)", "(group of small files in this folder)", "(grupo de archivos pequeños de esta carpeta)") : n.path)
+                labeled(L.x("Cale", "Path", "Ruta"), n.isAggregate ? L.x("(grup de fișiere mici din folderul curent)", "(group of small files in this folder)", "(grupo de archivos pequeños de esta carpeta)") : n.path)
                 labeled(L.x("Spațiu ocupat pe disc (alocat)", "Space used on disk (allocated)", "Espacio ocupado en disco (asignado)"), Studio.gb(n.usedBytes))
                 labeled(L.x("Mărime logică", "Logical size", "Tamaño lógico"), Studio.gb(n.sizeBytes))
                 if abs(n.sizeBytes - n.usedBytes) > max(1_000_000, n.sizeBytes / 10) {
