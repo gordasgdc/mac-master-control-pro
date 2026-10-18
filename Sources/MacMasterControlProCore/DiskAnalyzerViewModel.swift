@@ -62,6 +62,95 @@ public final class DiskAnalyzerViewModel: ObservableObject {
 
     private var currentRootPath: String?
 
+    // MARK: - Selecție și revizuire (Studio Glass)
+    /// Selecția supraviețuiește navigării. Un părinte selectat înlocuiește copiii selectați (fără dublă numărare).
+    @Published public private(set) var selection: [UUID: DiskTreeNode] = [:]
+    @Published public var focusID: UUID?
+    @Published public var hoverID: UUID?
+    /// Rezultatul ultimei mutări în Coș, per element (nil = nicio operație sau încă în revizuire).
+    @Published public private(set) var trashResults: [UUID: TrashService.Outcome]?
+    @Published public private(set) var isTrashing = false
+    /// Elementele operației curente, păstrate pentru afișarea rezultatului (după mutare dispar din selecție).
+    @Published public private(set) var resultItems: [UUID: DiskTreeNode] = [:]
+    @Published public var includeUnverified = false
+
+    public var duplicateSurplus: Set<String> { SpaceClassifier.duplicateSurplus(groups: DuplicateFinderViewModel.shared.groups) }
+
+    public func flags(_ n: DiskTreeNode) -> Set<SpaceFlag> {
+        SpaceClassifier.flags(path: n.path, isDirectory: n.isDirectory, isAggregate: n.isAggregate, duplicateSurplus: duplicateSurplus)
+    }
+
+    public var summary: SpaceSelectionSummary { SpaceMath.summarize(nodes: Array(selection.values), duplicateSurplus: duplicateSurplus) }
+
+    public func isSelected(_ n: DiskTreeNode) -> Bool { selection[n.id] != nil }
+    public func hasSelectedDescendant(_ n: DiskTreeNode) -> Bool { n.children.values.contains { selection[$0.id] != nil || hasSelectedDescendant($0) } }
+
+    /// false dacă elementul e protejat (nu se poate selecta).
+    @discardableResult
+    public func toggleSelection(_ n: DiskTreeNode) -> Bool {
+        if selection[n.id] != nil { selection[n.id] = nil; return true }
+        if flags(n).contains(.protected) { return false }
+        // părinte vs. copii: păstrăm doar nivelul cel mai de sus
+        func drop(_ x: DiskTreeNode) { for c in x.children.values { selection[c.id] = nil; drop(c) } }
+        drop(n)
+        var p: DiskTreeNode? = parentOf(n)
+        while let a = p { selection[a.id] = nil; p = parentOf(a) }
+        selection[n.id] = n
+        return true
+    }
+
+    private func parentOf(_ n: DiskTreeNode) -> DiskTreeNode? {
+        guard let tree else { return nil }
+        let parentPath = (n.path as NSString).deletingLastPathComponent
+        if parentPath == tree.path { return tree }
+        var cur = tree
+        let rel = parentPath.dropFirst(tree.path.hasSuffix("/") ? tree.path.count : tree.path.count + 1)
+        guard parentPath.hasPrefix(tree.path) else { return nil }
+        for comp in rel.split(separator: "/") { guard let next = cur.children[String(comp)] else { return nil }; cur = next }
+        return cur
+    }
+
+    public func clearSelection() { selection = [:]; trashResults = nil }
+
+    /// Mută la Coș elementele recuperabile (+ cele neverificate doar dacă `includeUnverified`). Per element, rezultat explicit.
+    public func moveSelectionToTrash() {
+        guard !isTrashing else { return }
+        let sum = summary
+        let wanted = Set(sum.recoverable + (includeUnverified ? sum.unverified : []))
+        let items = selection.values.filter { wanted.contains($0.path) }
+        guard !items.isEmpty else { return }
+        isTrashing = true; trashResults = nil
+        resultItems = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+        let op = DiagnosticLog.begin("trash", "move", fields: ["items": String(items.count)])
+        let pairs = items.map { ($0.id, $0.path) }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            var out: [UUID: TrashService.Outcome] = [:]
+            for (id, path) in pairs { out[id] = TrashService.moveToTrash(path: path) }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let failed = out.values.filter { if case .failed = $0 { return true } else { return false } }.count
+                op.end(failed == 0 ? "ok" : "partial", level: failed == 0 ? .info : .warning, fields: ["failed": String(failed)])
+                if let tree = self.tree, let rootPath = self.currentRootPath {
+                    for (id, o) in out where o == .moved {
+                        if let n = self.selection[id] { DiskScanEngine.remove(nodePath: n.path, from: tree) }
+                        self.selection[id] = nil
+                    }
+                    self.filesIndexed = tree.totalFileCount; self.bytesIndexed = tree.sizeBytes
+                    DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: self.lastScannedAt ?? Date(), root: tree,
+                                              accessErrors: self.accessErrors, verifiedAt: self.lastVerifiedAt))
+                }
+                self.trashResults = out
+                self.isTrashing = false
+                self.objectWillChange.send()
+            }
+        }
+    }
+
+    /// Căile din rezultat care erau „fără regulă verificată” (pentru gruparea rezultatului).
+    public var unverifiedPathsForResult: Set<String> { Set(resultItems.values.filter { !(flags($0).contains(.regenerable) || flags($0).contains(.duplicate)) }.map(\.path)) }
+
+    public func dismissTrashResults() { trashResults = nil }
+
     public var currentNode: DiskTreeNode? { pathStack.last ?? tree }
     public var currentChildren: [DiskTreeNode] { currentNode?.sortedChildren ?? [] }
     public var indexedBytesDescription: String { ByteCountFormatter.string(fromByteCount: bytesIndexed, countStyle: .file) }
