@@ -99,8 +99,16 @@ struct DiskAnalyzerView: View {
     private func isCurrent(_ r: DiskEntry) -> Bool { vm.tree?.path == URL(fileURLWithPath: r.path).resolvingSymlinksInPath().path || (vm.currentScanRootPath == r.path) }
 
     private var volumePicker: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            volumeHint
+            StudioArtView(name: "disk-empty-glass", width: 300, height: 189)
+        }
+        .padding(.horizontal, 30).padding(.top, 20)
+    }
+
+    private var volumeHint: some View {
         Text(L.x("Alege un volum de mai sus ca să-l analizezi. Rezultatul rămâne salvat; la următoarea deschidere nu se reia scanarea.", "Pick a volume above to analyse it. The result is saved; the next time you open it, no rescan is needed.", "Elige un volumen arriba para analizarlo. El resultado se guarda; la próxima vez no se vuelve a escanear."))
-            .foregroundStyle(Studio.textMuted).padding(.horizontal, 30).padding(.top, 20)
+            .foregroundStyle(Studio.textMuted)
     }
 
     // MARK: - Conținut

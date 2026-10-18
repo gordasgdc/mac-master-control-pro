@@ -55,6 +55,7 @@ mkdir -p "$BUILD_OUT/Contents/MacOS" "$BUILD_OUT/Contents/Resources"
 cp "$MCSP_SCRATCH/release/MacMasterControlPro" "$BUILD_OUT/Contents/MacOS/MacMasterControlPro"
 cp Info.plist "$BUILD_OUT/Contents/Info.plist"
 cp AppIcon.icns "$BUILD_OUT/Contents/Resources/AppIcon.icns"
+for img in Assets/*.jpg; do [ -f "$img" ] && cp "$img" "$BUILD_OUT/Contents/Resources/"; done
 for pdf in installer/Instructiuni_Utilizare_RO.pdf installer/Instructiuni_Utilizare_EN.pdf installer/Instructiuni_Utilizare_ES.pdf \
            installer/Ghid_ModRandare_RO.pdf installer/Ghid_ModRandare_EN.pdf installer/Ghid_ModRandare_ES.pdf \
            installer/Ghid_AnalizaDisc_RO.pdf installer/Ghid_AnalizaDisc_EN.pdf installer/Ghid_AnalizaDisc_ES.pdf \

@@ -20,9 +20,11 @@ struct HomeView: View {
             LinearGradient(colors: [Studio.canvasTop, Studio.canvasBottom], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
+                    HStack(alignment: .center, spacing: 24) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Master Control Studio Pro").font(.system(size: 30, weight: .bold, design: .rounded))
-                        Text(L.x("Spațiu, curățenie și controlul sistemului pentru stațiile de montaj.", "Space, cleanup and system control for editing workstations.", "Espacio, limpieza y control del sistema para estaciones de montaje.")).foregroundStyle(Studio.textMuted)
+                            Text("Master Control Studio Pro").font(.system(size: 30, weight: .bold, design: .rounded))
+                            Text(L.x("Spațiu, curățenie și controlul sistemului pentru stațiile de montaj.", "Space, cleanup and system control for editing workstations.", "Espacio, limpieza y control del sistema para estaciones de montaje.")).foregroundStyle(Studio.textMuted)
+                        }
                     }
                     HStack(alignment: .top, spacing: 14) {
                         ForEach(volumes) { v in volumeCard(v) }
@@ -43,6 +45,7 @@ struct HomeView: View {
                     .padding(18).background(Studio.card, in: RoundedRectangle(cornerRadius: 16)).overlay(RoundedRectangle(cornerRadius: 16).stroke(Studio.line))
                     AccessPanel(compact: true).padding(.top, 4)
                 }
+                .overlay(alignment: .topTrailing) { StudioArtView(name: "home-glass", width: 224, height: 168) }
                 .padding(32).frame(maxWidth: 980, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
