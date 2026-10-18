@@ -3,19 +3,20 @@
 # semnat + notarizat, cu panou de licenta (Regula 19).
 set -euo pipefail
 cd "$(dirname "$0")"
+source scripts/storage_env.sh   # poarta de stocare externa + MCSP_SCRATCH/MCSP_DIST_DIR/TMPDIR
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
 PKG_ID="com.gordasgdc.macmastercontrolpro.installer"
 APP_NAME="Master Control Studio Pro.app"
-DIST_DIR="dist"
+DIST_DIR="${MCSP_DIST_DIR}"
 PAYLOAD_ROOT="$DIST_DIR/payload"
 COMPONENT_PKG="$DIST_DIR/MacMasterControlPro-component.pkg"
 FINAL_PKG="$DIST_DIR/MacMasterControlPro-$VERSION.pkg"
 
 # Garda impotriva dist/ detinut de root (Regula 23).
 if [ -d "$DIST_DIR" ] && ! [ -w "$DIST_DIR" ] || find "$DIST_DIR" -maxdepth 2 -user root -print -quit 2>/dev/null | grep -q .; then
-    echo "EROARE: 'dist/' contine fisiere detinute de root. Ruleaza manual:" >&2
-    echo "    sudo rm -rf \$(pwd)/dist" >&2
+    echo "EROARE: '$DIST_DIR' contine fisiere detinute de root. Ruleaza manual:" >&2
+    echo "    sudo rm -rf $DIST_DIR" >&2
     exit 1
 fi
 
@@ -47,11 +48,11 @@ SWIFTEOF
 fi
 
 echo "==> Building app…"
-swift build -c release --product MacMasterControlPro
-BUILD_OUT="/tmp/Master Control Studio Pro.app.build-$$"
+swift build -c release --product MacMasterControlPro --scratch-path "$MCSP_SCRATCH"
+BUILD_OUT="${TMPDIR}Master Control Studio Pro.app.build-$$"
 rm -rf "$BUILD_OUT"
 mkdir -p "$BUILD_OUT/Contents/MacOS" "$BUILD_OUT/Contents/Resources"
-cp .build/release/MacMasterControlPro "$BUILD_OUT/Contents/MacOS/MacMasterControlPro"
+cp "$MCSP_SCRATCH/release/MacMasterControlPro" "$BUILD_OUT/Contents/MacOS/MacMasterControlPro"
 cp Info.plist "$BUILD_OUT/Contents/Info.plist"
 cp AppIcon.icns "$BUILD_OUT/Contents/Resources/AppIcon.icns"
 for pdf in installer/Instructiuni_Utilizare_RO.pdf installer/Instructiuni_Utilizare_EN.pdf installer/Instructiuni_Utilizare_ES.pdf \
