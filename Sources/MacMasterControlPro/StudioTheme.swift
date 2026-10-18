@@ -39,7 +39,10 @@ enum Studio {
     }
 
     static func gb(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+        let f = ByteCountFormatter()
+        f.countStyle = .file
+        f.allowsNonnumericFormatting = false     // „0 B”, nu „Zero KB”
+        return f.string(fromByteCount: bytes)
     }
 }
 
@@ -49,9 +52,9 @@ struct FlagChip: View {
     var body: some View {
         let (icon, text, fg, bg): (String, String, Color, Color) = {
             switch flag {
-            case .regenerable: return ("arrow.triangle.2.circlepath", "Regenerabil", Studio.good, Studio.goodBG)
-            case .duplicate: return ("doc.on.doc", "Duplicat verificat", Studio.dupe, Studio.dupeBG)
-            case .protected: return ("lock.fill", "Protejat", Studio.lock, Studio.line)
+            case .regenerable: return ("arrow.triangle.2.circlepath", L.x("Regenerabil", "Regenerable", "Regenerable"), Studio.good, Studio.goodBG)
+            case .duplicate: return ("doc.on.doc", L.x("Duplicat verificat", "Verified duplicate", "Duplicado verificado"), Studio.dupe, Studio.dupeBG)
+            case .protected: return ("lock.fill", L.x("Protejat", "Protected", "Protegido"), Studio.lock, Studio.line)
             }
         }()
         Label(text, systemImage: icon)

@@ -86,7 +86,7 @@ public enum AppProfile {
         for key in dict.keys where !key.hasPrefix("MMSP.access.") { defaults.removeObject(forKey: key) }
         SecretStore.delete(account: "smtp.appPassword")
         if let items = try? fm.contentsOfDirectory(atPath: supportDirectory.path) {
-            let keep: Set<String> = ["RenderModeSnapshot.json"]
+            let keep: Set<String> = ["RenderModeSnapshot.json", "secrets"]
             for n in items where !keep.contains(n) && !n.hasSuffix(".sh") { try? fm.removeItem(at: supportDirectory.appendingPathComponent(n)) }
         }
         DiagnosticLog.write(.warning, tag: "profile", event: "config.reset-by-user", fields: ["backup": backup.lastPathComponent])

@@ -26,7 +26,7 @@ print(h.hexdigest())
 PY
 }
 BEFORE=$(fp)
-MCSP_PROFILE_DIR="$PROFILE" MCSP_DEMO_VOLUMES="Studio SSD,Arhiva RAID" "$APP/Contents/MacOS/MacMasterControlPro" >/dev/null 2>&1 &
+MCSP_PROFILE_DIR="$PROFILE" MCSP_DEMO_VOLUMES="Studio SSD,Archive RAID" "$APP/Contents/MacOS/MacMasterControlPro" >/dev/null 2>&1 &
 APPPID=$!
 sleep "$SECS"
 kill "$APPPID" 2>/dev/null || true

@@ -26,6 +26,7 @@ struct MacMasterControlProApp: App {
                     DiagnosticLog.write(.info, tag: "app", event: "launch", fields: ["os": ProcessInfo.processInfo.operatingSystemVersionString])
                 }
         }
+        .defaultSize(width: 1240, height: 800)
         // BUG REAL, gasit 2026-08-31: `.windowResizability(.contentSize)`
         // intra in conflict cu `ScaledContentView` (GeometryReader + scaleEffect,
         // vezi mai jos) — GeometryReader nu are o dimensiune "ideala" proprie,

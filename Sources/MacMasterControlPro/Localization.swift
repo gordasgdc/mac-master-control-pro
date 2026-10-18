@@ -97,3 +97,13 @@ enum L {
         return strings[key]?[lang] ?? strings[key]?[.ro] ?? key
     }
 }
+
+extension L {
+    /// Text în limba curentă, scris la locul folosirii (RO, EN, ES). Pentru șiruri cu valori: `String(format: L.x("%d elemente", "%d items", "%d elementos"), n)`.
+    static func x(_ ro: String, _ en: String, _ es: String) -> String {
+        switch LanguageStore.shared.current { case .ro: return ro; case .en: return en; case .es: return es }
+    }
+    static var locale: Locale {
+        switch LanguageStore.shared.current { case .ro: return Locale(identifier: "ro_RO"); case .en: return Locale(identifier: "en_GB"); case .es: return Locale(identifier: "es_ES") }
+    }
+}

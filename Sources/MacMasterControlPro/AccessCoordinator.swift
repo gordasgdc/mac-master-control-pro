@@ -17,7 +17,7 @@ final class AccessCoordinator: ObservableObject {
     private var wasLocked = false
 
     var allowsFeatures: Bool { mode.allowsFeatures }
-    var editionLabel: String { provider.editionLabel }
+    var editionLabel: String { provider.isOfficialEdition ? L.x("Ediție oficială GDC","Official GDC edition","Edición oficial de GDC") : L.x("Ediție comunitară (cod sursă MIT)","Community edition (MIT source code)","Edición comunitaria (código fuente MIT)") }
 
     private init() {
         provider = AccessFactory.make()
@@ -69,16 +69,16 @@ struct AccessPanel: View {
         VStack(alignment: .leading, spacing: 14) {
             switch access.mode {
             case .demoLocked(let next):
-                Label("Sesiunea de probă s-a încheiat", systemImage: "hourglass").font(.title2.bold())
-                Text("Proba durează 10 minute de utilizare activă. Următoarea sesiune este disponibilă pe \(Self.fmt.string(from: next)). Aplicația pornește de fiecare dată de la zero în probă; setările și cache-urile nu se păstrează.")
+                Label(L.x("Sesiunea de probă s-a încheiat", "The trial session has ended", "La sesión de prueba ha terminado"), systemImage: "hourglass").font(.title2.bold())
+                Text(String(format: L.x("Proba durează 10 minute de utilizare activă. Următoarea sesiune este disponibilă pe %@. Setările tale nu se șterg: în probă nu se modifică nimic din configurația ta.","The trial lasts 10 minutes of active use. The next session is available on %@. Your settings are not erased: the trial never changes your configuration.","La prueba dura 10 minutos de uso activo. La próxima sesión estará disponible el %@. Tus ajustes no se borran: la prueba nunca modifica tu configuración."), Self.fmt.string(from: next)))
                     .foregroundStyle(Studio.textMuted)
             case .demoAvailable(let s):
-                Label("Sesiune de probă: \(s / 60):\(String(format: "%02d", s % 60)) rămase", systemImage: "timer").font(.title3.bold())
+                Label(String(format: L.x("Sesiune de probă: %d:%02d rămase","Trial session: %d:%02d left","Sesión de prueba: %d:%02d restantes"), s / 60, s % 60), systemImage: "timer").font(.title3.bold())
             case .full(let src):
-                Label("Acces complet (\(src))", systemImage: "checkmark.seal").font(.title3.bold())
+                Label(String(format: L.x("Acces complet (%@)","Full access (%@)","Acceso completo (%@)"), src), systemImage: "checkmark.seal").font(.title3.bold())
             }
             if !access.offers.isEmpty {
-                Text("Susține proiectul printr-o donație și primești licență:").fontWeight(.semibold)
+                Text(L.x("Susține proiectul printr-o donație și primești licență:", "Support the project with a donation and receive a licence:", "Apoya el proyecto con una donación y recibe una licencia:")).fontWeight(.semibold)
                 ForEach(access.offers) { o in
                     HStack { Text(o.title); Spacer(); Text(o.amountText).fontWeight(.semibold) }
                         .padding(10).background(Studio.card, in: RoundedRectangle(cornerRadius: 10)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Studio.line))
@@ -86,14 +86,14 @@ struct AccessPanel: View {
             }
             if !access.mode.isFull {
                 HStack {
-                    Button { NSWorkspace.shared.open(WhatsAppLink.url(text: access.activationRequestText())) } label: { Label("Cere o licență", systemImage: "message") }
+                    Button { NSWorkspace.shared.open(WhatsAppLink.url(text: access.activationRequestText())) } label: { Label(L.x("Cere o licență", "Request a licence", "Solicitar una licencia"), systemImage: "message") }
                         .buttonStyle(.borderedProminent).tint(Studio.accent)
-                    Button("Deschide pagina produsului") { NSWorkspace.shared.open(URL(string: "https://gordas.dev/mac-master-control-pro/")!) }
-                    Button("Copiază Machine ID") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(MachineID.display, forType: .string) }
+                    Button(L.x("Deschide pagina produsului", "Open the product page", "Abrir la página del producto")) { NSWorkspace.shared.open(URL(string: "https://gordas.dev/mac-master-control-pro/")!) }
+                    Button(L.x("Copiază Machine ID", "Copy Machine ID", "Copiar Machine ID")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(MachineID.display, forType: .string) }
                 }
                 HStack {
-                    TextField("Lipește licența primită", text: $license).textFieldStyle(.roundedBorder)
-                    Button("Aplică") { Task { message = await access.submitLicense(license) ?? "Licență aplicată." } }.disabled(license.isEmpty)
+                    TextField(L.x("Lipește licența primită", "Paste the licence you received", "Pega la licencia recibida"), text: $license).textFieldStyle(.roundedBorder)
+                    Button(L.x("Aplică", "Apply", "Aplicar")) { Task { message = await access.submitLicense(license) ?? L.x("Licență aplicată.", "Licence applied.", "Licencia aplicada.") } }.disabled(license.isEmpty)
                 }
                 if let m = message { Text(m).font(.callout).foregroundStyle(Studio.textMuted) }
                 Text(access.editionLabel).font(.caption).foregroundStyle(Studio.textMuted)
@@ -103,7 +103,7 @@ struct AccessPanel: View {
         .frame(maxWidth: 560, alignment: .leading)
     }
 
-    static let fmt: DateFormatter = { let f = DateFormatter(); f.dateFormat = "d MMMM yyyy, HH:mm"; f.locale = Locale(identifier: "ro_RO"); return f }()
+    static var fmt: DateFormatter { let f = DateFormatter(); f.dateFormat = "d MMMM yyyy, HH:mm"; f.locale = L.locale; return f }
 }
 
 struct AccessLockedOverlay: View {
@@ -117,7 +117,7 @@ struct AccessLockedOverlay: View {
 
 struct AccessGateSheet: View {
     @Environment(\.dismiss) private var dismiss
-    var body: some View { VStack(alignment: .trailing) { AccessPanel(); Button("Închide") { dismiss() }.padding([.horizontal, .bottom], 28) } }
+    var body: some View { VStack(alignment: .trailing) { AccessPanel(); Button(L.x("Închide", "Close", "Cerrar")) { dismiss() }.padding([.horizontal, .bottom], 28) } }
 }
 
 struct AccessStatusPill: View {
@@ -125,9 +125,9 @@ struct AccessStatusPill: View {
     var body: some View {
         HStack(spacing: 6) {
             switch access.mode {
-            case .full: Image(systemName: "checkmark.seal.fill").foregroundStyle(Studio.good); Text("Acces complet")
-            case .demoAvailable(let s): Image(systemName: "timer"); Text("Probă: \(s / 60):\(String(format: "%02d", s % 60))")
-            case .demoLocked: Image(systemName: "hourglass"); Text("Probă încheiată")
+            case .full: Image(systemName: "checkmark.seal.fill").foregroundStyle(Studio.good); Text(L.x("Acces complet", "Full access", "Acceso completo"))
+            case .demoAvailable(let s): Image(systemName: "timer"); Text(String(format: L.x("Probă: %d:%02d","Trial: %d:%02d","Prueba: %d:%02d"), s / 60, s % 60))
+            case .demoLocked: Image(systemName: "hourglass"); Text(L.x("Probă încheiată", "Trial ended", "Prueba finalizada"))
             }
             Spacer()
         }

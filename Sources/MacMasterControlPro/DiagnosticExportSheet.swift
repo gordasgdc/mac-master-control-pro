@@ -10,8 +10,8 @@ struct DiagnosticExportSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Exportă diagnosticul").font(.title3.bold())
-            Text("Pachetul conține doar fișierele de mai jos, redactate (parole, emailuri, nume de utilizator din căi). Nu include conținutul fișierelor tale și nu se încarcă nicăieri.")
+            Text(L.x("Exportă diagnosticul", "Export diagnostics", "Exportar diagnóstico")).font(.title3.bold())
+            Text(L.x("Pachetul conține doar fișierele de mai jos, redactate (parole, emailuri, nume de utilizator din căi). Nu include conținutul fișierelor tale și nu se încarcă nicăieri.", "The package contains only the files below, redacted (passwords, emails, user names in paths). It does not include the contents of your files and is never uploaded.", "El paquete contiene solo los archivos de abajo, redactados (contraseñas, correos, nombres de usuario en rutas). No incluye el contenido de tus archivos y no se sube a ningún sitio."))
                 .font(.callout).foregroundStyle(.secondary)
             List(items) { item in
                 HStack {
@@ -25,8 +25,8 @@ struct DiagnosticExportSheet: View {
             if let status { Text(status).font(.callout).textSelection(.enabled) }
             HStack {
                 Spacer()
-                Button("Închide") { dismiss() }
-                Button("Salvează ZIP...") { save() }.keyboardShortcut(.defaultAction)
+                Button(L.x("Închide", "Close", "Cerrar")) { dismiss() }
+                Button(L.x("Salvează ZIP...", "Save ZIP…", "Guardar ZIP…")) { save() }.keyboardShortcut(.defaultAction)
             }
         }
         .padding(20)
@@ -37,14 +37,14 @@ struct DiagnosticExportSheet: View {
     private func save() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false
-        panel.prompt = "Alege folderul"
+        panel.prompt = L.x("Alege folderul", "Choose folder", "Elegir carpeta")
         guard panel.runModal() == .OK, let dir = panel.url else { return }
         do {
             let zip = try DiagnosticExport.export(to: dir)
-            status = "Salvat: \(zip.path)"
+            status = String(format: L.x("Salvat: %@","Saved: %@","Guardado: %@"), zip.path)
             NSWorkspace.shared.activateFileViewerSelecting([zip])
         } catch {
-            status = "Export eșuat: \(error.localizedDescription)"
+            status = String(format: L.x("Export eșuat: %@","Export failed: %@","Exportación fallida: %@"), error.localizedDescription)
         }
     }
 }

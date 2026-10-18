@@ -122,7 +122,7 @@ struct SunburstView: View {
                     let n = hover.flatMap { id in list.first { $0.id == id }?.node } ?? root
                     Text(n.name).font(.callout.weight(.semibold)).lineLimit(1).truncationMode(.middle)
                     Text(Studio.gb(n.sizeBytes)).font(.system(size: max(20, rr.hole * 0.36), weight: .bold, design: .rounded))
-                    Text(n === root ? "în acest folder" : ByteCountFormatter.string(fromByteCount: n.sizeBytes, countStyle: .file) == "" ? "" : percent(n))
+                    Text(n === root ? L.x("în acest folder", "in this folder", "en esta carpeta") : ByteCountFormatter.string(fromByteCount: n.sizeBytes, countStyle: .file) == "" ? "" : percent(n))
                         .font(.caption).foregroundStyle(Studio.textMuted)
                 }
                 .frame(width: rr.hole * 1.7)

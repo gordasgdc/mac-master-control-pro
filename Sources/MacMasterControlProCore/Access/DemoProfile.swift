@@ -16,7 +16,7 @@ public enum DemoProfile {
         }
         if supportDir == nil { SecretStore.delete(account: "smtp.appPassword") }
         let dir = supportDir ?? AppProfile.supportDirectory
-        let keep: Set<String> = ["RenderModeSnapshot.json"]
+        let keep: Set<String> = ["RenderModeSnapshot.json", "secrets"]
         if let items = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
             for name in items where !keep.contains(name) && !name.hasSuffix(".sh") {
                 try? FileManager.default.removeItem(at: dir.appendingPathComponent(name))

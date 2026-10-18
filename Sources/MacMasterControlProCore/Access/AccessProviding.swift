@@ -27,8 +27,8 @@ public struct OfferSummary: Identifiable, Equatable, Sendable {
 public protocol AccessProviding: AnyObject {
     var mode: AccessMode { get }
     var offers: [OfferSummary] { get }
-    /// Ce afișează ecranul de activare despre ediție (ex. „Ediție comunitară”).
-    var editionLabel: String { get }
+    /// Ediția oficială distribuită de GDC (true) sau cea comunitară din codul sursă (false). Textul îl alege interfața, în limba utilizatorului.
+    var isOfficialEdition: Bool { get }
     /// Text de trimis proprietarului pentru a cere o licență (cerere de activare), fără date personale.
     func activationRequestText() -> String
     /// Aplică o licență lipită de utilizator. Întoarce mesajul de eroare sau nil la succes.

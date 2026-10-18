@@ -27,17 +27,6 @@ struct SidebarFooterView: View {
                     }
                 }
                 Spacer()
-                Button {
-                    if !license.allowsFeatures { showActivation = true }
-                } label: {
-                    Text(license.allowsFeatures ? "Pro" : L.t("sidebar.trialBadge"))
-                        .font(.caption2).bold()
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(license.allowsFeatures ? Color.green.opacity(0.2) : Color.orange.opacity(0.25))
-                        .foregroundStyle(license.allowsFeatures ? .green : .orange)
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
             }
 
             Button {
@@ -48,7 +37,7 @@ struct SidebarFooterView: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: copiedFeedback ? "checkmark" : "doc.on.doc")
-                    Text(copiedFeedback ? "Copiat" : "Machine ID: \(String(machineID.prefix(13)))…")
+                    Text(copiedFeedback ? L.x("Copiat", "Copied", "Copiado") : "Machine ID: \(String(machineID.prefix(13)))…")
                         .font(.caption2).font(.system(.caption2, design: .monospaced))
                 }
                 .foregroundStyle(.secondary)
@@ -56,10 +45,10 @@ struct SidebarFooterView: View {
             .buttonStyle(.plain)
 
             HStack {
-                Text("v\(UpdateChecker.currentVersion) Pro")
+                Text("v\(UpdateChecker.currentVersion)")
                     .font(.caption2).foregroundStyle(.secondary)
                 Spacer()
-                Button(isCheckingUpdate ? "Se verifică…" : "Caută actualizări") {
+                Button(isCheckingUpdate ? L.x("Se verifică…", "Checking…", "Comprobando…") : L.x("Caută actualizări", "Check for updates", "Buscar actualizaciones")) {
                     isCheckingUpdate = true
                     UpdateChecker.checkAndShowAlert()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { isCheckingUpdate = false }

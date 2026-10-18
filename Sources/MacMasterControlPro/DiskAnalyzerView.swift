@@ -15,9 +15,9 @@ struct DiskAnalyzerView: View {
     @State private var totals: (regenerable: Int64, duplicateSurplus: Int64, overlap: Int64, recoverable: Int64)?
     @State private var showCalc = false
 
-    private static let lastScanFormatter: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "d MMMM, HH:mm"; f.locale = Locale(identifier: "ro_RO"); return f
-    }()
+    private static var lastScanFormatter: DateFormatter {
+        let f = DateFormatter(); f.dateFormat = "d MMMM, HH:mm"; f.locale = L.locale; return f
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -35,10 +35,10 @@ struct DiskAnalyzerView: View {
         .task(id: vm.lastScannedAt) { await refreshTotals() }
         .task(id: dupes.groups.count) { await refreshTotals() }
         .sheet(isPresented: $showReview) { ReviewSheet(vm: vm, dismiss: { showReview = false }) }
-        .alert("Resetezi cache-ul și rescanezi tot discul?", isPresented: $confirmingReset) {
-            Button("Anulează", role: .cancel) {}
-            Button("Resetează și rescanează", role: .destructive) { vm.resetCacheAndFullRescan() }
-        } message: { Text("Poate dura mult pe un disc mare. „Verifică modificările” e suficient în mod normal.") }
+        .alert(L.x("Resetezi cache-ul și rescanezi tot discul?", "Reset the cache and rescan the whole disk?", "¿Restablecer la caché y volver a escanear todo el disco?"), isPresented: $confirmingReset) {
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
+            Button(L.x("Resetează și rescanează", "Reset and rescan", "Restablecer y volver a escanear"), role: .destructive) { vm.resetCacheAndFullRescan() }
+        } message: { Text(L.x("Poate dura mult pe un disc mare. „Verifică modificările” e suficient în mod normal.", "This can take long on a large disk. “Check for changes” is normally enough.", "Puede tardar en un disco grande. Normalmente basta con «Comprobar cambios».")) }
     }
 
     // MARK: - Antet și volume
@@ -47,12 +47,12 @@ struct DiskAnalyzerView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Ce ocupă spațiul").font(.system(size: 30, weight: .bold, design: .rounded))
-                    Text("Alege un volum, intră în foldere, bifează ce vrei să revizuiești.").foregroundStyle(Studio.textMuted)
+                    Text(L.x("Ce ocupă spațiul", "What takes up space", "Qué ocupa el espacio")).font(.system(size: 30, weight: .bold, design: .rounded))
+                    Text(L.x("Alege un volum, intră în foldere, bifează ce vrei să revizuiești.", "Pick a volume, step into folders, tick what you want to review.", "Elige un volumen, entra en carpetas y marca lo que quieras revisar.")).foregroundStyle(Studio.textMuted)
                 }
                 Spacer()
                 if vm.tree != nil {
-                    Picker("", selection: $advanced) { Text("Hartă").tag(false); Text("Tabel avansat").tag(true) }
+                    Picker("", selection: $advanced) { Text(L.x("Hartă", "Map", "Mapa")).tag(false); Text(L.x("Tabel avansat", "Advanced table", "Tabla avanzada")).tag(true) }
                         .pickerStyle(.segmented).frame(width: 190).labelsHidden()
                 }
             }
@@ -61,8 +61,8 @@ struct DiskAnalyzerView: View {
                     Button { chooseFolder() } label: {
                         VStack(spacing: 3) {
                             Image(systemName: "folder.badge.plus").font(.system(size: 30)).foregroundStyle(Studio.accent).frame(width: 52, height: 52)
-                            Text("Alege un folder").font(.callout.weight(.medium))
-                            Text("orice folder sau volum").font(.caption).foregroundStyle(Studio.textMuted)
+                            Text(L.x("Alege un folder", "Choose a folder", "Elegir una carpeta")).font(.callout.weight(.medium))
+                            Text(L.x("orice folder sau volum", "any folder or volume", "cualquier carpeta o volumen")).font(.caption).foregroundStyle(Studio.textMuted)
                         }
                         .frame(minWidth: 108).padding(.horizontal, 10).padding(.vertical, 8)
                     }
@@ -80,7 +80,7 @@ struct DiskAnalyzerView: View {
                             .shadow(color: .black.opacity(isCurrent(r) ? 0.10 : 0), radius: 8, y: 3)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Volum \(r.name)")
+                        .accessibilityLabel(String(format: L.x("Volum %@","Volume %@","Volumen %@"), r.name))
                     }
                 }
             }
@@ -91,7 +91,7 @@ struct DiskAnalyzerView: View {
     private func chooseFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
-        panel.prompt = "Analizează"; panel.message = "Alege folderul sau volumul de analizat"
+        panel.prompt = L.x("Analizează", "Analyse", "Analizar"); panel.message = L.x("Alege folderul sau volumul de analizat", "Choose the folder or volume to analyse", "Elige la carpeta o el volumen a analizar")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         vm.startIndexing(root: DiskEntry(id: url.path, name: url.lastPathComponent, path: url.path, sizeBytes: 0, isDirectory: true))
     }
@@ -99,7 +99,7 @@ struct DiskAnalyzerView: View {
     private func isCurrent(_ r: DiskEntry) -> Bool { vm.tree?.path == URL(fileURLWithPath: r.path).resolvingSymlinksInPath().path || (vm.currentScanRootPath == r.path) }
 
     private var volumePicker: some View {
-        Text("Alege un volum de mai sus ca să-l analizezi. Rezultatul rămâne salvat; la următoarea deschidere nu se reia scanarea.")
+        Text(L.x("Alege un volum de mai sus ca să-l analizezi. Rezultatul rămâne salvat; la următoarea deschidere nu se reia scanarea.", "Pick a volume above to analyse it. The result is saved; the next time you open it, no rescan is needed.", "Elige un volumen arriba para analizarlo. El resultado se guarda; la próxima vez no se vuelve a escanear."))
             .foregroundStyle(Studio.textMuted).padding(.horizontal, 30).padding(.top, 20)
     }
 
@@ -146,19 +146,19 @@ struct DiskAnalyzerView: View {
     private var freshness: some View {
         HStack(spacing: 8) {
             if vm.isRescanning {
-                ProgressView().controlSize(.small); Text("Verific fișierele…").font(.caption).foregroundStyle(Studio.textMuted)
-                Button("Oprește") { vm.cancelRescan() }.controlSize(.small)
+                ProgressView().controlSize(.small); Text(L.x("Verific fișierele…", "Checking files…", "Comprobando archivos…")).font(.caption).foregroundStyle(Studio.textMuted)
+                Button(L.x("Oprește", "Stop", "Detener")) { vm.cancelRescan() }.controlSize(.small)
             } else {
                 if let d = vm.lastScannedAt {
-                    Text(vm.lastVerifiedAt != nil ? "Verificat \(Self.lastScanFormatter.string(from: d))" : "Din analiza de \(Self.lastScanFormatter.string(from: d)), neverificată")
+                    Text(vm.lastVerifiedAt != nil ? String(format: L.x("Verificat %@","Checked %@","Comprobado %@"), Self.lastScanFormatter.string(from: d)) : String(format: L.x("Din analiza de %@, neverificată","From the analysis of %@, unchecked","Del análisis de %@, sin comprobar"), Self.lastScanFormatter.string(from: d)))
                         .font(.caption).foregroundStyle(Studio.textMuted)
                 }
-                if vm.accessErrors > 0 { Label("\(vm.accessErrors) inaccesibile", systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.orange) }
+                if vm.accessErrors > 0 { Label(String(format: L.x("%d inaccesibile","%d inaccessible","%d inaccesibles"), vm.accessErrors), systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.orange) }
                 Menu {
-                    Button("Verifică modificările") { vm.rescanChangesOnly() }
-                    Button("Resetează cache și rescanează…") { confirmingReset = true }
+                    Button(L.x("Verifică modificările", "Check for changes", "Comprobar cambios")) { vm.rescanChangesOnly() }
+                    Button(L.x("Resetează cache și rescanează…", "Reset cache and rescan…", "Restablecer caché y volver a escanear…")) { confirmingReset = true }
                 } label: { Image(systemName: "arrow.clockwise") }
-                    .menuStyle(.borderlessButton).fixedSize().help("Verifică modificările / rescanează")
+                    .menuStyle(.borderlessButton).fixedSize().help(L.x("Verifică modificările / rescanează", "Check for changes / rescan", "Comprobar cambios / volver a escanear"))
             }
         }
     }
@@ -183,12 +183,12 @@ struct DiskAnalyzerView: View {
                 }
                 Divider()
             }
-            if kids.isEmpty { Text("Folder gol.").foregroundStyle(Studio.textMuted) }
+            if kids.isEmpty { Text(L.x("Folder gol.", "Empty folder.", "Carpeta vacía.")).foregroundStyle(Studio.textMuted) }
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(shown) { row($0) }
                     if kids.count > 5 {
-                        Button(showAll ? "Arată mai puține" : "Alte \(kids.count - 5) elemente") { showAll.toggle() }
+                        Button(showAll ? L.x("Arată mai puține", "Show fewer", "Mostrar menos") : String(format: L.x("Alte %d elemente","%d more items","%d elementos más"), kids.count - 5)) { showAll.toggle() }
                             .buttonStyle(.plain).foregroundStyle(Studio.accent).fontWeight(.semibold).padding(.vertical, 10)
                     }
                 }
@@ -208,7 +208,7 @@ struct DiskAnalyzerView: View {
                         .foregroundStyle(selected ? Studio.accent : (protectedItem ? Studio.line : Studio.textMuted))
                 }
                 .buttonStyle(.plain).disabled(protectedItem && !selected)
-                .accessibilityLabel(selected ? "Deselectează \(n.name)" : "Selectează \(n.name)")
+                .accessibilityLabel(String(format: selected ? L.x("Deselectează %@","Deselect %@","Deseleccionar %@") : L.x("Selectează %@","Select %@","Seleccionar %@"), n.name))
                 SystemIconView(path: n.isAggregate ? (vm.currentNode?.path ?? "/") : n.path, size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(n.name).fontWeight(.semibold).lineLimit(1).truncationMode(.middle)
@@ -217,10 +217,10 @@ struct DiskAnalyzerView: View {
                 Spacer(minLength: 6)
                 ForEach(Array(f).sorted { $0.rawValue < $1.rawValue }, id: \.self) { FlagChip(flag: $0) }
                 Button { openDetail = openDetail == n.id ? nil : n.id; vm.focusID = n.id } label: { Image(systemName: "info.circle") }
-                    .buttonStyle(.plain).foregroundStyle(Studio.textMuted).help("Detalii").accessibilityLabel("Detalii \(n.name)")
+                    .buttonStyle(.plain).foregroundStyle(Studio.textMuted).help(L.x("Detalii","Details","Detalles")).accessibilityLabel(String(format: L.x("Detalii %@","Details %@","Detalles %@"), n.name))
                 if n.isDirectory && !n.isAggregate {
                     Button { drill(n) } label: { Image(systemName: "chevron.right") }.buttonStyle(.plain).foregroundStyle(Studio.textMuted)
-                        .accessibilityLabel("Deschide \(n.name)")
+                        .accessibilityLabel(String(format: L.x("Deschide %@","Open %@","Abrir %@"), n.name))
                 }
             }
             .padding(.vertical, 8).padding(.horizontal, 6)
@@ -240,18 +240,18 @@ struct DiskAnalyzerView: View {
     private func detail(_ n: DiskTreeNode, flags: Set<SpaceFlag>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Group {
-                labeled("Cale", n.isAggregate ? "(grup de fișiere mici din folderul curent)" : n.path)
-                labeled("Mărime logică", Studio.gb(n.sizeBytes))
-                if n.allocatedBytes > 0 { labeled("Spațiu alocat", Studio.gb(n.allocatedBytes)) }
-                labeled("De ce această stare", SpaceClassifier.explanation(path: n.path, isDirectory: n.isDirectory, flags: flags))
+                labeled("Cale", n.isAggregate ? L.x("(grup de fișiere mici din folderul curent)", "(group of small files in this folder)", "(grupo de archivos pequeños de esta carpeta)") : n.path)
+                labeled(L.x("Mărime logică", "Logical size", "Tamaño lógico"), Studio.gb(n.sizeBytes))
+                if n.allocatedBytes > 0 { labeled(L.x("Spațiu alocat", "Allocated space", "Espacio asignado"), Studio.gb(n.allocatedBytes)) }
+                labeled(L.x("De ce această stare", "Why this state", "Por qué este estado"), SpaceClassifier.explanation(path: n.path, isDirectory: n.isDirectory, flags: flags))
             }
             if !n.isAggregate {
                 HStack {
-                    Button(n.isDirectory ? "Arată în Finder" : "Arată în Finder") {
+                    Button(n.isDirectory ? L.x("Arată în Finder", "Show in Finder", "Mostrar en el Finder") : L.x("Arată în Finder", "Show in Finder", "Mostrar en el Finder")) {
                         if n.isDirectory { NSWorkspace.shared.open(URL(fileURLWithPath: n.path)) }
                         else { NSWorkspace.shared.selectFile(n.path, inFileViewerRootedAtPath: "") }
                     }
-                    if !n.isDirectory { Button("Previzualizează") { QuickLook.preview(path: n.path) } }
+                    if !n.isDirectory { Button(L.x("Previzualizează", "Preview", "Previsualizar")) { QuickLook.preview(path: n.path) } }
                 }.controlSize(.small)
             }
         }
@@ -267,21 +267,21 @@ struct DiskAnalyzerView: View {
     private var recoverableLine: some View {
         HStack(spacing: 4) {
             if let t = totals {
-                Text("Recuperabil verificat în volum: ").foregroundStyle(Studio.textMuted)
+                Text(L.x("Recuperabil verificat în volum: ", "Verified recoverable in volume: ", "Recuperable verificado en el volumen: ")).foregroundStyle(Studio.textMuted)
                 Text(Studio.gb(t.recoverable)).fontWeight(.semibold)
-                Button("Cum se calculează") { showCalc.toggle() }.buttonStyle(.plain).foregroundStyle(Studio.accent).fontWeight(.semibold)
+                Button(L.x("Cum se calculează", "How it is calculated", "Cómo se calcula")) { showCalc.toggle() }.buttonStyle(.plain).foregroundStyle(Studio.accent).fontWeight(.semibold)
                     .popover(isPresented: $showCalc) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Calcul fără dublă numărare").font(.headline)
-                            Text("Regenerabil: \(Studio.gb(t.regenerable))")
-                            Text("Surplus de duplicate verificate: \(Studio.gb(t.duplicateSurplus))")
-                            Text("Duplicate din interiorul unui element regenerabil, numărate o singură dată: \(Studio.gb(t.overlap))").foregroundStyle(Studio.textMuted)
+                            Text(L.x("Calcul fără dublă numărare", "Calculation without double counting", "Cálculo sin doble recuento")).font(.headline)
+                            Text(String(format: L.x("Regenerabil: %@","Regenerable: %@","Regenerable: %@"), Studio.gb(t.regenerable)))
+                            Text(String(format: L.x("Surplus de duplicate verificate: %@","Surplus of verified duplicates: %@","Excedente de duplicados verificados: %@"), Studio.gb(t.duplicateSurplus)))
+                            Text(String(format: L.x("Duplicate din interiorul unui element regenerabil, numărate o singură dată: %@","Duplicates inside a regenerable item, counted once: %@","Duplicados dentro de un elemento regenerable, contados una vez: %@"), Studio.gb(t.overlap))).foregroundStyle(Studio.textMuted)
                             Divider()
-                            Text("Total: \(Studio.gb(t.recoverable))").fontWeight(.semibold)
-                            Text("Elementele fără regulă verificată nu intră în total.").font(.caption).foregroundStyle(Studio.textMuted)
+                            Text(String(format: L.x("Total: %@","Total: %@","Total: %@"), Studio.gb(t.recoverable))).fontWeight(.semibold)
+                            Text(L.x("Elementele fără regulă verificată nu intră în total.", "Items without a verified rule are not part of the total.", "Los elementos sin regla verificada no cuentan en el total.")).font(.caption).foregroundStyle(Studio.textMuted)
                         }.padding(14).frame(width: 330)
                     }
-            } else { ProgressView().controlSize(.small); Text("Calculez ce se poate recupera…").foregroundStyle(Studio.textMuted) }
+            } else { ProgressView().controlSize(.small); Text(L.x("Calculez ce se poate recupera…", "Working out what can be recovered…", "Calculando lo recuperable…")).foregroundStyle(Studio.textMuted) }
         }
         .font(.caption).padding(.top, 4)
     }
@@ -317,13 +317,13 @@ struct DiskAnalyzerView: View {
                 SystemIconView(path: n.isAggregate ? "/" : n.path, size: 34).offset(x: CGFloat(i) * 9, y: CGFloat(i) * -5) } }
                 .frame(width: 52, height: 40)
             VStack(alignment: .leading, spacing: 1) {
-                Text("\(s.recoverable.count + s.unverified.count) \(s.recoverable.count + s.unverified.count == 1 ? "element selectat" : "elemente selectate") · \(Studio.gb(total))").fontWeight(.semibold)
-                Text("\(Studio.gb(s.recoverableBytes)) recuperabili verificat" + (s.unverifiedBytes > 0 ? " · \(Studio.gb(s.unverifiedBytes)) fără regulă verificată, nu intră în total" : ""))
+                Text(String(format: (s.recoverable.count + s.unverified.count == 1) ? L.x("%d element selectat · %@","%d item selected · %@","%d elemento seleccionado · %@") : L.x("%d elemente selectate · %@","%d items selected · %@","%d elementos seleccionados · %@"), s.recoverable.count + s.unverified.count, Studio.gb(total))).fontWeight(.semibold)
+                Text(String(format: L.x("%@ recuperabili verificat","%@ verified recoverable","%@ recuperables verificados"), Studio.gb(s.recoverableBytes)) + (s.unverifiedBytes > 0 ? String(format: L.x(" · %@ fără regulă verificată, nu intră în total"," · %@ without a verified rule, not in the total"," · %@ sin regla verificada, no entra en el total"), Studio.gb(s.unverifiedBytes)) : ""))
                     .font(.caption).foregroundStyle(Studio.textMuted)
             }
             Spacer()
-            Button("Deselectează") { vm.clearSelection() }.buttonStyle(.plain).foregroundStyle(Studio.textMuted)
-            Button { showReview = true } label: { Text("Revizuiește selecția").fontWeight(.semibold).padding(.horizontal, 10) }
+            Button(L.x("Deselectează", "Deselect", "Deseleccionar")) { vm.clearSelection() }.buttonStyle(.plain).foregroundStyle(Studio.textMuted)
+            Button { showReview = true } label: { Text(L.x("Revizuiește selecția", "Review selection", "Revisar selección")).fontWeight(.semibold).padding(.horizontal, 10) }
                 .buttonStyle(.borderedProminent).tint(Studio.accent).controlSize(.large)
         }
         .padding(.vertical, 12).padding(.horizontal, 16)
@@ -353,14 +353,14 @@ struct DiskAnalyzerView: View {
     private var indexingProgress: some View {
         VStack(alignment: .leading, spacing: 10) {
             ScanProgressView(
-                title: vm.isLoadingCache ? "Încarc analiza salvată…" : "Indexez discul…",
+                title: vm.isLoadingCache ? L.x("Încarc analiza salvată…", "Loading the saved analysis…", "Cargando el análisis guardado…") : L.x("Indexez discul…", "Indexing the disk…", "Indexando el disco…"),
                 detailPath: vm.currentScanRootPath ?? "",
-                itemsLabel: "\(vm.filesIndexed) fișiere",
+                itemsLabel: "\(vm.filesIndexed) " + L.x("fișiere", "files", "archivos"),
                 totalLabel: vm.indexedBytesDescription,
                 fraction: nil, tint: Studio.accent, iconPath: vm.currentScanRootPath
             ) { vm.cancelIndexing() }
-            Text(vm.isLoadingCache ? "Citesc rezultatul scanării anterioare, nu se recitește discul."
-                 : "O singură trecere completă. După ce se termină, orice subfolder se deschide instant.")
+            Text(vm.isLoadingCache ? L.x("Citesc rezultatul scanării anterioare, nu se recitește discul.", "Reading the previous scan result; the disk is not re-read.", "Leyendo el resultado del escaneo anterior; no se vuelve a leer el disco.")
+                 : L.x("O singură trecere completă. După ce se termină, orice subfolder se deschide instant.", "One full pass. Afterwards every subfolder opens instantly.", "Una sola pasada completa. Después, cada subcarpeta se abre al instante."))
                 .font(.caption2).foregroundStyle(.tertiary)
         }
     }
@@ -385,35 +385,35 @@ struct ReviewSheet: View {
         let res = vm.trashResults
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(res == nil ? "Revizuiește înainte de a muta în Coș" : resultTitle(res!)).font(.system(size: 22, weight: .bold, design: .rounded))
-                Text(res == nil ? "Nimic nu se șterge definitiv. Poți restaura din Coș." : "Elementele eșuate nu au fost modificate. Cele mutate se pot restaura din Coș.")
+                Text(res == nil ? L.x("Revizuiește înainte de a muta în Coș", "Review before moving to the Trash", "Revisa antes de mover a la Papelera") : resultTitle(res!)).font(.system(size: 22, weight: .bold, design: .rounded))
+                Text(res == nil ? L.x("Nimic nu se șterge definitiv. Poți restaura din Coș.", "Nothing is deleted permanently. You can restore from the Trash.", "No se borra nada de forma definitiva. Puedes restaurar desde la Papelera.") : L.x("Elementele eșuate nu au fost modificate. Cele mutate se pot restaura din Coș.", "Items that failed were not changed. Moved items can be restored from the Trash.", "Los elementos fallidos no se modificaron. Los movidos se pueden restaurar desde la Papelera."))
                     .foregroundStyle(Studio.textMuted)
             }.padding(24)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    if !s.recoverable.isEmpty || res != nil { group("Recuperabile verificat", icon: "checkmark.seal", paths: s.recoverable, bytes: s.recoverableBytes, res: res) }
+                    if !s.recoverable.isEmpty || res != nil { group(L.x("Recuperabile verificat", "Verified recoverable", "Recuperable verificado"), icon: "checkmark.seal", paths: s.recoverable, bytes: s.recoverableBytes, res: res) }
                     if !s.unverified.isEmpty || (res != nil && !vm.unverifiedPathsForResult.isEmpty) {
                         VStack(alignment: .leading, spacing: 8) {
-                            group("Fără regulă verificată", icon: "questionmark.shield", paths: s.unverified, bytes: s.unverifiedBytes, res: res, risk: true)
+                            group(L.x("Fără regulă verificată", "No verified rule", "Sin regla verificada"), icon: "questionmark.shield", paths: s.unverified, bytes: s.unverifiedBytes, res: res, risk: true)
                             if res == nil {
                                 Toggle(isOn: $vm.includeUnverified) {
-                                    Text("Include și elementele fără regulă verificată. Nu știm dacă au o copie de rezervă; nu intră în totalul recuperabil.").font(.callout)
+                                    Text(L.x("Include și elementele fără regulă verificată. Nu știm dacă au o copie de rezervă; nu intră în totalul recuperabil.", "Also include items without a verified rule. We cannot tell whether they have a backup; they do not count toward the recoverable total.", "Incluir también los elementos sin regla verificada. No sabemos si tienen copia de seguridad; no cuentan en el total recuperable.")).font(.callout)
                                 }.padding(.horizontal, 6)
                             }
                         }
                     }
-                    HStack(spacing: 8) { Image(systemName: "lock"); Text("Excluse automat: backup-uri de dispozitiv, biblioteci Foto/Mail, aplicații și foldere personale întregi.") }
+                    HStack(spacing: 8) { Image(systemName: "lock"); Text(L.x("Excluse automat: backup-uri de dispozitiv, biblioteci Foto/Mail, aplicații și foldere personale întregi.", "Automatically excluded: device backups, Photos/Mail libraries, applications and whole personal folders.", "Excluidos automáticamente: copias de dispositivos, bibliotecas de Fotos/Mail, aplicaciones y carpetas personales completas.")) }
                         .font(.caption).foregroundStyle(Studio.textMuted).padding(.horizontal, 6)
                 }.padding(.horizontal, 24)
             }
             Divider()
             HStack {
                 let move = s.recoverableBytes + (vm.includeUnverified ? s.unverifiedBytes : 0)
-                Text("Total de mutat: \(Studio.gb(move))").foregroundStyle(Studio.textMuted)
+                Text(String(format: L.x("Total de mutat: %@","Total to move: %@","Total a mover: %@"), Studio.gb(move))).foregroundStyle(Studio.textMuted)
                 Spacer()
-                Button(res == nil ? "Înapoi" : "Închide") { if res != nil { vm.dismissTrashResults() }; dismiss() }.keyboardShortcut(.cancelAction)
+                Button(res == nil ? L.x("Înapoi", "Back", "Atrás") : L.x("Închide", "Close", "Cerrar")) { if res != nil { vm.dismissTrashResults() }; dismiss() }.keyboardShortcut(.cancelAction)
                 if res == nil {
-                    Button { vm.moveSelectionToTrash() } label: { Label("Mută \(Studio.gb(move)) în Coș", systemImage: "trash").fontWeight(.semibold) }
+                    Button { vm.moveSelectionToTrash() } label: { Label(String(format: L.x("Mută %@ în Coș","Move %@ to the Trash","Mover %@ a la Papelera"), Studio.gb(move)), systemImage: "trash").fontWeight(.semibold) }
                         .buttonStyle(.borderedProminent).tint(Studio.accent).keyboardShortcut(.defaultAction)
                         .disabled(vm.isTrashing || (s.recoverable.isEmpty && !(vm.includeUnverified && !s.unverified.isEmpty)))
                 }
@@ -421,12 +421,12 @@ struct ReviewSheet: View {
         }
         .frame(width: 560, height: 560)
         .background(Studio.canvasTop)
-        .overlay { if vm.isTrashing { ProgressView("Mut în Coș…").padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
+        .overlay { if vm.isTrashing { ProgressView(L.x("Mut în Coș…", "Moving to Trash…", "Moviendo a la Papelera…")).padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
     }
 
     private func resultTitle(_ r: [UUID: TrashService.Outcome]) -> String {
         let ok = r.values.filter { $0 == .moved }.count
-        return "Rezultat: \(ok) din \(r.count) mutate în Coș"
+        return String(format: L.x("Rezultat: %d din %d mutate în Coș","Result: %d of %d moved to the Trash","Resultado: %d de %d movidos a la Papelera"), ok, r.count)
     }
 
     private func group(_ title: String, icon: String, paths: [String], bytes: Int64, res: [UUID: TrashService.Outcome]?, risk: Bool = false) -> some View {
@@ -438,7 +438,7 @@ struct ReviewSheet: View {
                     SystemIconView(path: n.path, size: 28)
                     VStack(alignment: .leading) { Text(n.name).fontWeight(.medium); Text((n.path as NSString).deletingLastPathComponent).font(.caption).foregroundStyle(Studio.textMuted).lineLimit(1).truncationMode(.head) }
                     Spacer()
-                    if let o = res?[n.id] { if case .failed(let why) = o { Text("eșuat: \(why)").font(.caption).foregroundStyle(Studio.caution) } else { Text("mutat").font(.caption).foregroundStyle(Studio.good) } }
+                    if let o = res?[n.id] { if case .failed(let why) = o { Text(String(format: L.x("eșuat: %@","failed: %@","falló: %@"), why)).font(.caption).foregroundStyle(Studio.caution) } else { Text(L.x("mutat","moved","movido")).font(.caption).foregroundStyle(Studio.good) } }
                     Text(Studio.gb(n.sizeBytes)).foregroundStyle(Studio.textMuted)
                 }.padding(.horizontal, 12).padding(.vertical, 8)
             }

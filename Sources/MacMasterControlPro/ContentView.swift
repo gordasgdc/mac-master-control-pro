@@ -103,11 +103,11 @@ enum SidebarGroup: CaseIterable {
     case home, space, system, media, app
     var title: String {
         switch self {
-        case .home: return "Acasă"
-        case .space: return "Spațiu"
-        case .system: return "Sistem și activitate"
-        case .media: return "Media și Resolve"
-        case .app: return "Aplicație"
+        case .home: return L.x("Acasă", "Home", "Inicio")
+        case .space: return L.x("Spațiu", "Space", "Espacio")
+        case .system: return L.x("Sistem și activitate", "System and activity", "Sistema y actividad")
+        case .media: return L.x("Media și Resolve", "Media and Resolve", "Media y Resolve")
+        case .app: return L.x("Aplicație", "App", "Aplicación")
         }
     }
     var items: [SidebarItem] {
@@ -150,7 +150,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 HStack {
                     Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                    TextField("Caută (ex: duplicate, dezinstalare, reglare)…", text: $searchText)
+                    TextField(L.x("Caută (ex: duplicate, dezinstalare, reglare)…","Search (e.g. duplicates, uninstall, tweaks)…","Buscar (p. ej. duplicados, desinstalar, ajustes)…"), text: $searchText)
                         .textFieldStyle(.plain)
                     if !searchText.isEmpty {
                         Button { searchText = "" } label: { Image(systemName: "xmark.circle.fill") }
@@ -190,6 +190,7 @@ struct ContentView: View {
                 AccessStatusPill()
                 SidebarFooterView()
             }
+            .navigationSplitViewColumnWidth(min: 215, ideal: 240, max: 320)
             .navigationTitle("Master Control Studio Pro")
         } detail: {
             switch selection {
@@ -275,25 +276,25 @@ struct SettingsView: View {
             }
 
             Section("Diagnostic") {
-                Text("Sesiune: \(DiagnosticLog.sessionID)").font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                Text(String(format: L.x("Sesiune: %@","Session: %@","Sesión: %@"), DiagnosticLog.sessionID)).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 HStack {
-                    Button("Deschide folderul de loguri") {
+                    Button(L.x("Deschide folderul de loguri", "Open logs folder", "Abrir carpeta de registros")) {
                         try? FileManager.default.createDirectory(at: DiagnosticLog.directory, withIntermediateDirectories: true)
                         NSWorkspace.shared.open(DiagnosticLog.directory)
                     }
-                    Button("Copiază ID-ul sesiunii") {
+                    Button(L.x("Copiază ID-ul sesiunii", "Copy session ID", "Copiar ID de sesión")) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(DiagnosticLog.sessionID, forType: .string)
                     }
-                    Button("Exportă diagnosticul...") { showDiagnostic = true }
+                    Button(L.x("Exportă diagnosticul...", "Export diagnostics…", "Exportar diagnóstico…")) { showDiagnostic = true }
                 }
-                Text("Pachetul se creează local, redactat; nu se trimite nimic automat.").font(.caption).foregroundStyle(.secondary)
+                Text(L.x("Pachetul se creează local, redactat; nu se trimite nimic automat.", "The package is created locally and redacted; nothing is sent automatically.", "El paquete se crea localmente y redactado; no se envía nada automáticamente.")).font(.caption).foregroundStyle(.secondary)
             }
 
-            Section("Configurație") {
-                Text("Setările, folderele alese și cache-urile aplicației. Resetarea este o acțiune separată: nu se întâmplă automat la expirarea probei și face mai întâi o copie de siguranță.")
+            Section(L.x("Configurație", "Configuration", "Configuración")) {
+                Text(L.x("Setările, folderele alese și cache-urile aplicației. Resetarea este o acțiune separată: nu se întâmplă automat la expirarea probei și face mai întâi o copie de siguranță.", "The app’s settings, chosen folders and caches. Resetting is a separate action: it never happens automatically when the trial ends and it makes a backup first.", "Los ajustes, carpetas elegidas y cachés de la app. Restablecer es una acción aparte: nunca ocurre automáticamente al terminar la prueba y antes hace una copia de seguridad."))
                     .font(.caption).foregroundStyle(.secondary)
-                Button("Resetează configurația aplicației…", role: .destructive) { confirmReset = true }
+                Button(L.x("Resetează configurația aplicației…", "Reset app configuration…", "Restablecer la configuración de la app…"), role: .destructive) { confirmReset = true }
                 if let resetMessage { Text(resetMessage).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
             }
 
@@ -305,16 +306,16 @@ struct SettingsView: View {
         }
         .padding(32)
         .sheet(isPresented: $showDiagnostic) { DiagnosticExportSheet() }
-        .alert("Resetezi configurația aplicației?", isPresented: $confirmReset) {
-            Button("Anulează", role: .cancel) {}
-            Button("Fă copie și resetează", role: .destructive) {
-                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = "Copie de siguranță: \(b.path)" }
-                catch { resetMessage = "Resetarea a eșuat: \(error.localizedDescription)" }
+        .alert(L.x("Resetezi configurația aplicației?", "Reset the app configuration?", "¿Restablecer la configuración de la app?"), isPresented: $confirmReset) {
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
+            Button(L.x("Fă copie și resetează", "Back up and reset", "Copiar y restablecer"), role: .destructive) {
+                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = String(format: L.x("Copie de siguranță: %@","Backup: %@","Copia de seguridad: %@"), b.path) }
+                catch { resetMessage = String(format: L.x("Resetarea a eșuat: %@","Reset failed: %@","Falló el restablecimiento: %@"), error.localizedDescription) }
             }
         } message: { Text(AppProfile.resetPreview().joined(separator: "\n")) }
         .alert("Ești sigur că vrei să ștergi aplicația și toate datele/licențele locale?",
                isPresented: $confirmUninstall) {
-            Button("Anulează", role: .cancel) {}
+            Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
             Button("Dezinstalează", role: .destructive) {
                 SelfUninstaller.removeUserData()
                 SelfUninstaller.trashAppAndQuit()
