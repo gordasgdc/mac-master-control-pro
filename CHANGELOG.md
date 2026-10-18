@@ -1,5 +1,10 @@
 # Changelog — Master Control Studio Pro
 
+## v2.34.2 (2026-10-19) — Izolare: variabilele de demonstrație nu au efect în instalarea oficială
+
+### Fixed
+- Variabilele de mediu folosite doar la capturi demonstrative (filtrarea volumelor afișate) funcționează acum NUMAI într-un profil izolat de test; în instalarea oficială nu au niciun efect.
+
 ## v2.34.1 (2026-10-19) — Oferte selectabile, o singură autorizare, spațiu alocat corect
 
 ### Added

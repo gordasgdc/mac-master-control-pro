@@ -36,8 +36,8 @@ public enum DiskAnalyzerService {
                 roots.append(DiskEntry(id: path, name: name, path: path, sizeBytes: Int64(size), isDirectory: true))
             }
         }
-        // Doar pentru materiale demonstrative (capturi): MCSP_DEMO_VOLUMES="Nume1,Nume2" arată numai acele volume, ca nicio denumire personală să nu apară.
-        if let only = ProcessInfo.processInfo.environment["MCSP_DEMO_VOLUMES"], !only.isEmpty {
+        // Doar pentru materiale demonstrative (capturi), NUMAI în profil izolat — în instalarea oficială variabila nu are niciun efect: MCSP_DEMO_VOLUMES="Nume1,Nume2" arată numai acele volume, ca nicio denumire personală să nu apară.
+        if AppProfile.isIsolated, let only = ProcessInfo.processInfo.environment["MCSP_DEMO_VOLUMES"], !only.isEmpty {
             let names = Set(only.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) })
             roots = roots.filter { names.contains($0.name) }
         }
