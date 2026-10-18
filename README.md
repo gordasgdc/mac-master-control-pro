@@ -29,3 +29,7 @@ Pachet complet de release (`.pkg` semnat + notarizat + stapled):
 ```bash
 ./build_installer.sh
 ```
+
+## Licență
+
+Codul sursă este sub licență MIT (vezi LICENSE). Dependențele, numele, sigla și activele de identitate nu sunt acoperite de MIT: vezi THIRD_PARTY_NOTICES.md. Ediția oficială distribuită se activează prin drepturi GDC (donație), fără a restrânge drepturile MIT asupra sursei.
