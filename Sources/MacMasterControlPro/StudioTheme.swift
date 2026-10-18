@@ -65,3 +65,18 @@ struct FlagChip: View {
             .background(bg, in: flag == .regenerable ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: 5)))
     }
 }
+
+
+/// Carduri „Studio Glass” pentru secțiunile modulelor (în loc de caseta implicită).
+struct StudioGroupBoxStyle: GroupBoxStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            configuration.label.font(.headline)
+            configuration.content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Studio.card, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Studio.line))
+    }
+}

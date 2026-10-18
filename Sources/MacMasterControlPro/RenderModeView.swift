@@ -17,7 +17,7 @@ struct RenderModeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Label("Mod Randare", systemImage: "bolt.circle").font(.title2).bold()
+            Label(L.x("Mod Randare", "Render Mode", "Modo de renderizado"), systemImage: "bolt.circle").font(.title2).bold()
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 10) {
@@ -55,7 +55,7 @@ struct RenderModeView: View {
 
                     if !service.isActive {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Ce va schimba activarea acum").font(.caption.bold())
+                            Text(L.x("Ce va schimba activarea acum", "What turning it on will change", "Qué cambiará al activarlo")).font(.caption.bold())
                             ForEach(previewLines, id: \.self) { Text("• " + $0).font(.caption).foregroundStyle(.secondary) }
                         }
                         .onAppear { previewLines = service.previewChanges() }

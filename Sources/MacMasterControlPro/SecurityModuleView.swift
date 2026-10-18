@@ -38,7 +38,7 @@ struct SecurityModuleView: View {
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             if !check.isGood, !check.manualSteps.isEmpty {
-                                Button("Cum rezolv?") { guideCheck = check }
+                                Button(L.x("Cum rezolv?", "How do I fix it?", "¿Cómo lo arreglo?")) { guideCheck = check }
                                     .controlSize(.small)
                             }
                         }

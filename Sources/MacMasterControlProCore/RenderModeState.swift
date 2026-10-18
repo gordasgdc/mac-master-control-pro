@@ -71,8 +71,8 @@ public enum RenderModeState {
         case nil: l.append(CoreL.x("Time Machine: stare necunoscută, nu se modifică.", "Time Machine: unknown state, not modified.", "Time Machine: estado desconocido, no se modifica."))
         }
         let on = s.spotlight.filter { $0.value }.keys.sorted()
-        l.append(on.isEmpty ? CoreL.x("Spotlight: nicio indexare activă de oprit.", "Spotlight: no active indexing to stop.", "Spotlight: no hay indexación activa que detener.") : "Spotlight: indexarea se oprește pe \(on.count) volum(e): \(on.joined(separator: ", ")).")
-        l.append(s.nice.isEmpty ? CoreL.x("Prioritate: nicio aplicație de randare cunoscută nu rulează.", "Priority: no known render app is running.", "Prioridad: no se está ejecutando ninguna app de render conocida.") : "Prioritate: \(s.nice.count) proces(e) trec la prioritate mare; valorile vechi se restaurează.")
+        l.append(on.isEmpty ? CoreL.x("Spotlight: nicio indexare activă de oprit.", "Spotlight: no active indexing to stop.", "Spotlight: no hay indexación activa que detener.") : CoreL.x("Spotlight: indexarea se oprește pe \(on.count) volum(e): \(on.joined(separator: ", ")).", "Spotlight: indexing stops on \(on.count) volume(s): \(on.joined(separator: ", ")).", "Spotlight: la indexación se detiene en \(on.count) volumen(es): \(on.joined(separator: ", "))."))
+        l.append(s.nice.isEmpty ? CoreL.x("Prioritate: nicio aplicație de randare cunoscută nu rulează.", "Priority: no known render app is running.", "Prioridad: no se está ejecutando ninguna app de render conocida.") : CoreL.x("Prioritate: \(s.nice.count) proces(e) trec la prioritate mare; valorile vechi se restaurează.", "Priority: \(s.nice.count) process(es) go to high priority; the old values are restored.", "Prioridad: \(s.nice.count) proceso(s) pasan a prioridad alta; los valores anteriores se restauran."))
         return l
     }
 

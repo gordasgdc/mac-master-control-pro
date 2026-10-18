@@ -214,6 +214,9 @@ struct ContentView: View {
             default: HomeView(checker: dependencyChecker, navigate: { selection = $0 })
             }
         }
+        .scrollContentBackground(.hidden)
+        .groupBoxStyle(StudioGroupBoxStyle())
+        .background { LinearGradient(colors: [Studio.canvasTop, Studio.canvasBottom], startPoint: .top, endPoint: .bottom).ignoresSafeArea() }
         .overlay { if !access.allowsFeatures { AccessLockedOverlay() } }
         .id(language.current) // forteaza refresh la schimbarea limbii
         .frame(minWidth: 900, minHeight: 600)

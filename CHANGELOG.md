@@ -1,5 +1,22 @@
 # Changelog — Master Control Studio Pro
 
+## v2.34.0 (2026-10-18) — Studio Glass, analiză de disc nouă, acces Demo
+
+### Added
+- **Analiză de disc nouă:** hartă radială proporțională, listă scurtă cu detalii la cerere, selecție comună între hartă și listă, revizuire înainte de mutarea în Coș. Totalul recuperabil se calculează din reguli, fără dublă numărare; elementele fără regulă verificată nu intră în total și cer confirmare explicită.
+- **Scanare corectă:** detectează creșteri și rescrieri în loc la orice adâncime; anulare imediată; un volum deconectat sau înlocuit nu folosește cache vechi.
+- **Mod Randare reversibil:** starea se salvează înainte și se restaurează exact, inclusiv după o închidere forțată.
+- **Acces:** Demo de 10 minute de utilizare activă (următoarea sesiune după 48 de ore) și activare cu licență semnată în ediția oficială.
+- **Jurnal de diagnostic local** cu export redactat; parola SMTP în Keychain.
+- **Limbi:** interfață completă în română, engleză și spaniolă.
+
+### Changed
+- Aspect „Studio Glass” (Acasă, Analiză Disc, Setări, module).
+- Curățarea mută în Coș datele personale (copii iOS, atașamente Mail) în loc să le șteargă definitiv.
+
+### Fixed
+- Expirarea probei nu mai șterge setările, conturile sau licența; resetarea configurației este o acțiune separată, cu copie de siguranță.
+
 ## v2.33.0 (2026-09-20) — Dezinstalare din aplicație
 
 ### Added
