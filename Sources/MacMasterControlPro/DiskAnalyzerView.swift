@@ -58,6 +58,15 @@ struct DiskAnalyzerView: View {
             }
             if !vm.roots.isEmpty || vm.tree != nil {
                 HStack(spacing: 6) {
+                    Button { chooseFolder() } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: "folder.badge.plus").font(.system(size: 30)).foregroundStyle(Studio.accent).frame(width: 52, height: 52)
+                            Text("Alege un folder").font(.callout.weight(.medium))
+                            Text("orice folder sau volum").font(.caption).foregroundStyle(Studio.textMuted)
+                        }
+                        .frame(minWidth: 108).padding(.horizontal, 10).padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
                     ForEach(vm.roots) { r in
                         Button { vm.startIndexing(root: r) } label: {
                             VStack(spacing: 3) {
@@ -77,6 +86,14 @@ struct DiskAnalyzerView: View {
             }
         }
         .padding(.horizontal, 30).padding(.top, 22)
+    }
+
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
+        panel.prompt = "Analizează"; panel.message = "Alege folderul sau volumul de analizat"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        vm.startIndexing(root: DiskEntry(id: url.path, name: url.lastPathComponent, path: url.path, sizeBytes: 0, isDirectory: true))
     }
 
     private func isCurrent(_ r: DiskEntry) -> Bool { vm.tree?.path == URL(fileURLWithPath: r.path).resolvingSymlinksInPath().path || (vm.currentScanRootPath == r.path) }

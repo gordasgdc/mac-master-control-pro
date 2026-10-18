@@ -7,6 +7,9 @@ import Foundation
 /// pe niveluri, cu bară proporțională + listă sortată, ceea ce acoperă
 /// exact întrebarea reală a userului: "ce ocupă spațiul, unde".
 public struct DiskEntry: Identifiable, Hashable {
+    public init(id: String, name: String, path: String, sizeBytes: Int64, isDirectory: Bool) {
+        self.id = id; self.name = name; self.path = path; self.sizeBytes = sizeBytes; self.isDirectory = isDirectory
+    }
     public let id: String // calea completă
     public let name: String
     public let path: String
@@ -32,6 +35,11 @@ public enum DiskAnalyzerService {
                 let size = (try? URL(fileURLWithPath: path).resourceValues(forKeys: [.volumeTotalCapacityKey]))?.volumeTotalCapacity ?? 0
                 roots.append(DiskEntry(id: path, name: name, path: path, sizeBytes: Int64(size), isDirectory: true))
             }
+        }
+        // Doar pentru materiale demonstrative (capturi): MCSP_DEMO_VOLUMES="Nume1,Nume2" arată numai acele volume, ca nicio denumire personală să nu apară.
+        if let only = ProcessInfo.processInfo.environment["MCSP_DEMO_VOLUMES"], !only.isEmpty {
+            let names = Set(only.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) })
+            roots = roots.filter { names.contains($0.name) }
         }
         return roots
     }
