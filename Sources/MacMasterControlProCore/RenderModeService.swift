@@ -54,7 +54,10 @@ public final class RenderModeService: ObservableObject {
     /// vadă tot timpul ce ar optimiza Modul Randare dacă l-ar porni acum.
     @Published public private(set) var detectedApps: [DetectedRenderApp] = []
 
-    public init() { refreshDetectedApps() }
+    public init() {
+        refreshDetectedApps()
+        if RenderModeState.loadSnapshot() != nil { isActive = true; recoveredFromPreviousSession = true }
+    }
 
     /// Cuvinte-cheie, NU nume exacte — se potrivesc prin substring,
     /// insensibil la majuscule, pe `localizedName`-ul aplicației rulate
@@ -88,48 +91,72 @@ public final class RenderModeService: ObservableObject {
 
     /// Activează Modul Randare — o SINGURĂ cerere de parolă admin pentru tot
     /// lanțul de comenzi (`PrivilegedRunner.run([...])`).
+    /// Mod Randare rămas activ de la o sesiune anterioară (închidere forțată / repornire): sistemul poate fi încă modificat.
+    @Published public private(set) var recoveredFromPreviousSession = false
+
+    private func readCurrentState() -> RenderModeSnapshot {
+        let tm = RenderModeState.parseAutoBackup(Shell.run("/usr/bin/defaults read /Library/Preferences/com.apple.TimeMachine AutoBackup 2>/dev/null", timeout: 10))
+        let spot = RenderModeState.parseMdutil(Shell.run("/usr/bin/mdutil -a -s 2>/dev/null", timeout: 20))
+        var nice: [Int32: Int] = [:]
+        for app in detectedApps {
+            if let n = Int(Shell.run("/bin/ps -o nice= -p \(app.pid)", timeout: 5).trimmingCharacters(in: .whitespaces)) { nice[app.pid] = n }
+        }
+        return RenderModeSnapshot(timeMachineAutoBackup: tm, spotlight: spot, nice: nice)
+    }
+
+    /// Ce ar schimba activarea ACUM (fără să schimbe nimic): pentru previzualizare în interfață.
+    public func previewChanges() -> [String] {
+        refreshDetectedApps()
+        return RenderModeState.changeSummary(readCurrentState())
+    }
+
     public func activate(log: @escaping (String) -> Void) {
         refreshDetectedApps()
-        var commands = ["tmutil disable", "mdutil -a -i off"]
-        for app in detectedApps {
-            commands.append("renice -n -15 -p \(app.pid)")
+        let snapshot = readCurrentState()
+        let commands = RenderModeState.activationCommands(snapshot)
+        let op = DiagnosticLog.begin("render", "activate", fields: ["commands": String(commands.count)])
+        for line in RenderModeState.changeSummary(snapshot) { log("• " + line) }
+        guard !commands.isEmpty else {
+            log("ℹ Nimic de schimbat: tot ce poate face Modul Randare este deja oprit.")
+            op.end("noop"); return
         }
-
+        // Starea veche se salvează ÎNAINTE de modificare; fără ea nu se continuă.
+        do { try RenderModeState.saveSnapshot(snapshot) } catch {
+            log("✘ Nu am putut salva starea curentă, nu modific nimic: \(error.localizedDescription)")
+            op.end("snapshot-failed", level: .error); return
+        }
         log("$ " + commands.joined(separator: " && "))
         let result = PrivilegedRunner.run(commands)
         if result.success {
-            log("✔ Time Machine pus pe pauză.")
-            log("✔ Indexare Spotlight oprită (tot sistemul).")
-            if detectedApps.isEmpty {
-                log("ℹ Nicio aplicație de randare cunoscută nu rulează acum — prioritatea n-a fost atinsă (Time Machine/Spotlight tot ajută la orice export/copiere masivă).")
-            } else {
-                for app in detectedApps {
-                    log("✔ \(app.name) (PID \(app.pid)) ridicat la prioritate maximă.")
-                }
-            }
             isActive = true
-            log("✔ Mod Randare ACTIV.")
+            log("✔ Mod Randare ACTIV. Starea anterioară e salvată; dezactivarea o restaurează exact.")
+            op.end("ok")
         } else {
             log("✘ Eroare la activare — \(result.output)")
+            log("ℹ Starea veche rămâne salvată; apasă Dezactivează pentru a readuce ce s-a schimbat parțial.")
+            isActive = true   // posibil parțial aplicat: permite restaurarea
+            op.end("failed", level: .error)
         }
     }
 
-    /// Revine la starea normală — Time Machine + Spotlight reactivate.
-    /// Prioritatea aplicațiilor de randare NU trebuie resetată manual:
-    /// `renice` afectează doar procesul curent, dispare automat la
-    /// restart/relansare, iar readucerea ei la "normal" (0) în timp ce
-    /// aplicația încă randează n-are niciun beneficiu practic.
     public func deactivate(log: @escaping (String) -> Void) {
-        let commands = ["tmutil enable", "mdutil -a -i on"]
+        guard let snapshot = RenderModeState.loadSnapshot() else {
+            log("ℹ Nu există o stare salvată de restaurat. Nu modific Time Machine sau Spotlight.")
+            isActive = false; recoveredFromPreviousSession = false; return
+        }
+        let commands = RenderModeState.restoreCommands(snapshot)
+        let op = DiagnosticLog.begin("render", "deactivate", fields: ["commands": String(commands.count)])
+        if commands.isEmpty { RenderModeState.clearSnapshot(); isActive = false; recoveredFromPreviousSession = false; log("✔ Nimic de restaurat."); op.end("noop"); return }
         log("$ " + commands.joined(separator: " && "))
         let result = PrivilegedRunner.run(commands)
         if result.success {
-            log("✔ Time Machine reactivat.")
-            log("✔ Indexare Spotlight reactivată.")
-            isActive = false
-            log("✔ Mod Randare dezactivat — revenit la normal.")
+            RenderModeState.clearSnapshot()
+            isActive = false; recoveredFromPreviousSession = false
+            log("✔ Mod Randare dezactivat: s-a restaurat exact starea de dinainte.")
+            op.end("ok")
         } else {
-            log("✘ Eroare la dezactivare — \(result.output)")
+            log("✘ Eroare la restaurare — \(result.output). Starea salvată a fost păstrată; reîncearcă.")
+            op.end("failed", level: .error)
         }
     }
 }

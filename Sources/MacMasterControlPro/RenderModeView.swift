@@ -6,6 +6,7 @@ import MacMasterControlProCore
 /// lung (indexare Spotlight, Time Machine, prioritate proces). Vezi
 /// RenderModeService.swift pentru mecanismul exact.
 struct RenderModeView: View {
+    @State private var previewLines: [String] = []
     @StateObject private var service = RenderModeService.shared
     @ObservedObject private var license = LicenseStore.shared
     @State private var showGate = false
@@ -45,6 +46,19 @@ struct RenderModeView: View {
                         ))
                         .toggleStyle(.switch)
                         .labelsHidden()
+                    }
+
+                    if service.recoveredFromPreviousSession {
+                        Label("Modul Randare era activ când aplicația s-a închis. Time Machine și Spotlight pot fi încă oprite de el. Dezactivează comutatorul pentru a restaura exact starea de dinainte.", systemImage: "arrow.counterclockwise.circle.fill")
+                            .font(.callout).foregroundStyle(.orange)
+                    }
+
+                    if !service.isActive {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Ce va schimba activarea acum").font(.caption.bold())
+                            ForEach(previewLines, id: \.self) { Text("• " + $0).font(.caption).foregroundStyle(.secondary) }
+                        }
+                        .onAppear { previewLines = service.previewChanges() }
                     }
 
                     if service.isActive {
