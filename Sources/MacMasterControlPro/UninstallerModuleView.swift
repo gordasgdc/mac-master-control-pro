@@ -192,12 +192,8 @@ struct UninstallerModuleView: View {
         let toDelete = categories.filter { selectedCategoryIDs.contains($0.id) }
         DispatchQueue.global(qos: .userInitiated).async {
             UninstallerService.terminateIfRunning(app)
-            UninstallerService.delete(categories: toDelete) { line in
+            UninstallerService.uninstall([UninstallerService.Target(app: app, categories: toDelete, deleteApp: deleteAppItselfToo)]) { line in
                 DispatchQueue.main.async { logLines.append(line) }
-            }
-            if deleteAppItselfToo {
-                let result = UninstallerService.deleteAppBundle(app)
-                DispatchQueue.main.async { logLines.append(result) }
             }
             DispatchQueue.main.async {
                 logLines.append(L.x("Gata. Reverific…", "Done. Re-checking…", "Listo. Volviendo a comprobar…"))
@@ -228,15 +224,13 @@ struct UninstallerModuleView: View {
         isBulkBusy = true
         logLines = [L.x("Încep ștergerea în masă pentru \(targets.count) aplicații…", "Starting bulk removal of \(targets.count) apps…", "Iniciando la eliminación múltiple de \(targets.count) apps…")]
         DispatchQueue.global(qos: .userInitiated).async {
+            var plan: [UninstallerService.Target] = []
             for app in targets {
-                DispatchQueue.main.async { logLines.append("— \(app.name) —") }
                 UninstallerService.terminateIfRunning(app)
-                let foundCategories = UninstallerService.scanRelatedFiles(for: app)
-                UninstallerService.delete(categories: foundCategories) { line in
-                    DispatchQueue.main.async { logLines.append(line) }
-                }
-                let result = UninstallerService.deleteAppBundle(app)
-                DispatchQueue.main.async { logLines.append(result) }
+                plan.append(UninstallerService.Target(app: app, categories: UninstallerService.scanRelatedFiles(for: app), deleteApp: true))
+            }
+            UninstallerService.uninstall(plan) { line in
+                DispatchQueue.main.async { logLines.append(line) }
             }
             DispatchQueue.main.async {
                 logLines.append(L.x("Gata. Reverific…", "Done. Re-checking…", "Listo. Volviendo a comprobar…"))

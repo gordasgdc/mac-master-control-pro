@@ -226,31 +226,63 @@ public enum UninstallerService {
         Thread.sleep(forTimeInterval: 0.3)
     }
 
-    /// Sterge categoriile bifate. Cele neprivilegiate direct prin
-    /// FileManager (Cos de gunoi, reversibil); cele de sistem, o singura
-    /// cerere de parola pentru toate (launchctl bootout + rm).
-    public static func delete(categories: [UninstallCategory], log: @escaping (String) -> Void) {
-        var privilegedCommands: [String] = []
-        for category in categories {
-            for path in category.paths {
-                if category.requiresPrivilege {
-                    privilegedCommands.append("launchctl bootout system \"\(path.path)\" 2>/dev/null; launchctl bootout gui/$(id -u) \"\(path.path)\" 2>/dev/null; rm -f \"\(path.path)\"")
-                } else {
-                    do {
-                        try fm.trashItem(at: path, resultingItemURL: nil)
-                        log(fm.fileExists(atPath: path.path)
-                            ? CoreL.x("EROARE: \(path.path) tot există după ștergere.", "ERROR: \(path.path) still exists after deletion.", "ERROR: \(path.path) sigue existiendo tras eliminarlo.")
-                            : CoreL.x("Mutat la Coșul de gunoi: \(path.path)", "Moved to the Trash: \(path.path)", "Movido a la Papelera: \(path.path)"))
-                    } catch {
-                        log(CoreL.x("EROARE, nu s-a putut șterge \(path.path): \(error.localizedDescription)", "ERROR, could not delete \(path.path): \(error.localizedDescription)", "ERROR, no se pudo eliminar \(path.path): \(error.localizedDescription)"))
+    /// O aplicație de dezinstalat, cu categoriile ei de fișiere asociate și, opțional, pachetul `.app`.
+    public struct Target {
+        public let app: InstalledApp
+        public let categories: [UninstallCategory]
+        public let deleteApp: Bool
+        public init(app: InstalledApp, categories: [UninstallCategory], deleteApp: Bool) { self.app = app; self.categories = categories; self.deleteApp = deleteApp }
+    }
+
+    /// Dezinstalare pentru una sau mai multe aplicații ca UN SINGUR plan: tot ce merge cu drepturile utilizatorului (Coș, fără dialog) se face
+    /// întâi; fișierele de sistem și pachetele deținute de root rămase formează UN plan privilegiat, prezentat și autorizat o singură dată
+    /// pentru toate aplicațiile selectate. Anulare/refuz = planul se oprește, fără ferestre succesive.
+    public static func uninstall(_ targets: [Target], log: @escaping (String) -> Void) {
+        var steps: [PrivilegedPlan.Step] = []
+        var labelsForApp: [String: String] = [:]
+        for t in targets {
+            for category in t.categories {
+                for path in category.paths {
+                    if category.requiresPrivilege {
+                        let p = path.path, q = PrivilegedPlan.shellQuote(p)
+                        steps.append(.init(label: p, command: "launchctl bootout system \(q) 2>/dev/null; launchctl bootout gui/$(id -u) \(q) 2>/dev/null; rm -f -- \(q)"))
+                    } else {
+                        do {
+                            try fm.trashItem(at: path, resultingItemURL: nil)
+                            log(fm.fileExists(atPath: path.path)
+                                ? CoreL.x("EROARE: \(path.path) tot există după ștergere.", "ERROR: \(path.path) still exists after deletion.", "ERROR: \(path.path) sigue existiendo tras eliminarlo.")
+                                : CoreL.x("Mutat la Coșul de gunoi: \(path.path)", "Moved to the Trash: \(path.path)", "Movido a la Papelera: \(path.path)"))
+                        } catch {
+                            log(CoreL.x("EROARE, nu s-a putut șterge \(path.path): \(error.localizedDescription)", "ERROR, could not delete \(path.path): \(error.localizedDescription)", "ERROR, no se pudo eliminar \(path.path): \(error.localizedDescription)"))
+                        }
                     }
                 }
             }
+            if t.deleteApp {
+                let p = t.app.path.path
+                if fm.isDeletableFile(atPath: p), (try? fm.trashItem(at: t.app.path, resultingItemURL: nil)) != nil, !fm.fileExists(atPath: p) {
+                    log(CoreL.x("Șters: \(p)", "Deleted: \(p)", "Eliminado: \(p)"))
+                } else if fm.fileExists(atPath: p) {
+                    if PrivilegedPlan.isSafeDeletePath(p) { steps.append(.init(label: p, command: "rm -rf -- \(PrivilegedPlan.shellQuote(p))")); labelsForApp[p] = t.app.name }
+                    else { log(CoreL.x("EROARE la ștergerea \(p): cale protejată", "ERROR deleting \(p): protected path", "ERROR al eliminar \(p): ruta protegida")) }
+                }
+            }
         }
-        if !privilegedCommands.isEmpty {
-            log(CoreL.x("Solicit parola de admin pentru \(privilegedCommands.count) fișiere de sistem…", "Requesting the admin password for \(privilegedCommands.count) system files…", "Solicitando la contraseña de administrador para \(privilegedCommands.count) archivos del sistema…"))
-            let result = PrivilegedRunner.run(privilegedCommands)
-            log(result.success ? CoreL.x("Fișiere de sistem șterse.", "System files deleted.", "Archivos del sistema eliminados.") : "EROARE: \(result.output)")
+        guard !steps.isEmpty else { return }
+        log(CoreL.x("Plan cu drepturi de administrator: \(steps.count) elemente, o singură autorizare.", "Administrator plan: \(steps.count) items, a single authorisation.", "Plan con derechos de administrador: \(steps.count) elementos, una sola autorización."))
+        let outcome = PrivilegedPlan.execute(title: CoreL.x("Dezinstalare cu drepturi de administrator", "Uninstall with administrator rights", "Desinstalación con derechos de administrador"), steps: steps)
+        if outcome.cancelled { log(CoreL.x("Anulat: nu s-a modificat nimic din planul privilegiat și nu se mai cere nicio parolă.", "Cancelled: nothing in the privileged plan was changed and no further password will be requested.", "Cancelado: no se modificó nada del plan con privilegios y no se pedirá ninguna otra contraseña.")); return }
+        for s in steps {
+            let gone = !fm.fileExists(atPath: s.label)
+            if case .some(.some(let err)) = outcome.results[s.label], !gone { log("EROARE \(s.label): \(err)") }
+            else { log(CoreL.x("Șters: \(s.label)", "Deleted: \(s.label)", "Eliminado: \(s.label)")) }
         }
+    }
+
+    /// Compatibilitate: ștergerea categoriilor unei singure aplicații (același plan unic).
+    public static func delete(categories: [UninstallCategory], log: @escaping (String) -> Void) {
+        guard !categories.isEmpty else { return }
+        let dummy = InstalledApp(id: "-", name: "", bundleID: nil, path: URL(fileURLWithPath: "/"))
+        uninstall([Target(app: dummy, categories: categories, deleteApp: false)], log: log)
     }
 }

@@ -77,4 +77,20 @@ final class MachineIDTests: XCTestCase {
         XCTAssertEqual(MachineID.base32Encode(Data("fooba".utf8)), "MZXW6YTB")
         XCTAssertEqual(MachineID.display.count, 10)
     }
+
+    func testWhatsAppLinkRoundTripsDiacriticsAndReservedCharacters() throws {
+        let text = "Doresc o licență Master Control Studio Pro pentru un calculator.\nOferta aleasă: 3 luni — 10 EUR.\nMachine ID: ABCDE23456 & +40 #1\nîșțăâ ÎȘȚĂÂ ñ"
+        let url = WhatsAppLink.url(text: text)
+        let q = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedQuery)
+        XCTAssertTrue(q.hasPrefix("text="))
+        let decoded = String(q.dropFirst(5)).removingPercentEncoding
+        XCTAssertEqual(decoded, text)
+        XCTAssertFalse(q.contains("+")); XCTAssertFalse(q.contains(" ")); XCTAssertFalse(q.contains("&"))
+    }
+
+    func testOffersSortNaturallyByDurationKey() {
+        let a = [OfferSummary(id: "y", title: "", amountText: "", version: 1, sortKey: 24 * 366), OfferSummary(id: "m1", title: "", amountText: "", version: 1, sortKey: 24 * 31),
+                 OfferSummary(id: "m3", title: "", amountText: "", version: 1, sortKey: 3 * 24 * 31)]
+        XCTAssertEqual(a.sorted { ($0.sortKey, $0.id) < ($1.sortKey, $1.id) }.map(\.id), ["m1", "m3", "y"])
+    }
 }

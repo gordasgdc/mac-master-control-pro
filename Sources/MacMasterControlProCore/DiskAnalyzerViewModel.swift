@@ -59,6 +59,8 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     @Published public var lastVerifiedAt: Date?
     /// Elemente ce n-au putut fi citite la ultima scanare; rezultatul e partial in acele zone.
     @Published public var accessErrors = 0
+    /// Primele căi neanalizate (eșantion) — arătate în detalii; rezultatul nu e complet cât timp contorul > 0.
+    @Published public var accessSamples: [String] = []
     /// Mesaj de stare pentru utilizator (volum deconectat, anulat etc.); null daca nimic de spus.
     @Published public var scanNotice: String?
 
@@ -137,9 +139,9 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                         if let n = self.selection[id] { DiskScanEngine.remove(nodePath: n.path, from: tree) }
                         self.selection[id] = nil
                     }
-                    self.filesIndexed = tree.totalFileCount; self.bytesIndexed = tree.sizeBytes
+                    self.filesIndexed = tree.totalFileCount; self.bytesIndexed = tree.usedBytes
                     DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: self.lastScannedAt ?? Date(), root: tree,
-                                              accessErrors: self.accessErrors, verifiedAt: self.lastVerifiedAt))
+                                              accessErrors: self.accessErrors, verifiedAt: self.lastVerifiedAt, accessSamples: self.accessSamples))
                 }
                 self.trashResults = out
                 self.isTrashing = false
@@ -227,9 +229,9 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                     self.tree = snapshot.root
                     self.lastScannedAt = snapshot.scannedAt
                     self.lastVerifiedAt = snapshot.verifiedAt
-                    self.accessErrors = snapshot.accessErrors
+                    self.accessErrors = snapshot.accessErrors; self.accessSamples = snapshot.accessSamples
                     self.filesIndexed = snapshot.root.totalFileCount
-                    self.bytesIndexed = snapshot.root.sizeBytes
+                    self.bytesIndexed = snapshot.root.usedBytes
                     self.isIndexing = false
                 } else {
                     self.performFullScan(rootPath: path)
@@ -278,10 +280,10 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                 let now = Date()
                 self.lastScannedAt = now
                 self.lastVerifiedAt = now
-                self.accessErrors = outcome.accessErrors
+                self.accessErrors = outcome.accessErrors; self.accessSamples = outcome.accessSamples
                 self.filesIndexed = node.totalFileCount
                 DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: now, root: node,
-                                          accessErrors: outcome.accessErrors, verifiedAt: now))
+                                          accessErrors: outcome.accessErrors, verifiedAt: now, accessSamples: outcome.accessSamples))
             }
         )
     }
@@ -305,12 +307,12 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                     let now = Date()
                     self.lastScannedAt = now
                     self.lastVerifiedAt = now
-                    self.accessErrors = outcome.accessErrors
+                    self.accessErrors = outcome.accessErrors; self.accessSamples = outcome.accessSamples
                     self.filesIndexed = node.totalFileCount
-                    self.bytesIndexed = node.sizeBytes
+                    self.bytesIndexed = node.usedBytes
                     self.objectWillChange.send()
                     DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: now, root: node,
-                                              accessErrors: outcome.accessErrors, verifiedAt: now))
+                                              accessErrors: outcome.accessErrors, verifiedAt: now, accessSamples: outcome.accessSamples))
                 case .rootUnavailable:
                     // Volum deconectat: pastram arborele si cache-ul neatinse.
                     self.scanNotice = "Volumul nu mai este disponibil. Datele afisate sunt din ultima analiza salvata."
@@ -339,9 +341,9 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                 self.pathStack = []
                 self.lastScannedAt = snap.scannedAt
                 self.lastVerifiedAt = snap.verifiedAt
-                self.accessErrors = snap.accessErrors
+                self.accessErrors = snap.accessErrors; self.accessSamples = snap.accessSamples
                 self.filesIndexed = snap.root.totalFileCount
-                self.bytesIndexed = snap.root.sizeBytes
+                self.bytesIndexed = snap.root.usedBytes
             }
         }
     }
@@ -388,7 +390,7 @@ public final class DiskAnalyzerViewModel: ObservableObject {
                     // la urmatoarea deschidere a aplicatiei, cache-ul VECHI
                     // ar arata din nou fisierul/folderul deja sters.
                     self.filesIndexed = tree.totalFileCount
-                    self.bytesIndexed = tree.sizeBytes
+                    self.bytesIndexed = tree.usedBytes
                     DiskCacheStore.save(.init(rootPath: rootPath, scannedAt: self.lastScannedAt ?? Date(), root: tree))
                 }
             }

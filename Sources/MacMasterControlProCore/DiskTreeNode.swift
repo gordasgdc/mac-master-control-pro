@@ -81,12 +81,17 @@ public final class DiskTreeNode: Identifiable, Codable {
         try c.encode(aggregatedFileCount, forKey: .aggregatedFileCount)
     }
 
-    public var sizeDescription: String { ByteCountFormatter.string(fromByteCount: sizeBytes, countStyle: .file) }
+    /// Spațiul ocupat PE DISC, cel raportat de sistem (`st_blocks`): măsura din „ce ocupă spațiul” (hartă, listă, procente, totaluri).
+    /// Diferă de `sizeBytes` (mărimea logică) la fișiere sparse, comprimate sau cu spațiu rezervat. NU e o garanție de spațiu recuperat:
+    /// clonele APFS, hard link-urile și snapshoturile pot ține aceleași blocuri.
+    public var usedBytes: Int64 { allocatedBytes }
+
+    public var sizeDescription: String { ByteCountFormatter.string(fromByteCount: usedBytes, countStyle: .file) }
 
     /// Copiii sortați descrescător după mărime — ordinea pe care o vede
     /// userul mereu, exact ca DaisyDisk/GrandPerspective/TreeSize.
     public var sortedChildren: [DiskTreeNode] {
-        children.values.sorted { $0.sizeBytes > $1.sizeBytes }
+        children.values.sorted { $0.usedBytes > $1.usedBytes }
     }
 
     /// Numărul total de fișiere din acest subarbore — folosit doar pentru
@@ -137,7 +142,8 @@ public extension DiskTreeNode {
         var keys: [String] = []
 
         for (key, child) in children where !child.isDirectory && !child.isAggregate {
-            if child.sizeBytes < threshold {
+            // Un fișier sparse/comprimat (logic mare, alocat mic) rămâne vizibil individual: nu îl ascundem într-o agregare.
+            if child.sizeBytes < threshold && child.allocatedBytes < threshold {
                 smallTotalBytes += child.sizeBytes
                 smallAllocated += child.allocatedBytes
                 smallCount += 1

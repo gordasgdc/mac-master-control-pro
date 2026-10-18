@@ -14,6 +14,7 @@ struct DiskAnalyzerView: View {
     @State private var showReview = false
     @State private var totals: (regenerable: Int64, duplicateSurplus: Int64, overlap: Int64, recoverable: Int64)?
     @State private var showCalc = false
+    @State private var showUnscanned = false
 
     private static var lastScanFormatter: DateFormatter {
         let f = DateFormatter(); f.dateFormat = "d MMMM, HH:mm"; f.locale = L.locale; return f
@@ -207,7 +208,11 @@ struct DiskAnalyzerView: View {
                     Text(vm.lastVerifiedAt != nil ? String(format: L.x("Verificat %@","Checked %@","Comprobado %@"), Self.lastScanFormatter.string(from: d)) : String(format: L.x("Din analiza de %@, neverificată","From the analysis of %@, unchecked","Del análisis de %@, sin comprobar"), Self.lastScanFormatter.string(from: d)))
                         .font(.caption).foregroundStyle(Studio.textMuted)
                 }
-                if vm.accessErrors > 0 { Label(String(format: L.x("%d inaccesibile","%d inaccessible","%d inaccesibles"), vm.accessErrors), systemImage: "exclamationmark.circle").font(.caption).foregroundStyle(.orange) }
+                if vm.accessErrors > 0 {
+                    Button { showUnscanned.toggle() } label: { Label(String(format: L.x("%d neanalizate","%d not analysed","%d sin analizar"), vm.accessErrors), systemImage: "exclamationmark.circle") }
+                        .buttonStyle(.plain).font(.caption).foregroundStyle(.orange)
+                        .popover(isPresented: $showUnscanned) { unscannedDetails }
+                }
                 Menu {
                     Button(L.x("Verifică modificările", "Check for changes", "Comprobar cambios")) { vm.rescanChangesOnly() }
                     Button(L.x("Resetează cache și rescanează…", "Reset cache and rescan…", "Restablecer caché y volver a escanear…")) { confirmingReset = true }
@@ -230,7 +235,7 @@ struct DiskAnalyzerView: View {
                     SystemIconView(path: f.isAggregate ? (vm.currentNode?.path ?? "/") : f.path, size: 64)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(f.name).font(.system(size: 22, weight: .bold, design: .rounded)).lineLimit(2)
-                        Text(Studio.gb(f.sizeBytes)).font(.title3).foregroundStyle(Studio.textMuted)
+                        Text(Studio.gb(f.usedBytes)).font(.title3).foregroundStyle(Studio.textMuted)
                     }
                     Spacer()
                     if f.isDirectory, f !== vm.currentNode, !f.isAggregate { Button { drill(f) } label: { Label(L.x("Deschide", "Open", "Abrir"), systemImage: "chevron.right") }.buttonStyle(.bordered) }
@@ -266,7 +271,7 @@ struct DiskAnalyzerView: View {
                 SystemIconView(path: n.isAggregate ? (vm.currentNode?.path ?? "/") : n.path, size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(n.name).fontWeight(.semibold).lineLimit(1).truncationMode(.middle)
-                    Text("\(Studio.gb(n.sizeBytes)) · \(percent(n))").font(.caption).foregroundStyle(Studio.textMuted)
+                    Text("\(Studio.gb(n.usedBytes)) · \(percent(n))").font(.caption).foregroundStyle(Studio.textMuted)
                 }
                 Spacer(minLength: 6)
                 ForEach(Array(f).sorted { $0.rawValue < $1.rawValue }, id: \.self) { FlagChip(flag: $0) }
@@ -295,8 +300,15 @@ struct DiskAnalyzerView: View {
         VStack(alignment: .leading, spacing: 4) {
             Group {
                 labeled("Cale", n.isAggregate ? L.x("(grup de fișiere mici din folderul curent)", "(group of small files in this folder)", "(grupo de archivos pequeños de esta carpeta)") : n.path)
+                labeled(L.x("Spațiu ocupat pe disc (alocat)", "Space used on disk (allocated)", "Espacio ocupado en disco (asignado)"), Studio.gb(n.usedBytes))
                 labeled(L.x("Mărime logică", "Logical size", "Tamaño lógico"), Studio.gb(n.sizeBytes))
-                if n.allocatedBytes > 0 { labeled(L.x("Spațiu alocat", "Allocated space", "Espacio asignado"), Studio.gb(n.allocatedBytes)) }
+                if abs(n.sizeBytes - n.usedBytes) > max(1_000_000, n.sizeBytes / 10) {
+                    Text(n.sizeBytes > n.usedBytes
+                         ? L.x("Mărimea logică e mai mare decât spațiul alocat: fișier sparse sau comprimat (golurile nu ocupă blocuri pe disc). Harta și procentele folosesc spațiul alocat raportat de sistem.", "The logical size is larger than the allocated space: a sparse or compressed file (holes take no blocks on disk). The map and percentages use the allocated space reported by the system.", "El tamaño lógico es mayor que el espacio asignado: archivo disperso (sparse) o comprimido (los huecos no ocupan bloques en disco). El mapa y los porcentajes usan el espacio asignado que informa el sistema.")
+                         : L.x("Spațiul alocat e mai mare decât mărimea logică (spațiu rezervat sau metadate).", "The allocated space is larger than the logical size (reserved space or metadata).", "El espacio asignado es mayor que el tamaño lógico (espacio reservado o metadatos)."))
+                        .font(.caption).foregroundStyle(Studio.textMuted)
+                }
+                Text(L.x("Spațiul alocat nu garantează spațiul eliberat: clonele APFS, hard link-urile și snapshoturile pot păstra aceleași date.", "Allocated space does not guarantee freed space: APFS clones, hard links and snapshots may keep the same data.", "El espacio asignado no garantiza el espacio liberado: los clones APFS, los enlaces duros y las instantáneas pueden conservar los mismos datos.")).font(.caption).foregroundStyle(Studio.textMuted)
                 labeled(L.x("De ce această stare", "Why this state", "Por qué este estado"), SpaceClassifier.explanation(path: n.path, isDirectory: n.isDirectory, flags: flags, lang: LanguageStore.shared.current.rawValue))
             }
             if !n.isAggregate {
@@ -356,7 +368,7 @@ struct DiskAnalyzerView: View {
             TableColumn(L.x("Nume", "Name", "Nombre")) { r in Text(r.node.name).padding(.leading, CGFloat(r.depth) * 16).lineLimit(1) }
             TableColumn(L.x("Stare", "State", "Estado")) { r in HStack { ForEach(Array(vm.flags(r.node)).sorted { $0.rawValue < $1.rawValue }, id: \.self) { FlagChip(flag: $0) } } }
             TableColumn(L.x("Logic", "Logical", "Lógico")) { r in Text(Studio.gb(r.node.sizeBytes)).monospacedDigit() }.width(90)
-            TableColumn(L.x("Alocat", "Allocated", "Asignado")) { r in Text(r.node.allocatedBytes > 0 ? Studio.gb(r.node.allocatedBytes) : "—").monospacedDigit() }.width(90)
+            TableColumn(L.x("Alocat", "Allocated", "Asignado")) { r in Text(Studio.gb(r.node.usedBytes)).monospacedDigit() }.width(90)
             TableColumn("%") { r in Text(percent(r.node)).monospacedDigit() }.width(60)
         }
     }
@@ -388,8 +400,27 @@ struct DiskAnalyzerView: View {
 
     // MARK: - Helpers
 
+    /// Elementele pe care macOS nu le-a lăsat să fie citite: analiza NU e completă. Nu se cere nicio parolă de administrator pentru ele.
+    private var unscannedDetails: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(String(format: L.x("Analiza nu este completă: %d elemente neanalizate", "The analysis is incomplete: %d items not analysed", "El análisis no está completo: %d elementos sin analizar"), vm.accessErrors)).font(.headline)
+            Text(L.x("macOS nu a permis aplicației să citească aceste foldere sau fișiere (protecții de sistem, date ale altor utilizatori sau aplicații). Totalurile de mai sus NU le includ. Aplicația nu a cerut și nu va cere parola de administrator pentru ele.", "macOS did not allow the app to read these folders or files (system protections, other users' or apps' data). The totals above do NOT include them. The app did not request and will not request the administrator password for them.", "macOS no permitió que la app leyera estas carpetas o archivos (protecciones del sistema, datos de otros usuarios o apps). Los totales anteriores NO los incluyen. La app no pidió ni pedirá la contraseña de administrador para ellos."))
+                .fixedSize(horizontal: false, vertical: true)
+            Text(L.x("Pasul necesar: acordă aplicației „Acces complet la disc” în Setări de sistem → Confidențialitate și securitate. Este o permisiune macOS diferită de parola de administrator (care autorizează o acțiune, nu citirea datelor protejate). După acordare, reanalizează.", "Required step: grant the app “Full Disk Access” in System Settings → Privacy & Security. This is a macOS permission, different from the administrator password (which authorises an action, not reading protected data). After granting it, scan again.", "Paso necesario: concede a la app «Acceso total al disco» en Ajustes del Sistema → Privacidad y seguridad. Es un permiso de macOS distinto de la contraseña de administrador (que autoriza una acción, no la lectura de datos protegidos). Después, vuelve a analizar."))
+                .fixedSize(horizontal: false, vertical: true)
+            Button(L.x("Deschide Acces complet la disc", "Open Full Disk Access", "Abrir Acceso total al disco")) {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!)
+            }
+            if !vm.accessSamples.isEmpty {
+                Text(String(format: L.x("Primele %d căi:", "First %d paths:", "Primeras %d rutas:"), min(vm.accessSamples.count, 30))).font(.caption.bold())
+                ScrollView { VStack(alignment: .leading, spacing: 2) { ForEach(Array(vm.accessSamples.prefix(30).enumerated()), id: \.offset) { _, p in Text(p).font(.system(.caption, design: .monospaced)).textSelection(.enabled) } } }.frame(maxHeight: 140)
+            }
+        }
+        .padding(16).frame(width: 440)
+    }
+
     private func percent(_ n: DiskTreeNode) -> String {
-        let t = Double(max(vm.currentNode?.sizeBytes ?? 1, 1)); let p = Double(n.sizeBytes) / t * 100
+        let t = Double(max(vm.currentNode?.usedBytes ?? 1, 1)); let p = Double(n.usedBytes) / t * 100
         return String(format: p < 10 ? "%.1f%%" : "%.0f%%", p).replacingOccurrences(of: ".", with: L.decimalSeparator)
     }
     private func drill(_ n: DiskTreeNode) { guard n.isDirectory, !n.isAggregate else { return }; withAnimation(.easeOut(duration: 0.2)) { vm.open(n); vm.focusID = nil; showAll = false; openDetail = nil } }
@@ -498,7 +529,7 @@ struct ReviewSheet: View {
                     VStack(alignment: .leading) { Text(n.name).fontWeight(.medium); Text((n.path as NSString).deletingLastPathComponent).font(.caption).foregroundStyle(Studio.textMuted).lineLimit(1).truncationMode(.head) }
                     Spacer()
                     if let o = res?[n.id] { if case .failed(let why) = o { Text(String(format: L.x("eșuat: %@","failed: %@","falló: %@"), why)).font(.caption).foregroundStyle(Studio.caution) } else { Text(L.x("mutat","moved","movido")).font(.caption).foregroundStyle(Studio.good) } }
-                    Text(Studio.gb(n.sizeBytes)).foregroundStyle(Studio.textMuted)
+                    Text(Studio.gb(n.usedBytes)).foregroundStyle(Studio.textMuted)
                 }.padding(.horizontal, 12).padding(.vertical, 8)
             }
         }

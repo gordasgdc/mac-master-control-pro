@@ -168,6 +168,29 @@ final class DiskScanTests: XCTestCase {
         let big = d.appendingPathComponent("a/big.bin"); try grow(big, by: 5)
         XCTAssertEqual(incr(back).0.sizeBytes, t.sizeBytes + 5)
     }
+
+    func testSparseFileIsMeasuredByAllocatedSpace() throws {
+        let d = try fixture()
+        let sparse = d.appendingPathComponent("a/sparse.img")
+        let fd = open(sparse.path, O_CREAT | O_WRONLY, 0o644); XCTAssertGreaterThan(fd, 0)
+        XCTAssertEqual(ftruncate(fd, 10 * 1024 * 1024 * 1024), 0)   // 10 GiB logic, practic nimic alocat
+        _ = "x".withCString { write(fd, $0, 1) }; close(fd)
+        let (t, _) = scan(d.path)
+        let n = try XCTUnwrap(t.children["a"]?.children["sparse.img"], "fișierul sparse rămâne vizibil individual, nu agregat")
+        XCTAssertEqual(n.sizeBytes, 10 * 1024 * 1024 * 1024)
+        XCTAssertLessThan(n.usedBytes, 5_000_000)
+        XCTAssertLessThan(t.usedBytes, 10_000_000, "totalul de pe disc nu poate depăși spațiul alocat real")
+        XCTAssertGreaterThan(t.sizeBytes, 10 * 1024 * 1024 * 1024)
+        XCTAssertEqual(t.children["a"]?.sortedChildren.first?.name, "big.bin", "ordinea după spațiul alocat, nu după mărimea logică")
+    }
+
+    func testUnreadableFolderIsReportedWithSampleNotAsComplete() throws {
+        let d = try fixture()
+        chmod(d.appendingPathComponent("a/b").path, 0)
+        let (_, o) = scan(d.path)
+        XCTAssertGreaterThan(o.accessErrors, 0); XCTAssertFalse(o.isCleanAndComplete)
+        XCTAssertTrue(o.accessSamples.contains { $0.hasSuffix("/a/b") })
+    }
 }
 
 extension DiskTreeNode {

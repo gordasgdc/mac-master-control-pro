@@ -125,8 +125,10 @@ public enum DuplicateFinderService {
     /// privilegiată (2026-09-03, `PrivilegedFileOps`) dacă fișierul e
     /// deținut de root/alt user, în loc să raporteze doar "EROARE".
     public static func delete(_ files: [DuplicateFile], log: (String) -> Void) {
+        let batch = PrivilegedFileOps.deleteBatch(files.map(\.path))
+        if batch.cancelled { log(CoreL.x("Anulat: nu s-a cerut nicio altă autorizare; elementele rămase cu drepturi insuficiente nu au fost modificate.", "Cancelled: no further authorisation was requested; items that need administrator rights were not changed.", "Cancelado: no se pidió ninguna otra autorización; los elementos que requieren derechos de administrador no se modificaron.")) }
         for file in files {
-            if let error = PrivilegedFileOps.delete(file.path) {
+            if case .some(.some(let error)) = batch.results[file.path] {
                 log("EROARE, nu s-a putut șterge \(file.path): \(error)")
             } else {
                 log("Mutat/șters (\(file.sizeDescription)): \(file.path)")

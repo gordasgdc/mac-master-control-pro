@@ -31,6 +31,19 @@ public enum PrivilegedRunner {
     public struct Result {
         public let output: String
         public let success: Bool
+        /// Dialogul de autorizare a fost anulat/refuzat de utilizator (nu o eroare a comenzii).
+        public let cancelled: Bool
+        public init(output: String, success: Bool, cancelled: Bool = false) { self.output = output; self.success = success; self.cancelled = cancelled }
+    }
+
+    /// Numărul de solicitări de autorizare (dialoguri de administrator) lansate de această sesiune a aplicației. Folosit la verificare și în jurnal.
+    nonisolated(unsafe) public private(set) static var promptCount = 0
+    private static let countLock = NSLock()
+
+    /// Verificare automată (DOAR profil izolat, `MCSP_DEMO_ELEVATION=ok|cancel`): fără dialog real; numără solicitările și, pentru `ok`, execută comanda cu drepturile utilizatorului pe fixture-uri.
+    private static var stubMode: String? {
+        guard AppProfile.isIsolated, let v = ProcessInfo.processInfo.environment["MCSP_DEMO_ELEVATION"], ["ok", "cancel"].contains(v) else { return nil }
+        return v
     }
 
     /// [2026-09-03] `onOutput`, daca dat, primeste comanda exacta trimisa
@@ -43,7 +56,18 @@ public enum PrivilegedRunner {
     /// ciudat, e vizibil și copiabil direct de user, fără să mai depindă
     /// de un mesaj static presupus de noi dinainte.
     @discardableResult
-    public static func run(_ command: String, onOutput: ((String) -> Void)? = nil) -> Result {
+    public static func run(_ command: String, onOutput: ((String) -> Void)? = nil, reason: String = "") -> Result {
+        countLock.lock(); promptCount += 1; let n = promptCount; countLock.unlock()
+        DiagnosticLog.write(.info, tag: "privilege", event: "prompt", message: "#\(n) \(reason)")
+        if let stub = stubMode {
+            let out = (try? Data(contentsOf: URL(fileURLWithPath: AppProfile.supportDirectory.appendingPathComponent("elevation-prompts.log").path))) ?? Data()
+            try? (String(data: out, encoding: .utf8) ?? "").appending("prompt #\(n) \(stub) \(reason)\n").write(to: AppProfile.supportDirectory.appendingPathComponent("elevation-prompts.log"), atomically: true, encoding: .utf8)
+            if stub == "cancel" { return Result(output: "User canceled.", success: false, cancelled: true) }
+            let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/sh"); p.arguments = ["-c", command]
+            let pipe = Pipe(); p.standardOutput = pipe; p.standardError = pipe
+            try? p.run(); let d = pipe.fileHandleForReading.readDataToEndOfFile(); p.waitUntilExit()
+            return Result(output: String(data: d, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "", success: p.terminationStatus == 0)
+        }
         // [2026-09-03] ROOT-CAUZA REALĂ a "Touch ID nu merge NICIODATĂ",
         // confirmată direct din panoul Terminal Live nou-adăugat (fără el,
         // n-am fi văzut asta): "176:177: syntax error: Expected "\"" but
@@ -104,7 +128,8 @@ public enum PrivilegedRunner {
         }
         let exitCode = process.terminationStatus
         onOutput?(exitCode == 0 ? CoreL.x("✔ osascript a ieșit cu codul 0", "✔ osascript exited with code 0", "✔ osascript terminó con código 0") : CoreL.x("✘ osascript a ieșit cu codul \(exitCode)", "✘ osascript exited with code \(exitCode)", "✘ osascript terminó con código \(exitCode)"))
-        return Result(output: text, success: exitCode == 0)
+        let canceled = exitCode != 0 && (text.contains("User canceled") || text.contains("(-128)") || text.contains("Utilizador cancelou"))
+        return Result(output: text, success: exitCode == 0, cancelled: canceled)
     }
 
     /// Rulare multi-comanda (o singura solicitare de parola pentru tot lantul).

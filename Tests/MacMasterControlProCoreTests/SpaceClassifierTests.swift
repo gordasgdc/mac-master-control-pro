@@ -4,7 +4,7 @@ import XCTest
 final class SpaceClassifierTests: XCTestCase {
     private func node(_ path: String, _ size: Int64, dir: Bool = true, kids: [DiskTreeNode] = []) -> DiskTreeNode {
         let n = DiskTreeNode(name: (path as NSString).lastPathComponent, path: path, isDirectory: dir)
-        n.sizeBytes = size; for k in kids { n.children[k.name] = k }; return n
+        n.sizeBytes = size; n.allocatedBytes = size; for k in kids { n.children[k.name] = k }; return n
     }
     func testRegenerableByExplicitRuleOnly() {
         XCTAssertTrue(SpaceClassifier.flags(path: "/Volumes/X/Proj/CacheClip", isDirectory: true).contains(.regenerable))

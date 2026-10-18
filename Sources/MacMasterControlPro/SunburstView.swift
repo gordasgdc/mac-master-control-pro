@@ -22,23 +22,23 @@ struct SunburstView: View {
     private var arcs: [Arc] { Self.layout(root: root) }
 
     static func layout(root: DiskTreeNode) -> [Arc] {
-        let total = Double(max(root.sizeBytes, 1))
+        let total = Double(max(root.usedBytes, 1))
         var out: [Arc] = []
         var a = -Double.pi / 2
-        for k in root.sortedChildren where k.sizeBytes > 0 {
-            let sweep = Double(k.sizeBytes) / total * 2 * .pi
+        for k in root.sortedChildren where k.usedBytes > 0 {
+            let sweep = Double(k.usedBytes) / total * 2 * .pi
             let hue = Studio.hue(for: k.name)
             out.append(Arc(id: k.id, node: k, ring: 1, start: a, end: a + sweep, colors: hue))
             var b = a
             var rest: Int64 = 0
-            for c in k.sortedChildren where c.sizeBytes > 0 {
-                let cs = Double(c.sizeBytes) / Double(max(k.sizeBytes, 1)) * sweep
-                if cs < 0.007 { rest += c.sizeBytes; continue }
+            for c in k.sortedChildren where c.usedBytes > 0 {
+                let cs = Double(c.usedBytes) / Double(max(k.usedBytes, 1)) * sweep
+                if cs < 0.007 { rest += c.usedBytes; continue }
                 out.append(Arc(id: c.id, node: c, ring: 2, start: b, end: b + cs, colors: hue))
                 b += cs
             }
             if rest > 0 {
-                let cs = Double(rest) / Double(max(k.sizeBytes, 1)) * sweep
+                let cs = Double(rest) / Double(max(k.usedBytes, 1)) * sweep
                 out.append(Arc(id: UUID(), node: nil, ring: 2, start: b, end: b + cs, colors: (Studio.line, Studio.line)))
             }
             a += sweep
@@ -121,8 +121,8 @@ struct SunburstView: View {
                 VStack(spacing: 2) {
                     let n = hover.flatMap { id in list.first { $0.id == id }?.node } ?? root
                     Text(n.name).font(.callout.weight(.semibold)).lineLimit(1).truncationMode(.middle)
-                    Text(Studio.gb(n.sizeBytes)).font(.system(size: max(20, rr.hole * 0.36), weight: .bold, design: .rounded))
-                    Text(n === root ? L.x("în acest folder", "in this folder", "en esta carpeta") : ByteCountFormatter.string(fromByteCount: n.sizeBytes, countStyle: .file) == "" ? "" : percent(n))
+                    Text(Studio.gb(n.usedBytes)).font(.system(size: max(20, rr.hole * 0.36), weight: .bold, design: .rounded))
+                    Text(n === root ? L.x("în acest folder", "in this folder", "en esta carpeta") : ByteCountFormatter.string(fromByteCount: n.usedBytes, countStyle: .file) == "" ? "" : percent(n))
                         .font(.caption).foregroundStyle(Studio.textMuted)
                 }
                 .frame(width: rr.hole * 1.7)
@@ -131,13 +131,13 @@ struct SunburstView: View {
         }
         .accessibilityRepresentation {
             List(root.sortedChildren) { n in
-                Button("\(n.name), \(Studio.gb(n.sizeBytes))") { onTap(n) }
+                Button("\(n.name), \(Studio.gb(n.usedBytes))") { onTap(n) }
             }
         }
     }
 
     private func percent(_ n: DiskTreeNode) -> String {
-        let p = Double(n.sizeBytes) / Double(max(root.sizeBytes, 1)) * 100
+        let p = Double(n.usedBytes) / Double(max(root.usedBytes, 1)) * 100
         return String(format: p < 10 ? L.x("%.1f%% din folder", "%.1f%% of folder", "%.1f%% de la carpeta") : L.x("%.0f%% din folder", "%.0f%% of folder", "%.0f%% de la carpeta"), p).replacingOccurrences(of: ".", with: L.decimalSeparator)
     }
 

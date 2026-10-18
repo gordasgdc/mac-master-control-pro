@@ -15,6 +15,7 @@ struct MacMasterControlProApp: App {
         #if OFFICIAL_BUILD
         AccessFactory.make = { OfficialAccess() }
         #endif
+        PrivilegePlanUI.install()
         _ = AccessCoordinator.shared
     }
 

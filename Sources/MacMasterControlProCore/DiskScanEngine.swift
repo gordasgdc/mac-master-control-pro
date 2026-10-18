@@ -30,6 +30,9 @@ public enum DiskScanEngine {
         public let status: Status
         /// Foldere/fișiere care n-au putut fi citite (permisiuni, I/O). Rezultatul e util dar nu complet.
         public let accessErrors: Int
+        /// Primele căi neanalizate (cel mult 400), pentru explicație și detalii; restul doar în contor.
+        public let accessSamples: [String]
+        public init(status: Status, accessErrors: Int, accessSamples: [String] = []) { self.status = status; self.accessErrors = accessErrors; self.accessSamples = accessSamples }
         public var isCleanAndComplete: Bool { status == .complete && accessErrors == 0 }
     }
 
@@ -47,6 +50,7 @@ public enum DiskScanEngine {
         let entries: [Entry]
         let dirMTime: Double
         let errors: Int
+        let errorPaths: [String]
     }
 
     /// Acumulator de progres thread-safe; raportează în loturi, nu per-fișier.
@@ -55,8 +59,13 @@ public enum DiskScanEngine {
         private(set) var files = 0
         private(set) var bytes: Int64 = 0
         private(set) var accessErrors = 0
+        private(set) var samples: [String] = []
         private var lastReportedAt = Date()
-        func noteAccessError(_ n: Int = 1) { lock.lock(); accessErrors += n; lock.unlock() }
+        func noteAccessError(_ n: Int = 1, paths: [String] = []) {
+            lock.lock(); accessErrors += n
+            for p in paths where samples.count < 400 { samples.append(p) }
+            lock.unlock()
+        }
         func add(files deltaFiles: Int, bytes deltaBytes: Int64, onProgress: @escaping (Progress) -> Void) {
             lock.lock()
             files += deltaFiles
@@ -105,7 +114,7 @@ public enum DiskScanEngine {
 
             let rootStillThere = deviceID(resolvedRoot) == rootDev
             let status: ScanOutcome.Status = isCancelled ? .cancelled : (rootStillThere ? .complete : .rootUnavailable)
-            let outcome = ScanOutcome(status: status, accessErrors: counter.accessErrors)
+            let outcome = ScanOutcome(status: status, accessErrors: counter.accessErrors, accessSamples: counter.samples)
             let final = counter.snapshot
             op.end("\(status)", level: status == .complete ? .info : .warning,
                    fields: ["files": String(final.filesIndexed), "bytes": String(final.bytesIndexed),
@@ -122,10 +131,10 @@ public enum DiskScanEngine {
                                  onProgress: @escaping (Progress) -> Void, parallel: Bool) {
         if isCancelled { return }
         guard let listing = listDirectory(node.path, rootDev: rootDev) else {
-            counter.noteAccessError()
+            counter.noteAccessError(paths: [node.path])
             return
         }
-        counter.noteAccessError(listing.errors)
+        counter.noteAccessError(listing.errors, paths: listing.errorPaths)
         node.directoryModifiedAt = listing.dirMTime
         applyFiles(of: listing, to: node, collapse: false)
         reportFiles(listing, counter, onProgress)
@@ -171,7 +180,7 @@ public enum DiskScanEngine {
                    fields: ["changedFiles": String(final.filesIndexed), "accessErrors": String(final.accessErrors)])
             DispatchQueue.main.async {
                 onProgress(final)
-                completion(cachedRoot, ScanOutcome(status: status, accessErrors: final.accessErrors))
+                completion(cachedRoot, ScanOutcome(status: status, accessErrors: final.accessErrors, accessSamples: counter.samples))
             }
         }
     }
@@ -191,10 +200,10 @@ public enum DiskScanEngine {
 
         guard let listing = listDirectory(node.path, rootDev: rootDev) else {
             // Inaccesibil acum: păstrăm subarborele din cache (nu îl declarăm gol) și semnalăm eroarea.
-            counter.noteAccessError()
+            counter.noteAccessError(paths: [node.path])
             return
         }
-        counter.noteAccessError(listing.errors)
+        counter.noteAccessError(listing.errors, paths: listing.errorPaths)
         node.directoryModifiedAt = listing.dirMTime
 
         // Fișiere directe: amprentă diferită => reconstruim doar fișierele acestui folder.
@@ -253,7 +262,7 @@ public enum DiskScanEngine {
 
     private static func reportFiles(_ listing: Listing, _ counter: ProgressCounter, _ onProgress: @escaping (Progress) -> Void) {
         var n = 0; var bytes: Int64 = 0
-        for e in listing.entries where !e.isDirectory { n += 1; bytes += e.size }
+        for e in listing.entries where !e.isDirectory { n += 1; bytes += e.allocated }
         if n > 0 { counter.add(files: n, bytes: bytes, onProgress: onProgress) }
     }
 
@@ -333,13 +342,14 @@ public enum DiskScanEngine {
             ? Double(dst.st_mtimespec.tv_sec) + Double(dst.st_mtimespec.tv_nsec) / 1_000_000_000 : 0
         var entries: [Entry] = []
         var errors = 0
+        var errorPaths: [String] = []
         while let ent = readdir(dir) {
             let name = withUnsafePointer(to: &ent.pointee.d_name) {
                 $0.withMemoryRebound(to: CChar.self, capacity: Int(ent.pointee.d_namlen) + 1) { String(cString: $0) }
             }
             if name == "." || name == ".." { continue }
             var st = stat()
-            guard fstatat(fd, name, &st, AT_SYMLINK_NOFOLLOW) == 0 else { errors += 1; continue }
+            guard fstatat(fd, name, &st, AT_SYMLINK_NOFOLLOW) == 0 else { errors += 1; if errorPaths.count < 20 { errorPaths.append(path + "/" + name) }; continue }
             let mode = st.st_mode & S_IFMT
             if mode == S_IFDIR {
                 guard st.st_dev == rootDev else { continue }
@@ -350,6 +360,6 @@ public enum DiskScanEngine {
                                      allocated: Int64(st.st_blocks) * 512, mtimeNs: ns))
             }
         }
-        return Listing(entries: entries, dirMTime: dirMTime, errors: errors)
+        return Listing(entries: entries, dirMTime: dirMTime, errors: errors, errorPaths: errorPaths)
     }
 }

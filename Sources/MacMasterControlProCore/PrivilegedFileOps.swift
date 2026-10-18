@@ -16,28 +16,47 @@ import Foundation
 /// 3. Verifica REAL, cu `fileExists`, ca a disparut - nu se multumeste
 ///    cu absenta unei erori aruncate.
 public enum PrivilegedFileOps {
-    /// `nil` la succes; altfel un mesaj de eroare gata de afisat in log.
-    public static func delete(_ path: String) -> String? {
-        let fm = FileManager.default
-        let url = URL(fileURLWithPath: path)
+    public struct BatchResult {
+        /// Calea → `nil` la succes, altfel mesajul de eroare.
+        public let results: [String: String?]
+        /// Planul privilegiat a fost refuzat/anulat: nimic privilegiat nu s-a executat și nu se mai cere autorizare.
+        public let cancelled: Bool
+    }
 
-        if fm.isDeletableFile(atPath: path) {
-            do {
-                try fm.trashItem(at: url, resultingItemURL: nil)
-                Thread.sleep(forTimeInterval: 0.3)
-                if !fm.fileExists(atPath: path) { return nil }
-                // "succes" fara eroare dar fisierul tot exista - cade pe
-                // calea privilegiata mai jos, ca la orice alt esec.
-            } catch {
-                // cade pe calea privilegiata mai jos.
+    /// `nil` la succes; altfel un mesaj de eroare gata de afisat in log. Pentru mai multe elemente folosește `deleteBatch` (o singură autorizare).
+    public static func delete(_ path: String) -> String? {
+        deleteBatch([path]).results[path] ?? nil
+    }
+
+    /// Ștergerea unei selecții: mai întâi tot ce merge cu drepturile utilizatorului (Coș, reversibil, FĂRĂ dialog); doar elementele rămase
+    /// formează UN SINGUR plan privilegiat, prezentat și autorizat o singură dată. Refuz/anulare = planul se oprește, fără ferestre succesive.
+    public static func deleteBatch(_ paths: [String], trashFirst: Bool = true) -> BatchResult {
+        let fm = FileManager.default
+        var results: [String: String?] = [:]
+        var needPrivilege: [String] = []
+        for path in paths {
+            if trashFirst, fm.isDeletableFile(atPath: path) {
+                do {
+                    try fm.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: nil)
+                    Thread.sleep(forTimeInterval: 0.1)
+                    if !fm.fileExists(atPath: path) { results[path] = .some(nil); continue }
+                } catch {}
+            }
+            if !fm.fileExists(atPath: path) { results[path] = .some(nil); continue }
+            if PrivilegedPlan.isSafeDeletePath(path) { needPrivilege.append(path) }
+            else { results[path] = CoreL.x("cale protejată: ștergerea privilegiată este refuzată", "protected path: privileged deletion refused", "ruta protegida: se rechaza la eliminación con privilegios") }
+        }
+        var cancelled = false
+        if !needPrivilege.isEmpty {
+            let steps = needPrivilege.map { PrivilegedPlan.Step(label: $0, command: "rm -rf -- \(PrivilegedPlan.shellQuote($0))") }
+            let outcome = PrivilegedPlan.execute(title: CoreL.x("Ștergere cu drepturi de administrator", "Deletion with administrator rights", "Eliminación con derechos de administrador"), steps: steps)
+            cancelled = outcome.cancelled
+            for p in needPrivilege {
+                if outcome.cancelled { results[p] = CoreL.x("anulat: nu s-a modificat nimic", "cancelled: nothing was changed", "cancelado: no se modificó nada"); continue }
+                if case .some(.some(let err)) = outcome.results[p] { results[p] = CoreL.x("acces refuzat, chiar și cu drepturi de administrator: \(err)", "access denied, even with administrator rights: \(err)", "acceso denegado, incluso con derechos de administrador: \(err)"); continue }
+                results[p] = fm.fileExists(atPath: p) ? CoreL.x("tot există după ștergerea privilegiată", "still exists after the privileged deletion", "sigue existiendo tras la eliminación con privilegios") : .some(nil)
             }
         }
-
-        let result = PrivilegedRunner.run("rm -rf \"\(path)\"")
-        if !result.success {
-            return CoreL.x("acces refuzat, chiar și cu parolă de administrator: \(result.output)", "access denied, even with the administrator password: \(result.output)", "acceso denegado, incluso con la contraseña de administrador: \(result.output)")
-        }
-        Thread.sleep(forTimeInterval: 0.3)
-        return fm.fileExists(atPath: path) ? CoreL.x("tot există după ștergerea privilegiată", "still exists after the privileged deletion", "sigue existiendo tras la eliminación con privilegios") : nil
+        return BatchResult(results: results, cancelled: cancelled)
     }
 }

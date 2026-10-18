@@ -22,8 +22,11 @@ public enum DiskCacheStore {
         public let accessErrors: Int
         /// Data ultimei verificari la nivel de fisier (scanare completa sau incrementala verificata).
         public let verifiedAt: Date?
+        /// Primele căi neanalizate (eșantion), pentru detalii.
+        public let accessSamples: [String]
 
-        public init(rootPath: String, scannedAt: Date, root: DiskTreeNode, accessErrors: Int = 0, verifiedAt: Date? = nil) {
+        public init(rootPath: String, scannedAt: Date, root: DiskTreeNode, accessErrors: Int = 0, verifiedAt: Date? = nil, accessSamples: [String] = []) {
+            self.accessSamples = accessSamples
             self.rootPath = rootPath
             self.scannedAt = scannedAt
             self.root = root
@@ -39,7 +42,11 @@ public enum DiskCacheStore {
         var accessErrors: Int?
         var verifiedAt: Date?
         var volumeUUID: String?
+        /// Versiunea măsurătorii: 2 = spațiu alocat (`st_blocks`) ca măsură principală + eșantion de căi neanalizate. Cache-urile mai vechi se resping (rescanare).
+        var measureVersion: Int?
+        var accessSamples: [String]?
     }
+    static let currentMeasureVersion = 2
 
     /// UUID-ul volumului pe care se afla `path` (None daca nu se poate determina).
     static func volumeUUID(of path: String) -> String? {
@@ -78,19 +85,25 @@ public enum DiskCacheStore {
         // cu SHA-256, dar verificăm explicit — Regula 30, nu presupunem)
         // nu se folosește niciodată orb.
         guard file.rootPath == rootPath else { return nil }
+        // Măsurătoare veche (mărime logică ca „spațiu ocupat”, fără spațiul alocat corect): cache-ul ar induce în eroare (ex. un fișier sparse de 8,8 TB
+        // alocat 6,7 MB). Se respinge controlat, iar următoarea analiză îl rescrie cu măsura corectă.
+        guard (file.measureVersion ?? 0) >= currentMeasureVersion else {
+            DiagnosticLog.write(.info, tag: "disk", event: "cache.old-measure-rejected")
+            return nil
+        }
         // Alt volum montat la aceeasi cale (disc extern inlocuit): cache-ul ar minti, nu se foloseste.
         if let saved = file.volumeUUID, let now = volumeUUID(of: rootPath), saved != now {
             DiagnosticLog.write(.warning, tag: "disk", event: "cache.volume-mismatch")
             return nil
         }
         return Snapshot(rootPath: file.rootPath, scannedAt: file.scannedAt, root: file.root,
-                        accessErrors: file.accessErrors ?? 0, verifiedAt: file.verifiedAt)
+                        accessErrors: file.accessErrors ?? 0, verifiedAt: file.verifiedAt, accessSamples: file.accessSamples ?? [])
     }
 
     public static func save(_ snapshot: Snapshot) {
         let file = SnapshotFile(rootPath: snapshot.rootPath, scannedAt: snapshot.scannedAt, root: snapshot.root,
                                 accessErrors: snapshot.accessErrors, verifiedAt: snapshot.verifiedAt,
-                                volumeUUID: volumeUUID(of: snapshot.rootPath))
+                                volumeUUID: volumeUUID(of: snapshot.rootPath), measureVersion: currentMeasureVersion, accessSamples: snapshot.accessSamples)
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
         guard let plist = try? encoder.encode(file) else {

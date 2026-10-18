@@ -19,7 +19,13 @@ public struct OfferSummary: Identifiable, Equatable, Sendable {
     public let id: String
     public let title: String
     public let amountText: String
-    public init(id: String, title: String, amountText: String) { self.id = id; self.title = title; self.amountText = amountText }
+    /// Versiunea ofertei din lista semnată: selecția rămâne valabilă doar pentru perechea (id, versiune).
+    public let version: Int
+    /// Cheie de ordonare naturală (durata ofertei, din lista semnată): o lună, trei luni, un an.
+    public let sortKey: Int
+    public init(id: String, title: String, amountText: String, version: Int = 0, sortKey: Int = 0) {
+        self.id = id; self.title = title; self.amountText = amountText; self.version = version; self.sortKey = sortKey
+    }
 }
 
 /// Granița dintre aplicația publică (MIT) și componentele comerciale GDC. Ediția oficială furnizează o implementare
@@ -29,8 +35,8 @@ public protocol AccessProviding: AnyObject {
     var offers: [OfferSummary] { get }
     /// Ediția oficială distribuită de GDC (true) sau cea comunitară din codul sursă (false). Textul îl alege interfața, în limba utilizatorului.
     var isOfficialEdition: Bool { get }
-    /// Text de trimis proprietarului pentru a cere o licență (cerere de activare), fără date personale.
-    func activationRequestText() -> String
+    /// Text de trimis proprietarului pentru a cere o licență (cerere de activare), fără date personale. `offerID` = oferta aleasă de utilizator.
+    func activationRequestText(offerID: String?) -> String
     /// Aplică o licență lipită de utilizator. Întoarce mesajul de eroare sau nil la succes.
     func submitLicense(_ text: String) async -> String?
     /// Chemat la ~1 Hz; `active` = utilizatorul folosește efectiv o funcție.

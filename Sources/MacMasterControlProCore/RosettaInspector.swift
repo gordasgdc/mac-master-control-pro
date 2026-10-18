@@ -62,12 +62,8 @@ public final class RosettaInspector: ObservableObject {
     /// aplicatia e detinuta de root/alt user.
     @discardableResult
     public func moveToTrash(_ selected: Set<IntelApp>) -> Int {
-        var moved = 0
-        for app in selected {
-            if PrivilegedFileOps.delete(app.path) == nil {
-                moved += 1
-            }
-        }
+        let batch = PrivilegedFileOps.deleteBatch(selected.map(\.path))
+        let moved = selected.filter { if case .some(.some) = batch.results[$0.path] { return false } else { return true } }.count
         scan()
         return moved
     }

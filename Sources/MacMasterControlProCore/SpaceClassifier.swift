@@ -156,8 +156,8 @@ public enum SpaceMath {
         for n in nodes where !n.isAggregate && !hasSelectedAncestor(n.path) {
             let f = SpaceClassifier.flags(path: n.path, isDirectory: n.isDirectory, duplicateSurplus: duplicateSurplus)
             if f.contains(.protected) { s.blocked.append(n.path); continue }
-            if f.contains(.regenerable) || f.contains(.duplicate) { s.recoverableBytes += n.sizeBytes; s.recoverable.append(n.path) }
-            else { s.unverifiedBytes += n.sizeBytes; s.unverified.append(n.path) }
+            if f.contains(.regenerable) || f.contains(.duplicate) { s.recoverableBytes += n.usedBytes; s.recoverable.append(n.path) }
+            else { s.unverifiedBytes += n.usedBytes; s.unverified.append(n.path) }
         }
         return s
     }
@@ -171,8 +171,8 @@ public enum SpaceMath {
             let f = SpaceClassifier.flags(path: n.path, isDirectory: n.isDirectory, duplicateSurplus: duplicateSurplus)
             if f.contains(.protected) { return }
             var inReg = insideReg
-            if f.contains(.regenerable) && !insideReg { reg += n.sizeBytes; inReg = true }
-            if f.contains(.duplicate) { if insideReg { overlap += n.sizeBytes } else { dup += n.sizeBytes } }
+            if f.contains(.regenerable) && !insideReg { reg += n.usedBytes; inReg = true }
+            if f.contains(.duplicate) { if insideReg { overlap += n.usedBytes } else { dup += n.usedBytes } }
             for c in n.children.values { walk(c, insideReg: inReg) }
         }
         walk(root, insideReg: false)
