@@ -4,7 +4,7 @@ import MacMasterControlProCore
 
 struct CleanupModuleView: View {
     @StateObject private var service = CleanupService.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var selectedItems: Set<CleanableItem> = []
     @State private var selectedSnapshots: Set<String> = []
@@ -208,11 +208,11 @@ struct CleanupModuleView: View {
         .padding(24)
         }
         .onAppear { service.scanReclaimable(); service.scanSnapshots() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 
     private func scanBigFiles() {

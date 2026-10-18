@@ -3,7 +3,7 @@ import AppKit
 import MacMasterControlProCore
 
 struct DuplicateFinderView: View {
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @StateObject private var scanFolders = DuplicateScanFolders.shared
     @State private var showGate = false
     /// [2026-09-11] Starea scanarii traieste in ViewModel-ul SINGLETON, nu in
@@ -128,11 +128,11 @@ struct DuplicateFinderView: View {
             }
             .padding(24)
         }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 
     private func addFolder() {

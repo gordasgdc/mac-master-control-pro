@@ -4,7 +4,7 @@ import MacMasterControlProCore
 
 struct CloudManagerView: View {
     @StateObject private var service = CloudManagerService.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var showAddSheet = false
     @State private var useChunker = false
@@ -121,7 +121,7 @@ struct CloudManagerView: View {
         .padding(24)
         .onAppear { service.refreshRemotes() }
         .sheet(isPresented: $showAddSheet) { AddCloudRemoteSheet(service: service) }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func pickMountFolder() {
@@ -135,7 +135,7 @@ struct CloudManagerView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 }
 

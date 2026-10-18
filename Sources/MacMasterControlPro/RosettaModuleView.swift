@@ -3,7 +3,7 @@ import MacMasterControlProCore
 
 struct RosettaModuleView: View {
     @StateObject private var service = RosettaInspector.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var showConfirmRemove = false
     @State private var showConfirmTrash = false
@@ -59,7 +59,7 @@ struct RosettaModuleView: View {
                             .font(.caption).foregroundStyle(.secondary)
 
                         Button("Trimite la Coș aplicațiile selectate", role: .destructive) {
-                            if license.isActivated { showConfirmTrash = true } else { showGate = true }
+                            if license.allowsFeatures { showConfirmTrash = true } else { showGate = true }
                         }
                         .disabled(selected.isEmpty)
                     }
@@ -74,7 +74,7 @@ struct RosettaModuleView: View {
                             .foregroundStyle(.orange).font(.caption)
                     }
                     Button("Elimină Rosetta 2 din sistem…", role: .destructive) {
-                        if license.isActivated { showConfirmRemove = true } else { showGate = true }
+                        if license.allowsFeatures { showConfirmRemove = true } else { showGate = true }
                     }
                 }
                 .padding(6)
@@ -87,7 +87,7 @@ struct RosettaModuleView: View {
         }
         .padding(24)
         .onAppear { service.scan() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
         .alert("Elimini Rosetta 2?", isPresented: $showConfirmRemove) {
             Button("Anulează", role: .cancel) {}
             Button("Elimină definitiv", role: .destructive) { service.removeRosetta() }

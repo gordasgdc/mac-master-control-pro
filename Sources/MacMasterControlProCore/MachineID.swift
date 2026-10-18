@@ -33,6 +33,20 @@ public enum MachineID {
     /// copies from Preferences → License and sends before buying, and
     /// what `sell.py --machine-id <this>` expects.
     public static var display: String {
-        LicenseCore.base32Encode(Data(hashBytes))
+        base32Encode(Data(hashBytes))
+    }
+
+    // Base32 RFC 4648 (fără padding), identic cu base64.b32encode din Python: același Machine ID ca înainte.
+    private static let base32Alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
+    static func base32Encode(_ data: Data) -> String {
+        var bits = 0, value = 0
+        var output = ""
+        for byte in data {
+            value = (value << 8) | Int(byte)
+            bits += 8
+            while bits >= 5 { output.append(base32Alphabet[(value >> (bits - 5)) & 0x1F]); bits -= 5 }
+        }
+        if bits > 0 { output.append(base32Alphabet[(value << (5 - bits)) & 0x1F]) }
+        return output
     }
 }

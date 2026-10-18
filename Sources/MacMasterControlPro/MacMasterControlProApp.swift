@@ -1,6 +1,9 @@
 import SwiftUI
 import MacMasterControlProCore
 import AppKit
+#if OFFICIAL_BUILD
+import MacMasterControlProOfficial
+#endif
 
 extension Notification.Name {
     static let mmcpOpenSettings = Notification.Name("mmcpOpenSettings")
@@ -8,6 +11,13 @@ extension Notification.Name {
 
 @main
 struct MacMasterControlProApp: App {
+    init() {
+        #if OFFICIAL_BUILD
+        AccessFactory.make = { OfficialAccess() }
+        #endif
+        _ = AccessCoordinator.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

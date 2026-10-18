@@ -6,7 +6,7 @@ import MacMasterControlProCore
 /// Scripting API-ul oficial, niciodată scriere directă în baza de date
 /// internă a proiectelor (vezi comentariul din ResolveMediaAuditService).
 struct ResolveToolsView: View {
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
 
     @State private var isScanning = false
@@ -256,7 +256,7 @@ struct ResolveToolsView: View {
             refreshResolveHealth()
             backups = ResolveDatabaseBackupService.listBackups()
         }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func syncConfig() {
@@ -338,7 +338,7 @@ struct ResolveToolsView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 
     private func refreshResolveHealth() {

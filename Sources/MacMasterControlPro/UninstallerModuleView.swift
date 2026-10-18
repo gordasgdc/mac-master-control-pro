@@ -7,7 +7,7 @@ import MacMasterControlProCore
 /// Cerință directă (2026-08-31): "să dezinstalezi tot ce ține legătură de
 /// acea aplicație, să nu rămână nimica pe niciunde".
 struct UninstallerModuleView: View {
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
 
     @State private var apps: [InstalledApp] = []
@@ -42,7 +42,7 @@ struct UninstallerModuleView: View {
         }
         .padding(24)
         .onAppear { apps = UninstallerService.scanInstalledApps() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     // MARK: - Lista de aplicații
@@ -252,7 +252,7 @@ struct UninstallerModuleView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated {
+        if license.allowsFeatures {
             action()
         } else {
             showGate = true

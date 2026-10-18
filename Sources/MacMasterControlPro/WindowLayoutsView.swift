@@ -5,7 +5,7 @@ import MacMasterControlProCore
 /// restaurează pozițiile ferestrelor unei aplicații (DaVinci Resolve sau
 /// oricare alta) - necesită permisiunea de Accesibilitate (o singură dată).
 struct WindowLayoutsView: View {
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
 
     @State private var isTrusted = WindowLayoutService.isAccessibilityTrusted
@@ -89,7 +89,7 @@ struct WindowLayoutsView: View {
         }
         .padding(24)
         .onAppear { refresh() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func refresh() {
@@ -118,6 +118,6 @@ struct WindowLayoutsView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 }

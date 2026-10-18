@@ -7,7 +7,7 @@ import MacMasterControlProCore
 /// .safeAreaInset direct pe List (Regula 24 — bug de suprapunere la resize).
 struct SidebarFooterView: View {
     @ObservedObject private var profile = UserProfileStore.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var copiedFeedback = false
     @State private var isCheckingUpdate = false
     @State private var showActivation = false
@@ -28,13 +28,13 @@ struct SidebarFooterView: View {
                 }
                 Spacer()
                 Button {
-                    if !license.isActivated { showActivation = true }
+                    if !license.allowsFeatures { showActivation = true }
                 } label: {
-                    Text(license.isActivated ? "Pro" : L.t("sidebar.trialBadge"))
+                    Text(license.allowsFeatures ? "Pro" : L.t("sidebar.trialBadge"))
                         .font(.caption2).bold()
                         .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(license.isActivated ? Color.green.opacity(0.2) : Color.orange.opacity(0.25))
-                        .foregroundStyle(license.isActivated ? .green : .orange)
+                        .background(license.allowsFeatures ? Color.green.opacity(0.2) : Color.orange.opacity(0.25))
+                        .foregroundStyle(license.allowsFeatures ? .green : .orange)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -72,6 +72,6 @@ struct SidebarFooterView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .sheet(isPresented: $showActivation) { TrialGateModal() }
+        .sheet(isPresented: $showActivation) { AccessGateSheet() }
     }
 }

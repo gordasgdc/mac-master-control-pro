@@ -98,9 +98,33 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     }
 }
 
+/// Grupuri de navigare: toate modulele rămân accesibile, grupate după ce vrea utilizatorul să facă.
+enum SidebarGroup: CaseIterable {
+    case home, space, system, media, app
+    var title: String {
+        switch self {
+        case .home: return "Acasă"
+        case .space: return "Spațiu"
+        case .system: return "Sistem și activitate"
+        case .media: return "Media și Resolve"
+        case .app: return "Aplicație"
+        }
+    }
+    var items: [SidebarItem] {
+        switch self {
+        case .home: return [.dashboard]
+        case .space: return [.diskAnalyzer, .cleanup, .duplicates, .uninstaller]
+        case .system: return [.processMonitor, .loginItems, .diskHealth, .renderMode, .network, .security, .tweaks, .rosetta, .windowLayouts]
+        case .media: return [.resolveTools, .cloud]
+        case .app: return [.dependencies, .settings]
+        }
+    }
+}
+
 struct ContentView: View {
     @State private var selection: SidebarItem? = .dashboard
     @ObservedObject private var language = LanguageStore.shared
+    @ObservedObject private var access = AccessCoordinator.shared
     @StateObject private var dependencyChecker = DependencyChecker()
     @State private var searchText = ""
 
@@ -142,17 +166,28 @@ struct ContentView: View {
                 if filteredItems.isEmpty {
                     Text("Niciun rezultat.").font(.caption).foregroundStyle(.secondary).padding()
                 }
-                List(filteredItems, selection: $selection) { item in
-                    HStack {
-                        Label(L.t(item.labelKey), systemImage: item.icon)
-                        if item == .dependencies, !dependencyChecker.allInstalled, !dependencyChecker.items.isEmpty {
-                            Spacer()
-                            Circle().fill(Color.red).frame(width: 8, height: 8)
+                List(selection: $selection) {
+                    ForEach(SidebarGroup.allCases, id: \.self) { group in
+                        let items = group.items.filter { filteredItems.contains($0) }
+                        if !items.isEmpty {
+                            Section(group.title) {
+                                ForEach(items) { item in
+                                    HStack {
+                                        Label(L.t(item.labelKey), systemImage: item.icon)
+                                        if item == .dependencies, !dependencyChecker.allInstalled, !dependencyChecker.items.isEmpty {
+                                            Spacer()
+                                            Circle().fill(Color.red).frame(width: 8, height: 8)
+                                        }
+                                    }
+                                    .tag(item)
+                                    .help(item.tooltip)
+                                }
+                            }
                         }
                     }
-                    .tag(item)
-                    .help(item.tooltip)
                 }
+                .listStyle(.sidebar)
+                AccessStatusPill()
                 SidebarFooterView()
             }
             .navigationTitle("Master Control Studio Pro")
@@ -178,6 +213,7 @@ struct ContentView: View {
             default: DashboardView(checker: dependencyChecker, navigate: { selection = $0 })
             }
         }
+        .overlay { if !access.allowsFeatures { AccessLockedOverlay() } }
         .id(language.current) // forteaza refresh la schimbarea limbii
         .frame(minWidth: 900, minHeight: 600)
         .onReceive(NotificationCenter.default.publisher(for: .mmcpOpenSettings)) { _ in

@@ -7,7 +7,7 @@ import MacMasterControlProCore
 /// acțiuni SIGURE (fără risc de blocare a Mac-ului sau necesitatea unui
 /// recovery key manual) cu un singur click.
 struct SecurityModuleView: View {
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var checks: [SecurityCheck] = []
     @State private var isBusy = false
@@ -86,7 +86,7 @@ struct SecurityModuleView: View {
         }
         .padding(24)
         .onAppear { refresh() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
         .sheet(item: $guideCheck) { check in
             SecurityGuideSheet(check: check) { guideCheck = nil }
         }
@@ -105,7 +105,7 @@ struct SecurityModuleView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated {
+        if license.allowsFeatures {
             action()
         } else {
             showGate = true

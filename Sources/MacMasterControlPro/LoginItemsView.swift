@@ -4,7 +4,7 @@ import MacMasterControlProCore
 /// Auditor de aplicații la pornire (2026-08-31, Nivel 1 #4) - buton
 /// roșu/verde per element (Regula 26), niciodată o dezactivare în masă.
 struct LoginItemsView: View {
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var items: [LoginItem] = []
     @State private var disabledLabels: Set<String> = []
@@ -56,7 +56,7 @@ struct LoginItemsView: View {
         }
         .padding(24)
         .onAppear { refresh() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func refresh() {
@@ -81,6 +81,6 @@ struct LoginItemsView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 }

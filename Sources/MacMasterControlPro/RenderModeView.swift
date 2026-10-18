@@ -8,7 +8,7 @@ import MacMasterControlProCore
 struct RenderModeView: View {
     @State private var previewLines: [String] = []
     @StateObject private var service = RenderModeService.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var logLines: [String] = []
     /// Reîmprospătare periodică (nu doar la deschiderea paginii) — userul
@@ -79,7 +79,7 @@ struct RenderModeView: View {
         .padding(24)
         .onAppear { service.refreshDetectedApps() }
         .onReceive(refreshTimer) { _ in service.refreshDetectedApps() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     /// [2026-09-03] Cerut explicit de Cristi: "iconița oficială de la
@@ -117,6 +117,6 @@ struct RenderModeView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 }

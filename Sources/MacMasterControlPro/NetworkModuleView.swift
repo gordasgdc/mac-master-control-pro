@@ -4,7 +4,7 @@ import MacMasterControlProCore
 /// Primul modul: Retea & Cloud (mapare directa pe menu_network_cloud din script).
 struct NetworkModuleView: View {
     @StateObject private var service = NetworkService.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var selected: Set<String> = []
 
@@ -88,11 +88,11 @@ struct NetworkModuleView: View {
             service.scanAdapters()
             service.refreshPersistentTuningStatus()
         }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated {
+        if license.allowsFeatures {
             action()
         } else {
             showGate = true

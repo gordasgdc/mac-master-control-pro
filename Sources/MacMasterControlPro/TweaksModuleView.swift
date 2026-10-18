@@ -15,7 +15,7 @@ private enum TweakID: String, CaseIterable, Identifiable {
 
 struct TweaksModuleView: View {
     @StateObject private var service = TweaksService.shared
-    @ObservedObject private var license = LicenseStore.shared
+    @ObservedObject private var license = AccessCoordinator.shared
     @State private var showGate = false
     @State private var selected: Set<TweakID> = []
     @State private var status = ""
@@ -167,7 +167,7 @@ struct TweaksModuleView: View {
         }
         .padding(24)
         .onAppear { service.scanSpotlightTargets() }
-        .sheet(isPresented: $showGate) { TrialGateModal() }
+        .sheet(isPresented: $showGate) { AccessGateSheet() }
     }
 
     private func applySelected() {
@@ -187,6 +187,6 @@ struct TweaksModuleView: View {
     }
 
     private func runGated(_ action: @escaping () -> Void) {
-        if license.isActivated { action() } else { showGate = true }
+        if license.allowsFeatures { action() } else { showGate = true }
     }
 }
