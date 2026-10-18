@@ -243,7 +243,7 @@ struct DiskAnalyzerView: View {
                 labeled("Cale", n.isAggregate ? L.x("(grup de fișiere mici din folderul curent)", "(group of small files in this folder)", "(grupo de archivos pequeños de esta carpeta)") : n.path)
                 labeled(L.x("Mărime logică", "Logical size", "Tamaño lógico"), Studio.gb(n.sizeBytes))
                 if n.allocatedBytes > 0 { labeled(L.x("Spațiu alocat", "Allocated space", "Espacio asignado"), Studio.gb(n.allocatedBytes)) }
-                labeled(L.x("De ce această stare", "Why this state", "Por qué este estado"), SpaceClassifier.explanation(path: n.path, isDirectory: n.isDirectory, flags: flags))
+                labeled(L.x("De ce această stare", "Why this state", "Por qué este estado"), SpaceClassifier.explanation(path: n.path, isDirectory: n.isDirectory, flags: flags, lang: LanguageStore.shared.current.rawValue))
             }
             if !n.isAggregate {
                 HStack {

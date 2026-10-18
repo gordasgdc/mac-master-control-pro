@@ -68,8 +68,49 @@ public enum SpaceClassifier {
         return nil
     }
 
+    /// Traduceri RO→EN/ES ale explicațiilor (cheia = textul românesc din reguli). Necunoscut ⇒ textul românesc.
+    static let translations: [String: (en: String, es: String)] = [
+        "Adobe recreează cache-ul media la nevoie.": ("Adobe recreates its media cache when needed.", "Adobe recrea su caché de medios cuando hace falta."),
+        "Aplicație.": ("Application.", "Aplicación."),
+        "Aplicație: se dezinstalează din Dezinstalator, cu toate urmele.": ("Application: remove it with the Uninstaller, leftovers included.", "Aplicación: se desinstala con el Desinstalador, con todos sus restos."),
+        "Aplicații instalate: se dezinstalează din Dezinstalator.": ("Installed applications: remove them with the Uninstaller.", "Aplicaciones instaladas: se desinstalan con el Desinstalador."),
+        "Backup de dispozitiv iOS: nu se șterge de aici.": ("iOS device backup: do not delete it from here.", "Copia de seguridad de un dispositivo iOS: no se borra desde aquí."),
+        "Baza de date DaVinci Resolve: conține proiectele.": ("DaVinci Resolve database: it holds your projects.", "Base de datos de DaVinci Resolve: contiene tus proyectos."),
+        "Bibliotecă Foto: se gestionează din aplicația Foto.": ("Photos library: manage it from the Photos app.", "Fototeca: se gestiona desde la app Fotos."),
+        "Cache de aplicații: se recreează la nevoie.": ("App caches: recreated when needed.", "Cachés de apps: se recrean cuando hace falta."),
+        "Chei de protecție.": ("Protection keys.", "Claves de protección."),
+        "Chei și parole.": ("Keys and passwords.", "Claves y contraseñas."),
+        "Coșul de reciclare se golește din Windows.": ("The Recycle Bin is emptied from Windows.", "La Papelera de reciclaje se vacía desde Windows."),
+        "Credențiale.": ("Credentials.", "Credenciales."),
+        "DaVinci Resolve recreează CacheClip la nevoie.": ("DaVinci Resolve recreates CacheClip when needed.", "DaVinci Resolve recrea CacheClip cuando hace falta."),
+        "Date Mail.": ("Mail data.", "Datos de Mail."),
+        "Date Mesaje.": ("Messages data.", "Datos de Mensajes."),
+        "Date de sistem.": ("System data.", "Datos del sistema."),
+        "Datele derivate ale build-ului se recreează.": ("Build-derived data is recreated.", "Los datos derivados de la compilación se recrean."),
+        "Fișiere temporare: aplicațiile le recreează.": ("Temporary files: apps recreate them.", "Archivos temporales: las apps los recrean."),
+        "Fișierele de formă de undă se regenerează.": ("Waveform files are regenerated.", "Los archivos de forma de onda se regeneran."),
+        "Folder personal: selectează conținutul, nu folderul întreg.": ("Personal folder: select its contents, not the whole folder.", "Carpeta personal: selecciona su contenido, no la carpeta entera."),
+        "Folder sincronizat în cloud: ștergerea se propagă; se gestionează din OneDrive.": ("Cloud-synced folder: deleting propagates; manage it from OneDrive.", "Carpeta sincronizada en la nube: el borrado se propaga; se gestiona desde OneDrive."),
+        "Media optimizată se regenerează din originale.": ("Optimized media is regenerated from the originals.", "Los medios optimizados se regeneran a partir de los originales."),
+        "Sistem.": ("System.", "Sistema."),
+        "Time Machine.": ("Time Machine.", "Time Machine."),
+        "Xcode recreează DerivedData la build.": ("Xcode recreates DerivedData on build.", "Xcode recrea DerivedData al compilar."),
+        "iCloud Drive: se gestionează din iCloud.": ("iCloud Drive: manage it from iCloud.", "iCloud Drive: se gestiona desde iCloud."),
+        "Element fără cale reală pe disc (grup de fișiere mici).": ("Item with no real path on disk (group of small files).", "Elemento sin ruta real en el disco (grupo de archivos pequeños)."),
+        "Conținut identic cu o altă copie (sumă de control confirmată). Se păstrează o copie.": ("Content identical to another copy (checksum confirmed). One copy is kept.", "Contenido idéntico a otra copia (suma de control confirmada). Se conserva una copia."),
+        "Nicio regulă verificată nu se aplică: nu știm dacă există o copie de rezervă. Nu intră în totalul recuperabil; îl poți muta în Coș doar cu confirmare.": ("No verified rule applies: we do not know whether a backup exists. It does not count toward the recoverable total; you can move it to the Trash only with confirmation.", "No se aplica ninguna regla verificada: no sabemos si existe una copia de seguridad. No cuenta en el total recuperable; solo puedes moverlo a la Papelera con confirmación."),
+    ]
+    public static func localized(_ reason: String, lang: String) -> String {
+        guard let t = translations[reason] else { return reason }
+        switch lang { case "en": return t.en; case "es": return t.es; default: return reason }
+    }
+
     /// Explicația afișată la cerere: de ce are elementul această stare.
-    public static func explanation(path: String, isDirectory: Bool, flags: Set<SpaceFlag>) -> String {
+    public static func explanation(path: String, isDirectory: Bool, flags: Set<SpaceFlag>, lang: String = "ro") -> String {
+        localized(explanationRO(path: path, isDirectory: isDirectory, flags: flags), lang: lang)
+    }
+
+    static func explanationRO(path: String, isDirectory: Bool, flags: Set<SpaceFlag>) -> String {
         if flags.contains(.protected) { return protectedReason(path: path, isDirectory: isDirectory)?.reason ?? "Element fără cale reală pe disc (grup de fișiere mici)." }
         if flags.contains(.regenerable), let r = regenerableRule(path: path) { return r.reason }
         if flags.contains(.duplicate) { return "Conținut identic cu o altă copie (sumă de control confirmată). Se păstrează o copie." }
