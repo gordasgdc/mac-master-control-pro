@@ -17,6 +17,9 @@ jobs:
       - name: Descarca codul din repo
         uses: actions/checkout@v4
 
+      - name: Stub OAuth (editia comunitara)
+        run: scripts/ensure_secrets_stub.sh
+
       - name: Compileaza (release)
         run: swift build -c release --product MacMasterControlPro
 

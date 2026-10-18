@@ -33,6 +33,7 @@ See what takes up space on your disks, review it, and move it to the Trash **rec
 ## Build
 
 ```bash
+scripts/ensure_secrets_stub.sh       # once, on a fresh clone (empty OAuth stub; community edition)
 swift build -c release            # use --scratch-path to keep build output off the system disk
 swift test                        # 45 tests
 ./build_installer.sh              # signed + notarized DMG/PKG (needs Developer ID + notarytool profile)

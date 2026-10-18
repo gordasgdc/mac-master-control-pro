@@ -3,5 +3,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/storage_env.sh
+scripts/ensure_secrets_stub.sh
 cmd="${1:?build|test}"; shift
 exec swift "$cmd" --scratch-path "$MCSP_SCRATCH" "$@"
