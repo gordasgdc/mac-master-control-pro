@@ -13,7 +13,7 @@ public final class DuplicateScanFolders: ObservableObject {
     @Published public var folders: [String]
 
     public init() {
-        folders = (UserDefaults.standard.array(forKey: Self.key) as? [String]) ?? []
+        folders = (AppProfile.defaults.array(forKey: Self.key) as? [String]) ?? []
     }
 
     public func addFolder(_ path: String) {
@@ -28,7 +28,7 @@ public final class DuplicateScanFolders: ObservableObject {
     }
 
     private func persist() {
-        UserDefaults.standard.set(folders, forKey: Self.key)
+        AppProfile.defaults.set(folders, forKey: Self.key)
     }
 }
 

@@ -47,9 +47,7 @@ public enum DiskCacheStore {
     }
 
     private static var cacheDirectory: URL {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("MacMasterControlPro", isDirectory: true)
-            .appendingPathComponent("DiskCache", isDirectory: true)
+        let dir = AppProfile.supportDirectory.appendingPathComponent("DiskCache", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

@@ -5,12 +5,17 @@ import Foundation
 public enum DemoProfile {
     static let keepPrefixes = ["MMSP.access.", "NS", "Apple", "AK", "com.apple", "WebKit", "NavPanel", "Sparkle"]
 
-    public static func wipe(defaults: UserDefaults = .standard, supportDir: URL? = nil) {
+    /// Se aplică NUMAI profilului izolat (build demonstrativ/test) sau unor ținte date explicit (teste). Pe profilul oficial nu face NIMIC:
+    /// proba nu șterge niciodată setările, conturile, credențialele sau datele utilizatorului (hotărâre proprietar, 2026-10-18).
+    public static func wipe(defaults: UserDefaults? = nil, supportDir: URL? = nil) {
+        let explicit = defaults != nil || supportDir != nil
+        guard AppProfile.isIsolated || explicit else { DiagnosticLog.write(.info, tag: "access", event: "demo.wipe-skipped-official-profile"); return }
+        let defaults = defaults ?? AppProfile.defaults
         for key in defaults.dictionaryRepresentation().keys where !keepPrefixes.contains(where: { key.hasPrefix($0) }) {
             defaults.removeObject(forKey: key)
         }
-        SecretStore.delete(account: "smtp.appPassword")
-        let dir = supportDir ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("MacMasterControlPro", isDirectory: true)
+        if supportDir == nil { SecretStore.delete(account: "smtp.appPassword") }
+        let dir = supportDir ?? AppProfile.supportDirectory
         let keep: Set<String> = ["RenderModeSnapshot.json"]
         if let items = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
             for name in items where !keep.contains(name) && !name.hasSuffix(".sh") {

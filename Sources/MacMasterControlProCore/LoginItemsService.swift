@@ -23,7 +23,7 @@ public enum LoginItemsService {
     private static let systemAgentsDir = "/Library/LaunchAgents"
     /// Folder de "carantina" pentru plist-urile dezactivate - reversibil,
     /// niciodata stergere definitiva (userul poate reactiva oricand).
-    private static let disabledHoldingDir = NSHomeDirectory() + "/Library/Application Support/MacMasterControlPro/DisabledLoginItems"
+    private static let disabledHoldingDir = AppProfile.supportDirectory.appendingPathComponent("DisabledLoginItems").path
 
     public static func scan() -> [LoginItem] {
         var items: [LoginItem] = []

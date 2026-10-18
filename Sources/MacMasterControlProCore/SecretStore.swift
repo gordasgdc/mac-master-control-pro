@@ -3,7 +3,7 @@ import Security
 
 /// Secrete in Keychain (generic password), nu in UserDefaults. Valorile nu se logheaza.
 public enum SecretStore {
-    public static let service = "com.gordasgdc.macmastercontrolpro.secrets"
+    public static var service: String { AppProfile.keychainService }
 
     private static func query(_ account: String) -> [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,

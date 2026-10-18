@@ -49,17 +49,17 @@ final class DiagnosticTests: XCTestCase {
 final class SecretMigrationTests: XCTestCase {
     func testLegacyPlaintextPasswordMovesToKeychain() {
         let key = "MacMasterControlPro.emailNotifierSettings"
-        let backup = UserDefaults.standard.data(forKey: key)
+        let backup = AppProfile.defaults.data(forKey: key)
         let oldSecret = SecretStore.get(account: "smtp.appPassword")
         defer {
-            if let backup { UserDefaults.standard.set(backup, forKey: key) } else { UserDefaults.standard.removeObject(forKey: key) }
+            if let backup { AppProfile.defaults.set(backup, forKey: key) } else { AppProfile.defaults.removeObject(forKey: key) }
             if let oldSecret { SecretStore.set(oldSecret, account: "smtp.appPassword") } else { SecretStore.delete(account: "smtp.appPassword") }
         }
         var legacy = EmailNotifierSettings(); legacy.enabled = true; legacy.username = "u@x.org"; legacy.appPassword = "legacy-pass-123"; legacy.recipient = "r@x.org"
-        UserDefaults.standard.set(try! JSONEncoder().encode(legacy), forKey: key)
+        AppProfile.defaults.set(try! JSONEncoder().encode(legacy), forKey: key)
         let s = EmailNotifierService.settings
         XCTAssertEqual(s.appPassword, "legacy-pass-123"); XCTAssertEqual(s.username, "u@x.org"); XCTAssertTrue(s.enabled)
-        let raw = String(data: UserDefaults.standard.data(forKey: key)!, encoding: .utf8)!
+        let raw = String(data: AppProfile.defaults.data(forKey: key)!, encoding: .utf8)!
         XCTAssertFalse(raw.contains("legacy-pass-123"))
         XCTAssertEqual(SecretStore.get(account: "smtp.appPassword"), "legacy-pass-123")
     }

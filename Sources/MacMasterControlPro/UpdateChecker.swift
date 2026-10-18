@@ -1,3 +1,4 @@
+import MacMasterControlProCore
 import AppKit
 
 /// "Caută Actualizări" — compară versiunea rulată cu ultimul tag GitHub și
@@ -15,14 +16,14 @@ enum UpdateChecker {
         Task {
             if case .newVersion(let version, let pkgURL) = await fetchLatestTag() {
                 let dismissedKey = "mmc_dismissed_update_version"
-                if UserDefaults.standard.string(forKey: dismissedKey) == version { return }
+                if AppProfile.defaults.string(forKey: dismissedKey) == version { return }
                 await MainActor.run { onNewVersion(version, pkgURL) }
             }
         }
     }
 
     static func markDismissed(_ version: String) {
-        UserDefaults.standard.set(version, forKey: "mmc_dismissed_update_version")
+        AppProfile.defaults.set(version, forKey: "mmc_dismissed_update_version")
     }
 
     static func checkAndShowAlert() {

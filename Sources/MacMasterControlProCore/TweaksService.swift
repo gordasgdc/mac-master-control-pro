@@ -128,20 +128,20 @@ public final class TweaksService: ObservableObject {
     public func addCustomFolders(_ paths: [String]) {
         var stored = customFolders()
         for path in paths where !stored.contains(path) { stored.append(path) }
-        UserDefaults.standard.set(stored, forKey: Self.customFoldersKey)
+        AppProfile.defaults.set(stored, forKey: Self.customFoldersKey)
         scanSpotlightTargets()
     }
 
     public func removeCustomFolder(_ path: String) {
         var stored = customFolders()
         stored.removeAll { $0 == path }
-        UserDefaults.standard.set(stored, forKey: Self.customFoldersKey)
+        AppProfile.defaults.set(stored, forKey: Self.customFoldersKey)
         setProtected(path, false)
         scanSpotlightTargets()
     }
 
     private func customFolders() -> [String] {
-        UserDefaults.standard.stringArray(forKey: Self.customFoldersKey) ?? []
+        AppProfile.defaults.stringArray(forKey: Self.customFoldersKey) ?? []
     }
 
     public func isProtected(_ path: String) -> Bool {

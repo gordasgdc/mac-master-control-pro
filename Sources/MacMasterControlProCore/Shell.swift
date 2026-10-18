@@ -119,8 +119,7 @@ public enum Shell {
     /// ca aici trebuie sa fie un PROGRAM separat (nu un simplu apel), fiindca
     /// asta cere `sudo`/`SUDO_ASKPASS`.
     private static var askpassScriptPath: String = {
-        let dir = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/MacMasterControlPro", isDirectory: true)
+        let dir = AppProfile.supportDirectory
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let scriptURL = dir.appendingPathComponent("askpass.sh")
         let script = """

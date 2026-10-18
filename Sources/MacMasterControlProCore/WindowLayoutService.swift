@@ -104,7 +104,7 @@ public enum WindowLayoutService {
     }
 
     public static func allProfiles() -> [WindowLayoutProfile] {
-        guard let data = UserDefaults.standard.data(forKey: storeKey),
+        guard let data = AppProfile.defaults.data(forKey: storeKey),
               let profiles = try? JSONDecoder().decode([WindowLayoutProfile].self, from: data)
         else { return [] }
         return profiles.sorted { $0.savedAt > $1.savedAt }
@@ -116,7 +116,7 @@ public enum WindowLayoutService {
 
     private static func persist(_ profiles: [WindowLayoutProfile]) {
         if let data = try? JSONEncoder().encode(profiles) {
-            UserDefaults.standard.set(data, forKey: storeKey)
+            AppProfile.defaults.set(data, forKey: storeKey)
         }
     }
 

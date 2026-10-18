@@ -1,3 +1,4 @@
+import MacMasterControlProCore
 import SwiftUI
 import AppKit
 
@@ -20,13 +21,13 @@ final class ThemeManager: ObservableObject {
 
     @Published var current: AppTheme {
         didSet {
-            UserDefaults.standard.set(current.rawValue, forKey: Self.key)
+            AppProfile.defaults.set(current.rawValue, forKey: Self.key)
             applyNow()
         }
     }
 
     private init() {
-        let raw = UserDefaults.standard.string(forKey: Self.key) ?? AppTheme.system.rawValue
+        let raw = AppProfile.defaults.string(forKey: Self.key) ?? AppTheme.system.rawValue
         current = AppTheme(rawValue: raw) ?? .system
     }
 

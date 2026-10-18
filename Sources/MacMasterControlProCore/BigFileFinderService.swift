@@ -15,7 +15,7 @@ public final class BigFileScanFolders: ObservableObject {
     @Published public var customFolders: [String]
 
     public init() {
-        let defaults = UserDefaults.standard
+        let defaults = AppProfile.defaults
         if let saved = defaults.array(forKey: Self.enabledDefaultsKey) as? [String] {
             enabledDefaults = Set(saved)
         } else {
@@ -46,7 +46,7 @@ public final class BigFileScanFolders: ObservableObject {
     }
 
     private func persist() {
-        let defaults = UserDefaults.standard
+        let defaults = AppProfile.defaults
         defaults.set(Array(enabledDefaults), forKey: Self.enabledDefaultsKey)
         defaults.set(customFolders, forKey: Self.customFoldersKey)
     }

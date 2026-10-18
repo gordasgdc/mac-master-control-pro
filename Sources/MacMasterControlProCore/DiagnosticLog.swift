@@ -25,8 +25,7 @@ public enum DiagnosticLog {
     private static let osLogger = Logger(subsystem: subsystem, category: "app")
 
     public static var directory: URL {
-        directoryOverride ?? FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Logs/MasterControlStudioPro", isDirectory: true)
+        directoryOverride ?? AppProfile.logsDirectory
     }
     public static var activeFile: URL { directory.appendingPathComponent("mcsp.log") }
 

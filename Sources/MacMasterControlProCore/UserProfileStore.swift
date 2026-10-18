@@ -9,16 +9,16 @@ public final class UserProfileStore: ObservableObject {
     private static let emailKey = "MacMasterControlPro.profile.email"
 
     @Published public var name: String {
-        didSet { UserDefaults.standard.set(name, forKey: Self.nameKey) }
+        didSet { AppProfile.defaults.set(name, forKey: Self.nameKey) }
     }
     @Published public var email: String {
-        didSet { UserDefaults.standard.set(email, forKey: Self.emailKey) }
+        didSet { AppProfile.defaults.set(email, forKey: Self.emailKey) }
     }
 
     public var displayName: String { name.trimmingCharacters(in: .whitespaces).isEmpty ? "Anonim" : name }
 
     private init() {
-        name = UserDefaults.standard.string(forKey: Self.nameKey) ?? ""
-        email = UserDefaults.standard.string(forKey: Self.emailKey) ?? ""
+        name = AppProfile.defaults.string(forKey: Self.nameKey) ?? ""
+        email = AppProfile.defaults.string(forKey: Self.emailKey) ?? ""
     }
 }

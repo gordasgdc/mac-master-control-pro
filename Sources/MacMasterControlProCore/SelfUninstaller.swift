@@ -4,18 +4,19 @@ import AppKit
 /// Dezinstalare curată din interiorul aplicației (standard global GDC,
 /// Regula 45): șterge datele locale, apoi mută aplicația la Coș.
 public enum SelfUninstaller {
-    public static let bundleID = "com.gordasgdc.macmastercontrolpro"
+    public static var bundleID: String { AppProfile.bundleID }
     public static let appName = "MacMasterControlPro"
 
     /// Căile de date ale utilizatorului — public, ca să poată fi testate.
     public static func dataPaths(home: String = NSHomeDirectory()) -> [String] {
         let lib = home + "/Library"
+        let support = AppProfile.isIsolated ? AppProfile.supportDirectory.path : "\(lib)/Application Support/\(appName)"
         return [
-            "\(lib)/Application Support/\(appName)",
+            support,
             "\(lib)/Preferences/\(bundleID).plist",
             "\(lib)/Caches/\(bundleID)",
             "\(lib)/Caches/\(appName)",
-            "\(lib)/Logs/\(appName)",
+            AppProfile.isIsolated ? AppProfile.logsDirectory.path : "\(lib)/Logs/\(appName)",
             "\(lib)/Logs/\(appName).log",
             "\(lib)/Saved Application State/\(bundleID).savedState",
             "\(lib)/HTTPStorages/\(bundleID)",
@@ -26,8 +27,8 @@ public enum SelfUninstaller {
     /// Șterge datele; întoarce căile care n-au putut fi șterse.
     @discardableResult
     public static func removeUserData() -> [String] {
-        UserDefaults.standard.removePersistentDomain(forName: bundleID)
-        UserDefaults.standard.synchronize()
+        AppProfile.defaults.removePersistentDomain(forName: AppProfile.isIsolated ? "mcsp.iso.\(AppProfile.isolationID)" : bundleID)
+        AppProfile.defaults.synchronize()
         var failed: [String] = []
         for path in dataPaths() where FileManager.default.fileExists(atPath: path) {
             do { try FileManager.default.removeItem(atPath: path) }

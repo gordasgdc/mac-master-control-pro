@@ -247,6 +247,8 @@ struct SettingsView: View {
     @ObservedObject private var language = LanguageStore.shared
     @State private var confirmUninstall = false
     @State private var showDiagnostic = false
+    @State private var confirmReset = false
+    @State private var resetMessage: String?
 
     var body: some View {
         Form {
@@ -288,6 +290,13 @@ struct SettingsView: View {
                 Text("Pachetul se creează local, redactat; nu se trimite nimic automat.").font(.caption).foregroundStyle(.secondary)
             }
 
+            Section("Configurație") {
+                Text("Setările, folderele alese și cache-urile aplicației. Resetarea este o acțiune separată: nu se întâmplă automat la expirarea probei și face mai întâi o copie de siguranță.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Resetează configurația aplicației…", role: .destructive) { confirmReset = true }
+                if let resetMessage { Text(resetMessage).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
+            }
+
             Section("Dezinstalare") {
                 Button("Dezinstalează complet aplicația...", role: .destructive) {
                     confirmUninstall = true
@@ -296,6 +305,13 @@ struct SettingsView: View {
         }
         .padding(32)
         .sheet(isPresented: $showDiagnostic) { DiagnosticExportSheet() }
+        .alert("Resetezi configurația aplicației?", isPresented: $confirmReset) {
+            Button("Anulează", role: .cancel) {}
+            Button("Fă copie și resetează", role: .destructive) {
+                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = "Copie de siguranță: \(b.path)" }
+                catch { resetMessage = "Resetarea a eșuat: \(error.localizedDescription)" }
+            }
+        } message: { Text(AppProfile.resetPreview().joined(separator: "\n")) }
         .alert("Ești sigur că vrei să ștergi aplicația și toate datele/licențele locale?",
                isPresented: $confirmUninstall) {
             Button("Anulează", role: .cancel) {}

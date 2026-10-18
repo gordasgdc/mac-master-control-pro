@@ -80,8 +80,7 @@ public enum RenderModeState {
 
     // MARK: - Persistență (atomic, în Application Support)
     public static var snapshotURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("MacMasterControlPro", isDirectory: true).appendingPathComponent("RenderModeSnapshot.json")
+        AppProfile.supportDirectory.appendingPathComponent("RenderModeSnapshot.json")
     }
     public static func saveSnapshot(_ s: RenderModeSnapshot, to url: URL = snapshotURL) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)

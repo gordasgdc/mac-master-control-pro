@@ -19,8 +19,7 @@ public final class NetworkService: ObservableObject {
 
     private static let daemonLabel = "com.gdc.mastercontrolpro.network-tuning"
     private static var appSupportDir: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/MacMasterControlPro", isDirectory: true)
+        AppProfile.supportDirectory
     }
     private static var scriptPath: String { appSupportDir.appendingPathComponent("reapply-network-tuning.sh").path }
     private static var localPlistPath: String { appSupportDir.appendingPathComponent("\(daemonLabel).plist").path }

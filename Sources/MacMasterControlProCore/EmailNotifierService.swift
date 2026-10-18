@@ -26,7 +26,7 @@ public enum EmailNotifierService {
     /// si se sterg din UserDefaults (fara pierderea configuratiei).
     public static var settings: EmailNotifierSettings {
         get {
-            guard let data = UserDefaults.standard.data(forKey: key),
+            guard let data = AppProfile.defaults.data(forKey: key),
                   var decoded = try? JSONDecoder().decode(EmailNotifierSettings.self, from: data)
             else {
                 var s = EmailNotifierSettings()
@@ -38,7 +38,7 @@ public enum EmailNotifierService {
                 if SecretStore.set(decoded.appPassword, account: passwordAccount) {
                     var scrubbed = decoded
                     scrubbed.appPassword = ""
-                    if let clean = try? JSONEncoder().encode(scrubbed) { UserDefaults.standard.set(clean, forKey: key) }
+                    if let clean = try? JSONEncoder().encode(scrubbed) { AppProfile.defaults.set(clean, forKey: key) }
                     DiagnosticLog.write(.info, tag: "secrets", event: "smtp.migrated", result: "ok")
                 } else {
                     DiagnosticLog.write(.error, tag: "secrets", event: "smtp.migrated", result: "keychain-failed")
@@ -53,7 +53,7 @@ public enum EmailNotifierService {
             var stored = newValue
             stored.appPassword = ""
             if let data = try? JSONEncoder().encode(stored) {
-                UserDefaults.standard.set(data, forKey: key)
+                AppProfile.defaults.set(data, forKey: key)
             }
         }
     }

@@ -1,3 +1,4 @@
+import MacMasterControlProCore
 import Foundation
 
 enum AppLanguage: String, CaseIterable, Identifiable {
@@ -17,11 +18,11 @@ final class LanguageStore: ObservableObject {
     private static let key = "MacMasterControlPro.language"
 
     @Published var current: AppLanguage {
-        didSet { UserDefaults.standard.set(current.rawValue, forKey: Self.key) }
+        didSet { AppProfile.defaults.set(current.rawValue, forKey: Self.key) }
     }
 
     private init() {
-        if let saved = UserDefaults.standard.string(forKey: Self.key), let lang = AppLanguage(rawValue: saved) {
+        if let saved = AppProfile.defaults.string(forKey: Self.key), let lang = AppLanguage(rawValue: saved) {
             current = lang
         } else {
             // Detectie initiala din limba sistemului, cu fallback RO.

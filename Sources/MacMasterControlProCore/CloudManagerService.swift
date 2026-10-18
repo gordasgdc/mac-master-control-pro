@@ -128,8 +128,8 @@ public enum CloudMountSettings {
     private static let key = "MacMasterControlPro.customMountFolder"
 
     public static var customMountFolder: String? {
-        get { UserDefaults.standard.string(forKey: key) }
-        set { UserDefaults.standard.set(newValue, forKey: key) }
+        get { AppProfile.defaults.string(forKey: key) }
+        set { AppProfile.defaults.set(newValue, forKey: key) }
     }
 }
 
@@ -172,8 +172,8 @@ public enum GDCOAuthClients {
     /// pentru motivul exact al acestei decizii.
     private static let useGDCClientKey = "MacMasterControlPro.useGDCGoogleDriveClient"
     public static var useGDCClientForNewRemotes: Bool {
-        get { UserDefaults.standard.bool(forKey: useGDCClientKey) }
-        set { UserDefaults.standard.set(newValue, forKey: useGDCClientKey) }
+        get { AppProfile.defaults.bool(forKey: useGDCClientKey) }
+        set { AppProfile.defaults.set(newValue, forKey: useGDCClientKey) }
     }
 }
 
@@ -197,20 +197,20 @@ public enum RclonePerformanceSettings {
     public static let chunkChoicesMB = [8, 16, 32, 64, 128]
 
     public static var transfers: Int {
-        get { let v = UserDefaults.standard.integer(forKey: transfersKey); return v > 0 ? v : 8 }
-        set { UserDefaults.standard.set(newValue, forKey: transfersKey) }
+        get { let v = AppProfile.defaults.integer(forKey: transfersKey); return v > 0 ? v : 8 }
+        set { AppProfile.defaults.set(newValue, forKey: transfersKey) }
     }
     public static var checkers: Int {
-        get { let v = UserDefaults.standard.integer(forKey: checkersKey); return v > 0 ? v : 16 }
-        set { UserDefaults.standard.set(newValue, forKey: checkersKey) }
+        get { let v = AppProfile.defaults.integer(forKey: checkersKey); return v > 0 ? v : 16 }
+        set { AppProfile.defaults.set(newValue, forKey: checkersKey) }
     }
     public static var driveChunkMB: Int {
-        get { let v = UserDefaults.standard.integer(forKey: chunkMBKey); return v > 0 ? v : 64 }
-        set { UserDefaults.standard.set(newValue, forKey: chunkMBKey) }
+        get { let v = AppProfile.defaults.integer(forKey: chunkMBKey); return v > 0 ? v : 64 }
+        set { AppProfile.defaults.set(newValue, forKey: chunkMBKey) }
     }
     public static var fastList: Bool {
-        get { UserDefaults.standard.object(forKey: fastListKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: fastListKey) }
+        get { AppProfile.defaults.object(forKey: fastListKey) as? Bool ?? true }
+        set { AppProfile.defaults.set(newValue, forKey: fastListKey) }
     }
 
     /// Flag-urile gata formatate, de adaugat la orice comanda `rclone
@@ -469,12 +469,12 @@ public final class CloudManagerService: ObservableObject {
 
     private func saveMountedState() {
         if let data = try? JSONEncoder().encode(mounted) {
-            UserDefaults.standard.set(data, forKey: Self.mountedKey)
+            AppProfile.defaults.set(data, forKey: Self.mountedKey)
         }
     }
 
     private func loadMountedState() {
-        guard let data = UserDefaults.standard.data(forKey: Self.mountedKey),
+        guard let data = AppProfile.defaults.data(forKey: Self.mountedKey),
               let saved = try? JSONDecoder().decode([MountedDrive].self, from: data) else { return }
         // Nu remontam automat la lansare - doar afisam ce era montat anterior.
         mounted = saved
