@@ -299,10 +299,10 @@ struct DiskAnalyzerView: View {
             TableColumn("") { r in
                 Button { _ = vm.toggleSelection(r.node) } label: { Image(systemName: vm.isSelected(r.node) ? "checkmark.circle.fill" : "circle") }.buttonStyle(.plain)
             }.width(28)
-            TableColumn("Nume") { r in Text(r.node.name).padding(.leading, CGFloat(r.depth) * 16).lineLimit(1) }
-            TableColumn("Stare") { r in HStack { ForEach(Array(vm.flags(r.node)).sorted { $0.rawValue < $1.rawValue }, id: \.self) { FlagChip(flag: $0) } } }
-            TableColumn("Logic") { r in Text(Studio.gb(r.node.sizeBytes)).monospacedDigit() }.width(90)
-            TableColumn("Alocat") { r in Text(r.node.allocatedBytes > 0 ? Studio.gb(r.node.allocatedBytes) : "—").monospacedDigit() }.width(90)
+            TableColumn(L.x("Nume", "Name", "Nombre")) { r in Text(r.node.name).padding(.leading, CGFloat(r.depth) * 16).lineLimit(1) }
+            TableColumn(L.x("Stare", "State", "Estado")) { r in HStack { ForEach(Array(vm.flags(r.node)).sorted { $0.rawValue < $1.rawValue }, id: \.self) { FlagChip(flag: $0) } } }
+            TableColumn(L.x("Logic", "Logical", "Lógico")) { r in Text(Studio.gb(r.node.sizeBytes)).monospacedDigit() }.width(90)
+            TableColumn(L.x("Alocat", "Allocated", "Asignado")) { r in Text(r.node.allocatedBytes > 0 ? Studio.gb(r.node.allocatedBytes) : "—").monospacedDigit() }.width(90)
             TableColumn("%") { r in Text(percent(r.node)).monospacedDigit() }.width(60)
         }
     }
@@ -336,7 +336,7 @@ struct DiskAnalyzerView: View {
 
     private func percent(_ n: DiskTreeNode) -> String {
         let t = Double(max(vm.currentNode?.sizeBytes ?? 1, 1)); let p = Double(n.sizeBytes) / t * 100
-        return String(format: p < 10 ? "%.1f%%" : "%.0f%%", p).replacingOccurrences(of: ".", with: ",")
+        return String(format: p < 10 ? "%.1f%%" : "%.0f%%", p).replacingOccurrences(of: ".", with: L.decimalSeparator)
     }
     private func drill(_ n: DiskTreeNode) { guard n.isDirectory, !n.isAggregate else { return }; withAnimation(.easeOut(duration: 0.2)) { vm.open(n); vm.focusID = nil; showAll = false; openDetail = nil } }
 
@@ -380,6 +380,11 @@ struct ReviewSheet: View {
     @ObservedObject var vm: DiskAnalyzerViewModel
     let dismiss: () -> Void
 
+    /// Înălțimea urmează conținutul (fără gol mare când sunt puține elemente).
+    private func sheetHeight(items: Int, hasUnverified: Bool) -> CGFloat {
+        min(620, max(400, CGFloat(300 + items * 48 + (hasUnverified ? 90 : 0))))
+    }
+
     var body: some View {
         let s = vm.summary
         let res = vm.trashResults
@@ -419,7 +424,7 @@ struct ReviewSheet: View {
                 }
             }.padding(18)
         }
-        .frame(width: 560, height: 560)
+        .frame(width: 560, height: sheetHeight(items: max(s.recoverable.count + s.unverified.count, res?.count ?? 0), hasUnverified: !s.unverified.isEmpty))
         .background(Studio.canvasTop)
         .overlay { if vm.isTrashing { ProgressView(L.x("Mut în Coș…", "Moving to Trash…", "Moviendo a la Papelera…")).padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
     }

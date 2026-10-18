@@ -153,7 +153,7 @@ struct AddCloudRemoteSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(L.x("Adaugă cont Cloud", "Add cloud account", "Añadir cuenta en la nube")).font(.title3).bold()
 
-            TextField("Nume cont (ex: drive_personal)", text: $name)
+            TextField(L.x("Nume cont (ex: drive_personal)", "Account name (e.g. drive_personal)", "Nombre de la cuenta (p. ej. drive_personal)"), text: $name)
                 .textFieldStyle(.roundedBorder)
 
             Picker("Provider", selection: $type) {

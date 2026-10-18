@@ -14,10 +14,10 @@ enum TextScalePreference: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .small: return "Mic"
+        case .small: return L.x("Mic", "Small", "Pequeño")
         case .normal: return "Normal"
-        case .large: return "Mare"
-        case .xlarge: return "Foarte mare"
+        case .large: return L.x("Mare", "Large", "Grande")
+        case .xlarge: return L.x("Foarte mare", "Extra large", "Muy grande")
         }
     }
     /// Aceiasi factori ca pe Windows si ca in GDC Plugin Manager —

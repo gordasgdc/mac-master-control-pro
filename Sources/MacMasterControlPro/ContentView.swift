@@ -122,7 +122,7 @@ enum SidebarGroup: CaseIterable {
 }
 
 struct ContentView: View {
-    @State private var selection: SidebarItem? = .dashboard
+    @State private var selection: SidebarItem? = DemoHooks.page.flatMap { SidebarItem(rawValue: $0) } ?? .dashboard
     @ObservedObject private var language = LanguageStore.shared
     @ObservedObject private var access = AccessCoordinator.shared
     @StateObject private var dependencyChecker = DependencyChecker()
@@ -164,7 +164,7 @@ struct ContentView: View {
                 .padding(.top, 8)
 
                 if filteredItems.isEmpty {
-                    Text("Niciun rezultat.").font(.caption).foregroundStyle(.secondary).padding()
+                    Text(L.x("Niciun rezultat.", "No results.", "Sin resultados.")).font(.caption).foregroundStyle(.secondary).padding()
                 }
                 List(selection: $selection) {
                     ForEach(SidebarGroup.allCases, id: \.self) { group in
@@ -251,65 +251,85 @@ struct SettingsView: View {
     @State private var confirmReset = false
     @State private var resetMessage: String?
 
+    private func card<Content: View>(_ title: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(.headline)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(Studio.card, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Studio.line))
+    }
+
+    private func labeled<Content: View>(_ label: String, @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label).font(.subheadline.weight(.medium)).foregroundStyle(Studio.textMuted)
+            content()
+        }
+    }
+
     var body: some View {
-        Form {
-            Section(L.t("settings.appearance")) {
-                Picker(L.t("settings.theme"), selection: $theme.current) {
-                    ForEach(AppTheme.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-
-                Picker(L.t("settings.textSize"), selection: $textScale.current) {
-                    ForEach(TextScalePreference.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-
-                Picker(L.t("settings.language"), selection: $language.current) {
-                    ForEach(AppLanguage.allCases) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            Section(L.t("settings.profile")) {
-                TextField(L.t("settings.name"), text: $profile.name)
-                TextField(L.t("settings.email"), text: $profile.email)
-            }
-
-            Section("Diagnostic") {
-                Text(String(format: L.x("Sesiune: %@","Session: %@","Sesión: %@"), DiagnosticLog.sessionID)).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                HStack {
-                    Button(L.x("Deschide folderul de loguri", L.x("Open logs folder", L.x("Open logs folder", "Open logs folder", "Abrir la carpeta de registros"), "Abrir la carpeta de registros"), "Abrir carpeta de registros")) {
-                        try? FileManager.default.createDirectory(at: DiagnosticLog.directory, withIntermediateDirectories: true)
-                        NSWorkspace.shared.open(DiagnosticLog.directory)
+        ZStack {
+            LinearGradient(colors: [Studio.canvasTop, Studio.canvasBottom], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(L.t("sidebar.settings")).font(.system(size: 30, weight: .bold, design: .rounded))
+                    card(L.t("settings.appearance")) {
+                        labeled(L.t("settings.theme")) {
+                            Picker("", selection: $theme.current) { ForEach(AppTheme.allCases) { Text($0.label).tag($0) } }
+                                .pickerStyle(.segmented).labelsHidden()
+                        }
+                        labeled(L.t("settings.textSize")) {
+                            Picker("", selection: $textScale.current) { ForEach(TextScalePreference.allCases) { Text($0.label).tag($0) } }
+                                .pickerStyle(.segmented).labelsHidden()
+                        }
+                        labeled(L.t("settings.language")) {
+                            Picker("", selection: $language.current) { ForEach(AppLanguage.allCases) { Text($0.label).tag($0) } }
+                                .pickerStyle(.segmented).labelsHidden()
+                        }
                     }
-                    Button(L.x("Copiază ID-ul sesiunii", "Copy session ID", "Copiar ID de sesión")) {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(DiagnosticLog.sessionID, forType: .string)
+                    card(L.t("settings.profile")) {
+                        TextField(L.t("settings.name"), text: $profile.name).textFieldStyle(.roundedBorder)
+                        TextField(L.t("settings.email"), text: $profile.email).textFieldStyle(.roundedBorder)
                     }
-                    Button(L.x("Exportă diagnosticul...", "Export diagnostics…", "Exportar diagnóstico…")) { showDiagnostic = true }
+                    card(L.x("Diagnostic", "Diagnostics", "Diagnóstico")) {
+                        Text(String(format: L.x("Sesiune: %@","Session: %@","Sesión: %@"), DiagnosticLog.sessionID)).font(.caption).foregroundStyle(Studio.textMuted).textSelection(.enabled)
+                        HStack {
+                            Button(L.x("Deschide folderul de loguri", "Open logs folder", "Abrir la carpeta de registros")) {
+                                try? FileManager.default.createDirectory(at: DiagnosticLog.directory, withIntermediateDirectories: true)
+                                NSWorkspace.shared.open(DiagnosticLog.directory)
+                            }
+                            Button(L.x("Copiază ID-ul sesiunii", "Copy session ID", "Copiar ID de sesión")) {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(DiagnosticLog.sessionID, forType: .string)
+                            }
+                            Button(L.x("Exportă diagnosticul...", "Export diagnostics…", "Exportar diagnóstico…")) { showDiagnostic = true }
+                        }
+                        Text(L.x("Pachetul se creează local, redactat; nu se trimite nimic automat.", "The package is created locally and redacted; nothing is sent automatically.", "El paquete se crea localmente y redactado; no se envía nada automáticamente.")).font(.caption).foregroundStyle(Studio.textMuted)
+                    }
+                    card(L.x("Configurație", "Configuration", "Configuración")) {
+                        Text(L.x("Setările, folderele alese și cache-urile aplicației. Resetarea este o acțiune separată: nu se întâmplă automat la expirarea probei și face mai întâi o copie de siguranță.", "The app’s settings, chosen folders and caches. Resetting is a separate action: it never happens automatically when the trial ends and it makes a backup first.", "Los ajustes, las carpetas elegidas y las cachés de la app. Restablecer es una acción aparte: no ocurre al terminar la prueba y antes hace una copia de seguridad."))
+                            .font(.caption).foregroundStyle(Studio.textMuted)
+                        Button(L.x("Resetează configurația aplicației…", "Reset app configuration…", "Restablecer la configuración de la app…"), role: .destructive) { confirmReset = true }
+                        if let resetMessage { Text(resetMessage).font(.caption).foregroundStyle(Studio.textMuted).textSelection(.enabled) }
+                    }
+                    card(L.x("Dezinstalare", "Uninstall", "Desinstalación")) {
+                        Button(L.x("Dezinstalează complet aplicația...", "Uninstall the app completely…", "Desinstalar la app por completo…"), role: .destructive) {
+                            confirmUninstall = true
+                        }
+                    }
                 }
-                Text(L.x("Pachetul se creează local, redactat; nu se trimite nimic automat.", "The package is created locally and redacted; nothing is sent automatically.", "El paquete se crea localmente y redactado; no se envía nada automáticamente.")).font(.caption).foregroundStyle(.secondary)
-            }
-
-            Section(L.x("Configurație", "Configuration", "Configuración")) {
-                Text(L.x("Setările, folderele alese și cache-urile aplicației. Resetarea este o acțiune separată: nu se întâmplă automat la expirarea probei și face mai întâi o copie de siguranță.", "The app’s settings, chosen folders and caches. Resetting is a separate action: it never happens automatically when the trial ends and it makes a backup first.", "Los ajustes, carpetas elegidas y cachés de la app. Restablecer es una acción aparte: nunca ocurre automáticamente al terminar la prueba y antes hace una copia de seguridad."))
-                    .font(.caption).foregroundStyle(.secondary)
-                Button(L.x("Resetează configurația aplicației…", "Reset app configuration…", "Restablecer la configuración de la app…"), role: .destructive) { confirmReset = true }
-                if let resetMessage { Text(resetMessage).font(.caption).foregroundStyle(.secondary).textSelection(.enabled) }
-            }
-
-            Section("Dezinstalare") {
-                Button(L.x("Dezinstalează complet aplicația...", "Uninstall the app completely…", "Desinstalar la app por completo…"), role: .destructive) {
-                    confirmUninstall = true
-                }
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(32)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(32)
         .sheet(isPresented: $showDiagnostic) { DiagnosticExportSheet() }
         .alert(L.x("Resetezi configurația aplicației?", "Reset the app configuration?", "¿Restablecer la configuración de la app?"), isPresented: $confirmReset) {
             Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
             Button(L.x("Fă copie și resetează", "Back up and reset", "Copiar y restablecer"), role: .destructive) {
-                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = String(format: L.x("Copie de siguranță: %@","Backup: %@",L.x("Copia de seguridad: %@", "Safety copy: %@", L.x("Copia de seguridad: %@", "Safety copy: %@", "Copia de seguridad: %@"))), b.path) }
+                do { let b = try AppProfile.resetUserConfiguration(); resetMessage = String(format: L.x("Copie de siguranță: %@","Safety copy: %@","Copia de seguridad: %@"), b.path) }
                 catch { resetMessage = String(format: L.x("Resetarea a eșuat: %@","Reset failed: %@","Falló el restablecimiento: %@"), error.localizedDescription) }
             }
         } message: { Text(AppProfile.resetPreview().joined(separator: "\n")) }

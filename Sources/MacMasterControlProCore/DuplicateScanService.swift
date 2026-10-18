@@ -29,7 +29,7 @@ public struct DuplicateScanProgress: Sendable {
             case .enumerating: return CoreL.x("Caut fișiere…", "Looking for files…", "Buscando archivos…")
             case .prefiltering: return CoreL.x("Compar rapid conținutul…", "Quickly comparing content…", "Comparando el contenido rápidamente…")
             case .hashing: return CoreL.x("Verific fișierele identice…", "Verifying identical files…", "Verificando archivos idénticos…")
-            case .finished: return "Gata"
+            case .finished: return CoreL.x("Gata", "Done", "Listo")
             }
         }
     }

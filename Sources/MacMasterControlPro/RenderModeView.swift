@@ -28,7 +28,7 @@ struct RenderModeView: View {
                         Circle()
                             .fill(service.isActive ? Color.green : Color.secondary.opacity(0.3))
                             .frame(width: 12, height: 12)
-                        Text(service.isActive ? "Mod Randare ACTIV" : "Mod Randare inactiv")
+                        Text(service.isActive ? L.x("Mod Randare ACTIV", "Render Mode ON", "Modo de renderizado ACTIVO") : L.x("Mod Randare inactiv", "Render Mode off", "Modo de renderizado inactivo"))
                             .font(.headline)
                         Spacer()
                         Toggle("", isOn: Binding(

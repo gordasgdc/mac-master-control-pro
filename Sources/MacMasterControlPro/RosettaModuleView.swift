@@ -14,7 +14,7 @@ struct RosettaModuleView: View {
         VStack(alignment: .leading, spacing: 20) {
             Label("Rosetta 2 Inspector", systemImage: "cpu").font(.title2).bold()
 
-            GroupBox("Stare Rosetta 2") {
+            GroupBox(L.x("Stare Rosetta 2", "Rosetta 2 status", "Estado de Rosetta 2")) {
                 HStack {
                     Circle()
                         .fill(service.rosettaInstalled ? Color.orange : Color.green)

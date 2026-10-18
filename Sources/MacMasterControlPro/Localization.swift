@@ -22,7 +22,9 @@ final class LanguageStore: ObservableObject {
     }
 
     private init() {
-        if let saved = AppProfile.defaults.string(forKey: Self.key), let lang = AppLanguage(rawValue: saved) {
+        if let forced = DemoHooks.language, let lang = AppLanguage(rawValue: forced) {
+            current = lang
+        } else if let saved = AppProfile.defaults.string(forKey: Self.key), let lang = AppLanguage(rawValue: saved) {
             current = lang
         } else {
             // Detectie initiala din limba sistemului, cu fallback RO.
@@ -92,6 +94,7 @@ extension L {
     static func x(_ ro: String, _ en: String, _ es: String) -> String {
         switch LanguageStore.shared.current { case .ro: return ro; case .en: return en; case .es: return es }
     }
+    static var decimalSeparator: String { LanguageStore.shared.current == .en ? "." : "," }
     static var locale: Locale {
         switch LanguageStore.shared.current { case .ro: return Locale(identifier: "ro_RO"); case .en: return Locale(identifier: "en_GB"); case .es: return Locale(identifier: "es_ES") }
     }

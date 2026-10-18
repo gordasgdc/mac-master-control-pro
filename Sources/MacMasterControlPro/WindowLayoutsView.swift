@@ -47,7 +47,7 @@ struct WindowLayoutsView: View {
                         }
                     }
                     HStack {
-                        TextField("Nume profil (ex: „Grading — 2 monitoare”)", text: $newProfileName)
+                        TextField(L.x("Nume profil (ex: „Grading — 2 monitoare”)", "Profile name (e.g. “Grading — 2 monitors”)", "Nombre del perfil (p. ej. «Grading — 2 monitores»)"), text: $newProfileName)
                             .textFieldStyle(.roundedBorder)
                         Button(L.x("Salvează", "Save", "Guardar")) { save() }
                             .disabled(!isTrusted || selectedAppIndex == nil || newProfileName.trimmingCharacters(in: .whitespaces).isEmpty)

@@ -67,7 +67,7 @@ struct TweaksModuleView: View {
                 .padding(6)
             }
 
-            GroupBox("Spotlight Shield — Discuri & Foldere") {
+            GroupBox(L.x("Spotlight Shield — Discuri & Foldere", "Spotlight Shield — Drives & Folders", "Spotlight Shield — discos y carpetas")) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text(L.x("Bifează un disc/folder pentru a-l proteja de indexarea Spotlight (`.metadata_never_index`); debifează pentru a elimina protecția.", "Tick a drive/folder to protect it from Spotlight indexing (`.metadata_never_index`); untick to remove the protection.", "Marca un disco o carpeta para protegerlo de la indexación de Spotlight (`.metadata_never_index`); desmárcalo para quitar la protección."))

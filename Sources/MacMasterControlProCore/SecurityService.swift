@@ -49,7 +49,7 @@ public enum SecurityService {
         let on = output.contains("FileVault is On")
         return SecurityCheck(
             id: "filevault", title: "FileVault (criptare disc)", isGood: on,
-            detail: on ? "Activ" : "Dezactivat",
+            detail: on ? CoreL.x("Activ", "On", "Activo") : CoreL.x("Dezactivat", "Off", "Desactivado"),
             manualSteps: on ? [] : [
                 CoreL.x("Apasă „Deschide System Settings” mai jos — se deschide direct panoul corect.", "Press “Open System Settings” below — it opens the right pane directly.", "Pulsa «Abrir Ajustes del Sistema» abajo: abre directamente el panel correcto."),
                 CoreL.x("Apasă butonul „Turn On…” din dreptul FileVault.", "Press the “Turn On…” button next to FileVault.", "Pulsa el botón «Turn On…» junto a FileVault."),
@@ -65,7 +65,7 @@ public enum SecurityService {
         let on = output.contains("enabled")
         return SecurityCheck(
             id: "sip", title: "System Integrity Protection", isGood: on,
-            detail: on ? "Activ" : "Dezactivat",
+            detail: on ? CoreL.x("Activ", "On", "Activo") : CoreL.x("Dezactivat", "Off", "Desactivado"),
             manualSteps: on ? [] : [
                 CoreL.x("Nu se poate reactiva din System Settings — necesită Recovery Mode.", "It cannot be re-enabled from System Settings — it needs Recovery Mode.", "No se puede reactivar desde Ajustes del Sistema: requiere el modo de recuperación."),
                 CoreL.x("Repornește Mac-ul ținând apăsat butonul de pornire (Apple Silicon) până apare „Loading startup options”, apoi alege Options → Continue.", "Restart your Mac holding the power button (Apple silicon) until “Loading startup options” appears, then choose Options → Continue.", "Reinicia el Mac manteniendo pulsado el botón de encendido (Apple silicon) hasta que aparezca «Loading startup options»; luego elige Options → Continue."),
@@ -82,7 +82,7 @@ public enum SecurityService {
         let on = output.contains("assessments enabled")
         return SecurityCheck(
             id: "gatekeeper", title: "Gatekeeper", isGood: on,
-            detail: on ? "Activ" : "Dezactivat",
+            detail: on ? CoreL.x("Activ", "On", "Activo") : CoreL.x("Dezactivat", "Off", "Desactivado"),
             manualSteps: on ? [] : [
                 CoreL.x("Apasă „Deschide System Settings” mai jos.", "Press “Open System Settings” below.", "Pulsa «Abrir Ajustes del Sistema» abajo."),
                 CoreL.x("La secțiunea „Allow applications from”, alege „App Store and identified developers”.", "In the “Allow applications from” section, choose “App Store and identified developers”.", "En la sección «Allow applications from», elige «App Store and identified developers»."),
@@ -97,7 +97,7 @@ public enum SecurityService {
         let on = state > 0
         return SecurityCheck(
             id: "firewall", title: "Firewall", isGood: on,
-            detail: on ? "Activ" : "Dezactivat — sau folosește butonul „Activează Firewall + Stealth Mode” din Acțiuni rapide, mai jos, pentru activare automată dintr-un click",
+            detail: on ? CoreL.x("Activ", "On", "Activo") : CoreL.x("Dezactivat — sau folosește butonul „Activează Firewall + Stealth Mode” din Acțiuni rapide, mai jos, pentru activare automată dintr-un click", "Off — or use the “Enable Firewall + Stealth Mode” button in Quick actions below to turn it on with one click", "Desactivado; o usa el botón «Activar el cortafuegos + modo sigilo» de Acciones rápidas, abajo, para activarlo con un clic"),
             manualSteps: on ? [] : [
                 CoreL.x("Cel mai simplu: butonul „Activează Firewall + Stealth Mode” din secțiunea Acțiuni rapide de mai jos — un singur click, un singur prompt de parolă.", "Simplest: the “Enable Firewall + Stealth Mode” button in the Quick actions section below — one click, one password prompt.", "Lo más sencillo: el botón «Activar el cortafuegos + modo sigilo» de la sección Acciones rápidas de abajo; un clic y una sola petición de contraseña."),
                 CoreL.x("Manual: „Deschide System Settings” → activează switch-ul Firewall.", "Manual: “Open System Settings” → turn on the Firewall switch.", "Manual: «Abrir Ajustes del Sistema» → activa el interruptor del cortafuegos."),
@@ -125,7 +125,7 @@ public enum SecurityService {
         let on = output.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
         return SecurityCheck(
             id: "screensaver", title: CoreL.x("Parolă imediată la screensaver", "Immediate password after screensaver", "Contraseña inmediata tras el salvapantallas"), isGood: on,
-            detail: on ? "Activ" : "Dezactivat — sau folosește butonul „Cere parolă imediat la screensaver” din Acțiuni rapide, mai jos, pentru activare automată dintr-un click",
+            detail: on ? CoreL.x("Activ", "On", "Activo") : CoreL.x("Dezactivat — sau folosește butonul „Cere parolă imediat la screensaver” din Acțiuni rapide, mai jos, pentru activare automată dintr-un click", "Off — or use the “Require password immediately after screensaver” button in Quick actions below to turn it on with one click", "Desactivado; o usa el botón «Pedir contraseña inmediatamente tras el salvapantallas» de Acciones rápidas, abajo, para activarlo con un clic"),
             manualSteps: on ? [] : [
                 CoreL.x("Cel mai simplu: butonul „Cere parolă imediat la screensaver” din secțiunea Acțiuni rapide de mai jos — un singur click.", "Simplest: the “Require password immediately after screensaver” button in the Quick actions section below — one click.", "Lo más sencillo: el botón «Pedir contraseña inmediatamente tras el salvapantallas» de la sección Acciones rápidas de abajo; un solo clic."),
                 CoreL.x("Manual: „Deschide System Settings” → Lock Screen → „Require password after screen saver begins or display is turned off” → alege „Immediately”.", "Manual: “Open System Settings” → Lock Screen → “Require password after screen saver begins or display is turned off” → choose “Immediately”.", "Manual: «Abrir Ajustes del Sistema» → Lock Screen → «Require password after screen saver begins or display is turned off» → elige «Immediately»."),

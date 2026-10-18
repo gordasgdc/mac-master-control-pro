@@ -132,7 +132,7 @@ struct UninstallerModuleView: View {
                     }
                     .frame(maxHeight: 260)
 
-                    Text("Total selectat: \(selectedSizeDescription)")
+                    Text(L.x("Total selectat: \(selectedSizeDescription)", "Total selected: \(selectedSizeDescription)", "Total seleccionado: \(selectedSizeDescription)"))
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
@@ -161,7 +161,7 @@ struct UninstallerModuleView: View {
             Button(L.x("Șterge definitiv", "Delete permanently", "Eliminar definitivamente"), role: .destructive) { runGated { performDelete() } }
             Button(L.x("Anulează", "Cancel", "Cancelar"), role: .cancel) {}
         } message: {
-            Text("Total: \(selectedSizeDescription)\(deleteAppItselfToo ? " + aplicația însăși" : "")")
+            Text("Total: \(selectedSizeDescription)\(deleteAppItselfToo ? L.x(" + aplicația însăși", " + the app itself", " + la propia app") : "")")
         }
     }
 
@@ -200,7 +200,7 @@ struct UninstallerModuleView: View {
                 DispatchQueue.main.async { logLines.append(result) }
             }
             DispatchQueue.main.async {
-                logLines.append("Gata. Reverific…")
+                logLines.append(L.x("Gata. Reverific…", "Done. Re-checking…", "Listo. Volviendo a comprobar…"))
                 apps = UninstallerService.scanInstalledApps()
                 if selectedApp != nil && !apps.contains(where: { $0.id == app.id }) {
                     selectedApp = nil
@@ -239,7 +239,7 @@ struct UninstallerModuleView: View {
                 DispatchQueue.main.async { logLines.append(result) }
             }
             DispatchQueue.main.async {
-                logLines.append("Gata. Reverific…")
+                logLines.append(L.x("Gata. Reverific…", "Done. Re-checking…", "Listo. Volviendo a comprobar…"))
                 apps = UninstallerService.scanInstalledApps()
                 bulkSelectedIDs.removeAll()
                 if let selectedApp, !apps.contains(where: { $0.id == selectedApp.id }) {

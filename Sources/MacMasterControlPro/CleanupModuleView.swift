@@ -34,7 +34,7 @@ struct CleanupModuleView: View {
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Cache-uri recuperabile").font(.headline)
+                        Text(L.x("Cache-uri recuperabile", "Recoverable caches", "Cachés recuperables")).font(.headline)
                         Spacer()
                         Button(selectedItems.count == service.items.count ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             selectedItems = selectedItems.count == service.items.count ? [] : Set(service.items)
@@ -69,7 +69,7 @@ struct CleanupModuleView: View {
                             logLines = []
                             service.deleteSelected(selectedItems) { logLines.append($0) }
                             selectedItems = []
-                            status = "✔ Gata — vezi detaliile mai jos."
+                            status = L.x("✔ Gata — vezi detaliile mai jos.", "✔ Done — see the details below.", "✔ Listo: mira los detalles abajo.")
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -81,7 +81,7 @@ struct CleanupModuleView: View {
             GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Time Machine — Snapshots locale").font(.headline)
+                        Text(L.x("Time Machine — Snapshots locale", "Time Machine — local snapshots", "Time Machine — instantáneas locales")).font(.headline)
                         Spacer()
                         Button(selectedSnapshots.count == service.snapshotDates.count && !service.snapshotDates.isEmpty ? L.x("Deselectează tot", "Deselect all", "Deseleccionar todo") : L.x("Selectează tot", "Select all", "Seleccionar todo")) {
                             selectedSnapshots = selectedSnapshots.count == service.snapshotDates.count ? [] : Set(service.snapshotDates)
@@ -191,8 +191,8 @@ struct CleanupModuleView: View {
                 .padding(6)
             }
 
-            GroupBox("RAM & DNS") {
-                Button("Purjare RAM + Flush DNS") {
+            GroupBox(L.x("RAM & DNS", "RAM & DNS", "RAM y DNS")) {
+                Button(L.x("Purjare RAM + Flush DNS", "Purge RAM + flush DNS", "Purgar RAM + vaciar DNS")) {
                     runGated { service.purgeRAMAndFlushDNS(); status = "✔ RAM eliberat, DNS golit." }
                 }
                 .padding(6)

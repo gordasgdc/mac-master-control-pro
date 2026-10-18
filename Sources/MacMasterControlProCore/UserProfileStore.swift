@@ -15,7 +15,7 @@ public final class UserProfileStore: ObservableObject {
         didSet { AppProfile.defaults.set(email, forKey: Self.emailKey) }
     }
 
-    public var displayName: String { name.trimmingCharacters(in: .whitespaces).isEmpty ? "Anonim" : name }
+    public var displayName: String { name.trimmingCharacters(in: .whitespaces).isEmpty ? CoreL.x("Anonim", "Anonymous", "Anónimo") : name }
 
     private init() {
         name = AppProfile.defaults.string(forKey: Self.nameKey) ?? ""

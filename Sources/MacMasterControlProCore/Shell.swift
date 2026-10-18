@@ -54,7 +54,7 @@ public enum Shell {
             try process.run()
         } catch {
             pipe.fileHandleForReading.readabilityHandler = nil
-            return "Eroare executie: \(error.localizedDescription)"
+            return CoreL.x("Eroare executie: \(error.localizedDescription)", "Execution error: \(error.localizedDescription)", "Error de ejecución: \(error.localizedDescription)")
         }
         // Timeout optional: terminam procesul copil (SIGTERM, apoi SIGKILL) ca sa nu ramana suspendat.
         var timedOut = false

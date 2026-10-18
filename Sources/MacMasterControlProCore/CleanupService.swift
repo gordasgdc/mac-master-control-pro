@@ -36,7 +36,7 @@ public final class CleanupService: ObservableObject {
         // in timp fara ca userul sa observe.
         (CoreL.x("Coșul de gunoi (Trash)", "Trash", "Papelera"), NSHomeDirectory() + "/.Trash"),
         (CoreL.x("Atașamente Mail descărcate", "Downloaded Mail attachments", "Adjuntos de Mail descargados"), NSHomeDirectory() + "/Library/Containers/com.apple.mail/Data/Library/Mail Downloads"),
-        ("Backup-uri iOS (MobileSync)", NSHomeDirectory() + "/Library/Application Support/MobileSync/Backup"),
+        (CoreL.x("Backup-uri iOS (MobileSync)", "iOS backups (MobileSync)", "Copias de seguridad de iOS (MobileSync)"), NSHomeDirectory() + "/Library/Application Support/MobileSync/Backup"),
     ]
 
     /// Scanare libera (permisa in Trial) - calculeaza GB per item, fara sa stearga nimic.
@@ -71,11 +71,29 @@ public final class CleanupService: ObservableObject {
             // shopt -s dotglob: `*` implicit NU prinde fisierele ascunse
             // (.DS_Store etc.) - fara el, cache-uri ascunse ar ramane
             // neatinse desi userul a bifat exact acel folder.
+            if Self.isNotRegenerable(item.path) {
+                // Date personale (copii de siguranță iOS, atașamente Mail): mutare RECUPERABILĂ în Coș, niciodată ștergere definitivă.
+                let children = (try? FileManager.default.contentsOfDirectory(atPath: item.path)) ?? []
+                var moved = 0
+                for child in children {
+                    switch TrashService.moveToTrash(path: item.path + "/" + child) {
+                    case .moved: moved += 1
+                    case .failed(let reason): log?("  ✘ \(child): \(reason)")
+                    }
+                }
+                log?(CoreL.x("  ↩ \(moved) elemente mutate în Coș (recuperabil).", "  ↩ \(moved) items moved to the Trash (recoverable).", "  ↩ \(moved) elementos movidos a la Papelera (recuperable)."))
+                continue
+            }
             let output = Shell.run("setopt dotglob 2>/dev/null; rm -rfv \"\(item.path)\"/* 2>&1 | tail -n 5")
             if !output.isEmpty { log?(output) }
             log?(CoreL.x("  ✔ \(item.name): comandă terminată.", "  ✔ \(item.name): command finished.", "  ✔ \(item.name): comando terminado."))
         }
         scanReclaimable()
+    }
+
+    /// Locații cu date care NU se regenerează: se mută în Coș, nu se șterg.
+    static func isNotRegenerable(_ path: String) -> Bool {
+        path.contains("/MobileSync/Backup") || path.contains("/Mail Downloads")
     }
 
     public func deleteSelectedSnapshots(_ selected: Set<String>) {

@@ -27,7 +27,7 @@ final class ThemeManager: ObservableObject {
     }
 
     private init() {
-        let raw = AppProfile.defaults.string(forKey: Self.key) ?? AppTheme.system.rawValue
+        let raw = DemoHooks.theme ?? AppProfile.defaults.string(forKey: Self.key) ?? AppTheme.system.rawValue
         current = AppTheme(rawValue: raw) ?? .system
     }
 
