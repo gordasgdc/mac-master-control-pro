@@ -24,6 +24,7 @@ struct DiskAnalyzerView: View {
             LinearGradient(colors: [Studio.canvasTop, Studio.canvasBottom], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
             VStack(alignment: .leading, spacing: 0) {
                 header
+                if let e = vm.scanError ?? vm.deleteError { StatusBanner(text: e).padding(.horizontal, 30).padding(.top, 12) }
                 if vm.isIndexing { indexingProgress.padding(.horizontal, 30).padding(.top, 20); Spacer() }
                 else if vm.tree != nil { content }
                 else { volumePicker.padding(.top, 8); Spacer() }
@@ -32,6 +33,7 @@ struct DiskAnalyzerView: View {
         }
         .animation(.easeOut(duration: 0.22), value: vm.selection.isEmpty)
         .onAppear { vm.loadRootsIfNeeded() }
+        .task { await runDemoScript() }
         .task(id: vm.lastScannedAt) { await refreshTotals() }
         .task(id: dupes.groups.count) { await refreshTotals() }
         .sheet(isPresented: $showReview) { ReviewSheet(vm: vm, dismiss: { showReview = false }) }
@@ -88,6 +90,26 @@ struct DiskAnalyzerView: View {
         .padding(.horizontal, 30).padding(.top, 22)
     }
 
+    /// Doar pentru materiale demonstrative, în profil izolat: aduce ecranul în starea cerută prin variabile de mediu (fără clicuri).
+    private func runDemoScript() async {
+        guard DemoHooks.scanVolume != nil || DemoHooks.scanPath != nil else { return }
+        vm.loadRootsIfNeeded()
+        try? await Task.sleep(nanoseconds: 900_000_000)
+        if let p = DemoHooks.scanPath {
+            vm.startIndexing(root: DiskEntry(id: p, name: (p as NSString).lastPathComponent, path: p, sizeBytes: 0, isDirectory: true)); return
+        }
+        if let name = DemoHooks.scanVolume, let r = vm.roots.first(where: { $0.name.hasPrefix(name) }) { vm.startIndexing(root: r) }
+        for _ in 0..<240 { if vm.tree != nil && !vm.isIndexing { break }; try? await Task.sleep(nanoseconds: 250_000_000) }
+        if let path = DemoHooks.openPath {
+            for part in path.split(separator: "/") { if let n = vm.currentChildren.first(where: { $0.name == String(part) }) { drill(n) } }
+        }
+        if let sel = DemoHooks.select {
+            for nm in sel.split(separator: ",") { if let n = vm.currentChildren.first(where: { $0.name == String(nm) }) { _ = vm.toggleSelection(n) } }
+        }
+        if DemoHooks.advanced { advanced = true }
+        if DemoHooks.review { try? await Task.sleep(nanoseconds: 400_000_000); showReview = true }
+    }
+
     private func chooseFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
@@ -99,11 +121,35 @@ struct DiskAnalyzerView: View {
     private func isCurrent(_ r: DiskEntry) -> Bool { vm.tree?.path == URL(fileURLWithPath: r.path).resolvingSymlinksInPath().path || (vm.currentScanRootPath == r.path) }
 
     private var volumePicker: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            volumeHint
-            StudioArtView(name: "disk-empty-glass", width: 300, height: 189)
+        HStack(alignment: .top, spacing: 28) {
+            VStack(alignment: .leading, spacing: 18) {
+                volumeHint
+                VStack(alignment: .leading, spacing: 14) {
+                    step("1", "chart.pie", L.x("Alege un volum", "Pick a volume", "Elige un volumen"), L.x("Harta arată proporțiile reale; intri în foldere cu un click.", "The map shows the real proportions; step into folders with one click.", "El mapa muestra las proporciones reales; entras en las carpetas con un clic."))
+                    step("2", "checkmark.circle", L.x("Bifează ce vrei să revizuiești", "Tick what you want to review", "Marca lo que quieras revisar"), L.x("Fără regulă verificată nu intră în totalul recuperabil.", "Without a verified rule it does not count as recoverable.", "Sin regla verificada no cuenta como recuperable."))
+                    step("3", "trash", L.x("Revizuiești și muți în Coș", "Review, then move to the Trash", "Revisas y mueves a la Papelera"), L.x("Nimic nu se șterge definitiv; poți restaura din Coș.", "Nothing is deleted permanently; you can restore from the Trash.", "No se borra nada de forma definitiva; puedes restaurar desde la Papelera."))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            StudioArtFill(name: "disk-empty-glass")
+                .frame(width: 430, height: 300)
+                .background(Studio.card, in: RoundedRectangle(cornerRadius: 24))
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Studio.line))
+                .shadow(color: .black.opacity(0.08), radius: 12, y: 5)
         }
-        .padding(.horizontal, 30).padding(.top, 20)
+        .padding(.horizontal, 30).padding(.top, 22)
+    }
+
+    private func step(_ n: String, _ icon: String, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon).font(.title3).foregroundStyle(Studio.accent).frame(width: 30, height: 30)
+                .background(Studio.accent.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(n). \(title)").fontWeight(.semibold)
+                Text(detail).font(.callout).foregroundStyle(Studio.textMuted)
+            }
+        }
     }
 
     private var volumeHint: some View {

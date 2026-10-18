@@ -11,4 +11,11 @@ enum DemoHooks {
     static var language: String? { env("MCSP_DEMO_LANG") }
     static var theme: String? { env("MCSP_DEMO_THEME") }
     static var page: String? { env("MCSP_DEMO_PAGE") }
+    /// Scenariu de captură pentru Analiză Disc (profil izolat): volum de scanat, cale de scanat (progres/eroare), foldere de deschis, elemente de bifat, foaia de revizuire, tabel avansat.
+    static var scanVolume: String? { env("MCSP_DEMO_SCAN") }
+    static var scanPath: String? { env("MCSP_DEMO_SCAN_PATH") }
+    static var openPath: String? { env("MCSP_DEMO_OPEN") }
+    static var select: String? { env("MCSP_DEMO_SELECT") }
+    static var review: Bool { env("MCSP_DEMO_REVIEW") != nil }
+    static var advanced: Bool { env("MCSP_DEMO_ADVANCED") != nil }
 }

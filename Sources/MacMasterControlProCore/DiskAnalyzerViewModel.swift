@@ -49,6 +49,8 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     @Published public private(set) var isLoadingCache = false
     @Published public var bytesIndexed: Int64 = 0
     @Published public var deleteError: String?
+    /// Rădăcina aleasă nu există sau nu poate fi citită: se arată un banner, nu se revine mut la selector.
+    @Published public var scanError: String?
     @Published public var roots: [DiskEntry] = []
     /// Data ultimei analize (completă SAU incrementală) — `nil` doar cât
     /// timp arborele curent n-a fost încă salvat/încărcat niciodată.
@@ -177,6 +179,16 @@ public final class DiskAnalyzerViewModel: ObservableObject {
     /// (0 acces la disc dincolo de citirea unui singur fișier local mic),
     /// altfel pornește o scanare completă (prima dată pentru acea rădăcină).
     public func startIndexing(root: DiskEntry) {
+        scanError = nil
+        var isDir: ObjCBool = false
+        if !FileManager.default.fileExists(atPath: root.path, isDirectory: &isDir) {
+            scanError = String(format: CoreL.x("✘ „%@” nu există sau volumul nu mai este montat.", "✘ “%@” does not exist or the volume is no longer mounted.", "✘ «%@» no existe o el volumen ya no está montado."), root.path)
+            return
+        }
+        if !FileManager.default.isReadableFile(atPath: root.path) {
+            scanError = String(format: CoreL.x("✘ „%@” nu poate fi citit. Verifică permisiunile (Acces complet la disc).", "✘ “%@” cannot be read. Check the permissions (Full Disk Access).", "✘ «%@» no se puede leer. Revisa los permisos (Acceso total al disco)."), root.path)
+            return
+        }
         currentRootPath = root.path
         pathStack = []
         deleteError = nil
@@ -365,7 +377,7 @@ public final class DiskAnalyzerViewModel: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 if let error {
-                    self.deleteError = error
+                    self.deleteError = "✘ " + error
                 } else if let tree = self.tree, let rootPath = self.currentRootPath {
                     DiskScanEngine.remove(nodePath: nodePath, from: tree)
                     // Forteaza SwiftUI sa re-citeasca `currentChildren` —

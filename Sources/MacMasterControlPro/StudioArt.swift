@@ -36,3 +36,22 @@ struct StudioArtView: View {
         .task { image = await StudioArt.image(name) }
     }
 }
+
+
+/// Ilustrație care umple spațiul oferit (în hero-ul de pe Acasă): decupată, cu margine stângă estompată; textul nu stă niciodată peste ea.
+struct StudioArtFill: View {
+    let name: String
+    @State private var image: NSImage?
+    var body: some View {
+        ZStack {
+            if let image {
+                Image(nsImage: image).resizable().scaledToFill()
+                    .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.30), .init(color: .black, location: 1)], startPoint: .leading, endPoint: .trailing))
+                    .transition(.opacity)
+            }
+        }
+        .clipped()
+        .accessibilityHidden(true)
+        .task { image = await StudioArt.image(name) }
+    }
+}
