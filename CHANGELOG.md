@@ -1,5 +1,10 @@
 # Changelog — Master Control Studio Pro
 
+## v2.34.4 (2026-10-19) — Licența se poate lipi și pe un singur rând
+
+### Fixed
+- Aplicația găsește codul de licență oricum ar fi lipit mesajul primit, inclusiv când textul ajunge pe un singur rând, fără despărțiri. Verificările licenței rămân neschimbate.
+
 ## v2.34.3 (2026-10-19) — Licența se poate lipi împreună cu mesajul primit
 
 ### Fixed
